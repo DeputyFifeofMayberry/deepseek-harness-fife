@@ -71,6 +71,20 @@ function userTemp() {
 }
 
 /**
+ * Read the feed repository from the checkout's origin remote.
+ *
+ * `gh repo view` cannot decide this: the checkout carries the upstream remote too, and
+ * gh resolves that base repository, whose releases the fork must not touch.
+ * @returns {string} `owner/name` GitHub repository that hosts the feed.
+ */
+function feedRepository() {
+  const url = run(['git', 'remote', 'get-url', 'origin'])
+  const match = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/u.exec(url)
+  if (match === null) throw new Error(`fife desktop release: cannot read an owner/name GitHub repository from origin ${JSON.stringify(url)}`)
+  return `${match[1]}/${match[2]}`
+}
+
+/**
  * Read the sequence numbers today's fife releases already use.
  * @param {string} repo - `owner/name` repository that hosts the feed.
  * @param {string} tagPrefix - Regexp source matching `v<prefix><date>.` for one product version and date.
@@ -114,7 +128,7 @@ function ensureWindowsEnvironmentFile() {
  * @returns {Promise<void>} Resolves after the GitHub release is published.
  */
 async function main(env, requestedNotes, requestedFeedUrl) {
-  const repo = run(['gh', 'repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'])
+  const repo = feedRepository()
   const productVersion = JSON.parse(readFileSync(join(APP_ROOT, 'package.json'), 'utf8')).version
   const requested = requestedFeedUrl ?? env[FIFE_DESKTOP_UPDATE_FEED_URL_ENV] ?? `https://github.com/${repo}/releases/latest/download`
   const feedUrl = resolveFifeFeedUrl({ [FIFE_DESKTOP_UPDATE_FEED_URL_ENV]: requested })
@@ -127,12 +141,10 @@ async function main(env, requestedNotes, requestedFeedUrl) {
   const channel = resolveDesktopUpdateChannel(env)
   process.stdout.write(`fife desktop release: packaging ${buildVersion} for ${feedUrl}\n`)
   // Unix-style shells put GNU tar first on PATH, and it reads a drive-letter archive path as a
-  // remote host, so an ordinary Windows PATH is forced. A Unix-style TEMP makes Windows resolve
-  // the system temp directory, where the installer build cannot write its include files, so an
-  // absolute temp directory is forced too.
+  // remote host, so an ordinary Windows PATH is forced. Automations can inherit the Windows
+  // system temp directory, which the installer build cannot use, so the user temp is always forced.
   const shellSettings = process.platform === 'win32'
-    ? { PATH: `C:\\Windows\\System32;${process.env.PATH ?? ''}`,
-        ...(/^([A-Za-z]:[\\/]|\\\\)/u.test(env.TEMP ?? '') ? {} : { TEMP: userTemp(), TMP: userTemp() }) }
+    ? { PATH: `C:\\Windows\\System32;${process.env.PATH ?? ''}`, TEMP: userTemp(), TMP: userTemp() }
     : {}
   run(['pnpm', 'run', 'package:win:x64:unsigned', '--', '--build-version', buildVersion],
     { inputEnv: { ...shellSettings, [FIFE_DESKTOP_UPDATE_FEED_URL_ENV]: feedUrl }, shell: true })
