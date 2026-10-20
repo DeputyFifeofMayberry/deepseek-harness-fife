@@ -6,6 +6,7 @@ import {
   resolveDesktopAutoUpdateEnvironment,
   resolveDesktopAutoUpdateTarget,
   resolveDesktopUploadConfig,
+  resolveFifeFeedUrl,
 } from '../scripts/desktop-auto-update-environment.mjs'
 
 const RELEASE_ID = '0123456789abcdef0123456789abcdef'
@@ -106,9 +107,42 @@ describe('desktop auto-update environment', () => {
   it('rejects unknown deployments and targets', () => {
     expect(() => resolveDesktopAutoUpdateEnvironment({
       DSH_DESKTOP_AUTO_UPDATE_ENV: 'staging',
-    })).toThrow(/test.*production/u)
+    })).toThrow(/test.*production.*fife/u)
     expect(() => resolveDesktopAutoUpdateTarget('linux', 'x64')).toThrow(/unsupported target/u)
     expect(() => desktopBuildRecordFilename('linux-x64' as 'mac-arm64')).toThrow(/unsupported target/u)
+  })
+
+  it('resolves the fife deployment to one flat feed without COS prefixes', () => {
+    const feed = 'https://github.com/example/deepseek-harness-fife/releases/latest/download'
+    expect(resolveDesktopAutoUpdateEnvironment({ DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife' })).toBe('fife')
+    expect(resolveDesktopAutoUpdateConfig({
+      DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife', FIFE_DESKTOP_UPDATE_FEED_URL: feed,
+    }, 'win32', 'x64')).toEqual({
+      environment: 'fife', channel: 'nightly', target: 'win-x64', origin: 'https://github.com',
+      publicUrl: `${feed}/`, keyPrefix: '', binaryKeyPrefix: '',
+    })
+    expect(() => resolveDesktopAutoUpdateConfig({ DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife' }, 'win32', 'x64'))
+      .toThrow(/FIFE_DESKTOP_UPDATE_FEED_URL/u)
+    expect(() => resolveDesktopUploadConfig({
+      DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife', FIFE_DESKTOP_UPDATE_FEED_URL: feed,
+    }, 'win32', 'x64')).toThrow(/GitHub Releases/u)
+  })
+
+  it.each(['http://github.com/example/fife/releases/latest/download',
+    'https://github.com/example/fife/releases/latest/download?token=secret',
+    'https://token@github.com/example/fife/releases/latest/download',
+    'https://github.com/example/fife/releases/latest/download#fragment',
+    'https://github.com',
+    'github.com/example/fife/releases/latest/download',
+    'releases/latest/download',
+    ''])('rejects an unusable fife feed URL %j', (url) => {
+    expect(() => resolveFifeFeedUrl({ FIFE_DESKTOP_UPDATE_FEED_URL: url })).toThrow(/FIFE_DESKTOP_UPDATE_FEED_URL/u)
+  })
+
+  it('keeps one trailing slash on a fife feed URL', () => {
+    const feed = 'https://github.com/example/fife/releases/latest/download'
+    expect(resolveFifeFeedUrl({ FIFE_DESKTOP_UPDATE_FEED_URL: `${feed}/` })).toBe(`${feed}/`)
+    expect(resolveFifeFeedUrl({ FIFE_DESKTOP_UPDATE_FEED_URL: feed })).toBe(`${feed}/`)
   })
 
   it('uses Nightly metadata for stable and prerelease Desktop versions', () => {

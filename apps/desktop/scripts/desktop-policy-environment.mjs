@@ -17,6 +17,9 @@ function origin(value, name) {
  */
 export function resolveDesktopPolicyEnvironment(environment) {
   const deployment = resolveDesktopAutoUpdateEnvironment(environment)
+  if (deployment === 'fife') {
+    throw new Error('desktop package: the fife deployment has no mandatory-update policy service')
+  }
   const name = deployment === 'test' ? 'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN' : 'DSH_DESKTOP_MANDATORY_UPDATE_PROD_ORIGIN'
   const selected = origin(environment[name], name)
   let settings = {}

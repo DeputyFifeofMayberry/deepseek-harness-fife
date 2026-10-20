@@ -1,8 +1,11 @@
 /** Environment variable that selects the Desktop update deployment. */
 export const DESKTOP_AUTO_UPDATE_ENV: 'DSH_DESKTOP_AUTO_UPDATE_ENV'
 
+/** Environment variable that carries the fife deployment's public updater feed URL. */
+export const FIFE_DESKTOP_UPDATE_FEED_URL_ENV: 'FIFE_DESKTOP_UPDATE_FEED_URL'
+
 /** Supported Desktop update deployment. */
-export type DesktopAutoUpdateEnvironment = 'test' | 'production'
+export type DesktopAutoUpdateEnvironment = 'test' | 'production' | 'fife'
 
 /** Directory name of one supported Desktop release target. */
 export type DesktopAutoUpdateTarget = 'mac-arm64' | 'mac-x64' | 'win-x64'
@@ -20,6 +23,8 @@ export interface DesktopAutoUpdateConfig {
 
 /** Public updater URL and private COS destination for one upload target. */
 export interface DesktopUploadConfig extends DesktopAutoUpdateConfig {
+  /** The upload path rejects the fife deployment, so a resolved upload configuration is always COS-backed. */
+  readonly environment: 'test' | 'production'
   readonly bucket: string
   readonly secretIdEnvName: string
   readonly secretKeyEnvName: string
@@ -65,12 +70,20 @@ export function desktopUpdateMetadataFilename(
 ): string
 
 /**
+ * Resolve the fife deployment's public updater feed URL.
+ * @param env - Packaging environment.
+ * @returns HTTPS feed URL with exactly one trailing slash.
+ * @throws When the feed URL is missing, relative, non-HTTPS, or carries credentials, query, or fragment.
+ */
+export function resolveFifeFeedUrl(env: NodeJS.ProcessEnv): string
+
+/**
  * Resolve the public updater URL and object prefixes for one release target.
  * @param env - Packaging or upload environment.
  * @param platform - Target Node.js platform.
  * @param arch - Target Node.js architecture.
- * @returns Resolved updater configuration.
- * @throws When the test deployment lacks a valid HTTPS origin or a 32-character lowercase hexadecimal release ID.
+ * @returns Resolved updater configuration; the fife deployment serves one flat feed and leaves the object prefixes empty.
+ * @throws When the test deployment lacks a valid HTTPS origin or a 32-character lowercase hexadecimal release ID, or the fife deployment lacks a valid feed URL.
  */
 export function resolveDesktopAutoUpdateConfig(
   env: NodeJS.ProcessEnv,
@@ -84,7 +97,7 @@ export function resolveDesktopAutoUpdateConfig(
  * @param platform - Target Node.js platform.
  * @param arch - Target Node.js architecture.
  * @returns Resolved upload configuration.
- * @throws When the selected deployment lacks a bucket or valid updater configuration.
+ * @throws When the selected deployment lacks a bucket or valid updater configuration, or is the fife deployment.
  */
 export function resolveDesktopUploadConfig(
   env: NodeJS.ProcessEnv,
