@@ -92,7 +92,7 @@ function feedRepository() {
  */
 function takenIndexes(repo, tagPrefix) {
   const listing = JSON.parse(run(['gh', 'release', 'list', '--repo', repo, '--limit', '200', '--json', 'tagName']))
-  const tag = new RegExp(`^v${tagPrefix}(\\d+)$`, 'u')
+  const tag = new RegExp(`^${tagPrefix}(\\d+)$`, 'u')
   return listing.flatMap(release => {
     const match = tag.exec(release.tagName ?? '')
     return match === null ? [] : [Number(match[1])]
