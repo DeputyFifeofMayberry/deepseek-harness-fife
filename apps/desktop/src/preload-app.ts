@@ -55,6 +55,9 @@ function createProductApi(): DshDesktopProductApi {
         return () => { ipcRenderer.off(DESKTOP_IPC.updatesPresentation, handle) }
       },
     },
+    activity: {
+      report: (event) => { ipcRenderer.send(DESKTOP_IPC.activityAttention, event) },
+    },
   }
 }
 

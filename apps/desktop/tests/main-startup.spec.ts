@@ -189,10 +189,17 @@ const harness = await vi.hoisted(async () => {
   }
   const backgroundNotice = { close: vi.fn((hide: () => void) => { hide() }), dispose: vi.fn(), markerPath: undefined as string | undefined }
   const shellDialog = { isOpen: false, focus: vi.fn() }
+  const notices: FakeNotice[] = []
+  class FakeNotice extends EventEmitter {
+    static isSupported = vi.fn(() => true)
+    show = vi.fn()
+    close = vi.fn()
+    constructor(readonly options: unknown) { super(); notices.push(this) }
+  }
   return {
     failWindow(error: Error) { windowFailure = error },
     windows, hosts, handlers, app, FakeWindow, FakeHost, powerMonitor, nativeTheme, analytics,
-    trays, FakeTray, backgroundNotice, shellDialog,
+    trays, FakeTray, backgroundNotice, shellDialog, notices, FakeNotice,
     menu, popup, socketHeaders: vi.fn(), loginShell, readLoginShell, updateCheck, updateDownload, updateInstall,
     platformDispose,
     platformCloseAndWait,
@@ -277,6 +284,7 @@ vi.mock('../src/policy-test-auth.ts', () => ({ DesktopPolicyTestAuth: class {
 vi.mock('electron', () => ({
   app: harness.app,
   BrowserWindow: harness.FakeWindow,
+  Notification: harness.FakeNotice,
   dialog: harness.dialog,
   shell: { openExternal: harness.openExternal },
   nativeTheme: harness.nativeTheme,
@@ -1094,6 +1102,54 @@ describe('desktop main startup', () => {
     listener(event, false)
     expect(window.setMinimumSize).toHaveBeenLastCalledWith(520, 600)
     expect(window.setSize).not.toHaveBeenCalled()
+  })
+
+  it('raises background activity attention only for the primary product window', async () => {
+    await import('../src/main.ts')
+    await harness.preparing.promise
+    const window = harness.windows[0]!
+    const listener = harness.ipcOn.mock.calls.find(([channel]) => channel === DESKTOP_IPC.activityAttention)![1]
+    const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
+    // A foreground window suppresses every report.
+    listener(event, { kind: 'task-complete', sessionId: 'session-1' })
+    listener(event, { kind: 'approval-request', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(0)
+    window.visible = false
+    listener(event, { kind: 'task-complete', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(1)
+    expect(harness.notices[0]!.options)
+      .toEqual({ title: en.activityTaskCompleteTitle, body: en.activityTaskCompleteNotification, silent: true })
+    // Foreign senders and malformed payloads are dropped without throwing.
+    listener({ ...event, sender: {} }, { kind: 'task-complete', sessionId: 'session-2' })
+    listener(event, { kind: 'vanish', sessionId: 'session-2' })
+    listener(event, { kind: 'task-complete', sessionId: '' })
+    listener(event, 'complete')
+    expect(harness.notices).toHaveLength(1)
+    // One replaceable approval notification; a newer request closes the previous one.
+    listener(event, { kind: 'approval-request', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(2)
+    expect(harness.notices[1]!.options).toEqual({ title: en.activityApprovalTitle, body: en.activityApprovalNotification, silent: false })
+    listener(event, { kind: 'approval-request', sessionId: 'session-2' })
+    expect(harness.notices).toHaveLength(3)
+    expect(harness.notices[1]!.close).toHaveBeenCalled()
+    // Resolution closes the owned approval notification.
+    listener(event, { kind: 'approval-resolved', sessionId: 'session-2' })
+    expect(harness.notices[2]!.close).toHaveBeenCalled()
+    // A click on an owned notification restores and focuses the window.
+    listener(event, { kind: 'approval-request', sessionId: 'session-3' })
+    const clickable = harness.notices[3]!
+    clickable.emit('click')
+    expect(clickable.close).not.toHaveBeenCalled()
+    expect(window.restore).not.toHaveBeenCalled()
+    expect(window.show).toHaveBeenCalled()
+    expect(window.focus).toHaveBeenCalled()
+    // Window focus clears owned notifications.
+    window.show.mockClear()
+    window.focus.mockClear()
+    listener(event, { kind: 'task-complete', sessionId: 'session-4' })
+    const pending = harness.notices.at(-1)!
+    window.emit('focus')
+    expect(pending.close).toHaveBeenCalled()
   })
 
   it('registers the window-owned directory picker during startup and rejects foreign callers', async () => {

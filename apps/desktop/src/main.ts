@@ -29,7 +29,7 @@ import { DesktopPlatformView, PLATFORM_IPC, platformBounds } from './platform-vi
 import { installDesktopDirectoryPicker } from './directory-picker.ts'
 import { installMicrophonePermissions } from './microphone-permissions.ts'
 import { DesktopBackendController } from './backend-controller.ts'
-import { DESKTOP_IPC, SCHEME, assertDesktopSender, type DesktopUpdateState } from './ipc.ts'
+import { DESKTOP_IPC, SCHEME, assertDesktopSender, isDesktopActivityReport, type DesktopUpdateState } from './ipc.ts'
 import { readDeviceInfo } from './device-info.ts'
 import { desktopUpdateReadyConfirmation, formatDesktopMessage, resolveDesktopLocale, resolveDesktopStartupLocale } from './locale.ts'
 import { claimDesktopSingleInstance } from './single-instance.ts'
@@ -61,6 +61,7 @@ import { DesktopUpdateOverlays } from './update-overlay.ts'
 import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
+import { DesktopActivityAttention } from './activity-attention.ts'
 
 let focusPrimaryWindow = (): void => {}
 let stopForRecovery = async (): Promise<void> => {}
@@ -83,6 +84,16 @@ const rendererConsole = new RendererConsoleTail()
 // Platform-conventional logs directory (macOS ~/Library/Logs/<name>, otherwise under userData);
 // set before ready so the first fatal report already resolves under it.
 app.setAppLogsPath()
+
+// Windows toast attribution: match electron-builder's application identifier when the
+// release environment provides it (the packaging-time DSH_DESKTOP_APP_ID; see
+// scripts/desktop-release-environment.mjs). Development and unpackaged runs keep
+// Electron's default identifier, and installed-build notification qualification stays
+// a release requirement (see the Desktop README).
+const desktopAppId = process.env.DSH_DESKTOP_APP_ID?.trim()
+if (desktopAppId !== undefined && /^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/u.test(desktopAppId)) {
+  app.setAppUserModelId(desktopAppId)
+}
 
 function currentDesktopLocale(): ReturnType<typeof resolveDesktopLocale> {
   return resolveDesktopLocale(windowsLanguage ?? app.getLocale())
@@ -425,6 +436,7 @@ async function main(): Promise<void> {
       throw new Error('dsh desktop: rejected IPC from an unowned renderer')
     }
   }
+  const activityAttention = new DesktopActivityAttention(() => locale, desktopSettings.notifications, () => mainWindow)
   let navigation: { window: BrowserWindow; url: string; promise: Promise<void> } | undefined
   const navigateMain = (url: string): Promise<void> => {
     const window = mainWindow
@@ -796,6 +808,16 @@ async function main(): Promise<void> {
     assertProductSender(event)
     await openUpdatePrompt()
   })
+  // Background activity reports follow the send-channel convention: an unowned
+  // sender or malformed payload is dropped, never thrown.
+  ipcMain.on(DESKTOP_IPC.activityAttention, (event, report: unknown) => {
+    const window = mainWindow
+    if (window === undefined || window.isDestroyed() || event.sender !== window.webContents
+      || event.senderFrame !== window.webContents.mainFrame
+      || !event.senderFrame.url.startsWith(`${SCHEME}://app/`)) return
+    if (!isDesktopActivityReport(report)) return
+    activityAttention.report(report.kind, report.sessionId)
+  })
 
   let promptOperation: Promise<void> | undefined
   let policyAuthenticationQueued = false
@@ -1075,6 +1097,7 @@ async function main(): Promise<void> {
     browserGuests.bind(window, (guest, name) => shortcuts.attachGuest(window, guest, name))
     shortcuts.attach(window)
     window.on('focus', automaticCheck)
+    window.on('focus', () => { activityAttention.clear() })
     // Closing hides: the page and the Host keep running, and the next show resumes the same document.
     window.on('close', (event) => {
       if (quitting || shellInstallerOwnsQuit || sessionEnding) return

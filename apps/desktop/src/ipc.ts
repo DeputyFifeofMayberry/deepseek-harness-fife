@@ -27,6 +27,7 @@ export const DESKTOP_IPC = {
   updatesStatus: 'dsh-desktop:updates-status',
   updatesOpen: 'dsh-desktop:updates-open',
   updatesPresentation: 'dsh-desktop:updates-presentation',
+  activityAttention: 'dsh-desktop:activity-attention',
   nativeThemeSet: 'dsh-desktop:native-theme-set',
   windowFullscreen: 'dsh-desktop:window-fullscreen',
   windowsAppearance: 'dsh-desktop:windows-appearance',
@@ -68,6 +69,23 @@ export interface DesktopUpdatePresentation {
   readonly failure?: DesktopUpdateFailureKind
 }
 
+/** Activity the product renderer reports for native background attention. */
+export type DesktopActivityKind = 'task-complete' | 'approval-request' | 'approval-resolved'
+
+/** One renderer-reported attention event; `sessionId` names the owning session. */
+export interface DesktopActivityReport {
+  readonly kind: DesktopActivityKind
+  readonly sessionId: string
+}
+
+/** Validate one untrusted activity report from the product renderer. */
+export function isDesktopActivityReport(value: unknown): value is DesktopActivityReport {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return (candidate.kind === 'task-complete' || candidate.kind === 'approval-request' || candidate.kind === 'approval-resolved')
+    && typeof candidate.sessionId === 'string' && candidate.sessionId !== ''
+}
+
 /** Product documents cannot supply update versions, package URLs, or installation authorization. */
 export interface DshDesktopProductApi {
   readonly protocolVersion: 1
@@ -83,6 +101,14 @@ export interface DshDesktopProductApi {
     status(): Promise<DesktopUpdatePresentation>
     open(): Promise<void>
     subscribe(listener: (state: DesktopUpdatePresentation) => void): () => void
+  }
+  /**
+   * Reports session activity for native background attention; absent in plain browsers.
+   * Reports are best effort: the shell validates the sender and drops everything else,
+   * and a report never authorizes any action.
+   */
+  readonly activity?: {
+    report(event: DesktopActivityReport): void
   }
 }
 

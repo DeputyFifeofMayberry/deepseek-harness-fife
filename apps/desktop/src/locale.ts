@@ -166,6 +166,10 @@ export const en = {
   mandatoryCopyFailed: 'Could not copy the link. Select and copy it below.',
   mandatoryAddress: 'Download link',
   mandatoryNotification: 'Return to the application to confirm installation and restart.',
+  activityTaskCompleteTitle: 'Task finished',
+  activityTaskCompleteNotification: 'A DeepSeek Harness session finished running. Select to return.',
+  activityApprovalTitle: 'Approval needed',
+  activityApprovalNotification: 'DeepSeek Harness is waiting for your approval. Select to return.',
 } as const
 
 /** Every Desktop locale supplies the complete English key set. */
@@ -337,6 +341,10 @@ export const zh = {
   mandatoryCopyFailed: '复制失败，请手动选择并复制下方链接。',
   mandatoryAddress: '下载链接',
   mandatoryNotification: '返回应用确认安装并重启。',
+  activityTaskCompleteTitle: '任务已完成',
+  activityTaskCompleteNotification: '一个 DeepSeek Harness 会话已运行完成，点击返回。',
+  activityApprovalTitle: '需要批准',
+  activityApprovalNotification: 'DeepSeek Harness 正在等待你的批准，点击返回。',
 } as const satisfies DesktopMessages
 
 /** Locale payload exposed to the Desktop-owned renderer. */
