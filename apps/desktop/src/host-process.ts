@@ -8,7 +8,6 @@ import { desktopNodeEnvironment } from './node-environment.ts'
 interface ReadyEvent {
   readonly type: 'ready'
   readonly url: string
-  readonly injections?: readonly unknown[] | undefined
 }
 
 interface FatalEvent {
@@ -24,6 +23,11 @@ interface PlatformSessionEvent {
 }
 
 type DesktopHostEvent = ReadyEvent | FatalEvent | PlatformSessionEvent | { readonly type: 'shutdown-complete' } | {
+  readonly type: 'index-injections'
+  readonly requestId: number
+  readonly injections: readonly unknown[]
+  readonly error?: string
+} | {
   readonly type: 'update-tasks'
   readonly requestId: number
   readonly active: boolean
@@ -85,6 +89,9 @@ function isDesktopHostEvent(message: unknown): message is DesktopHostEvent {
     case 'quit-inspection':
       return Number.isSafeInteger(candidate.requestId) && typeof candidate.activeTasks === 'boolean'
         && typeof candidate.scheduledTasks === 'boolean' && (candidate.error === undefined || typeof candidate.error === 'string')
+    case 'index-injections':
+      return Number.isSafeInteger(candidate.requestId) && Array.isArray(candidate.injections)
+        && (candidate.error === undefined || typeof candidate.error === 'string')
     default:
       return false
   }
@@ -106,7 +113,6 @@ async function exitsWithin(exit: Promise<void>, milliseconds: number): Promise<b
 /** Browser authentication URL reported by the running Web application. */
 export interface DesktopHostReady {
   readonly url: string
-  readonly injections?: readonly unknown[] | undefined
 }
 
 /** The child has exited, but task teardown did not finish successfully. */
@@ -209,7 +215,7 @@ export class DesktopHostProcess {
         child.kill('SIGTERM')
         return
       }
-      if (message.type === 'ready') this.readyResolve({ url: message.url, injections: message.injections })
+      if (message.type === 'ready') this.readyResolve({ url: message.url })
       else if (message.type === 'platform-session') this.onPlatformSession?.(message.session)
       else if (message.type === 'shutdown-complete') {
         if (this.stopping) this.shutdownCompleted = true
@@ -257,13 +263,24 @@ export class DesktopHostProcess {
     return { activeTasks: response.activeTasks, scheduledTasks: response.scheduledTasks }
   }
 
+  /**
+   * Collect the current page initialization rows after any plugin rebuilds.
+   * @returns Fresh Host rows; rejects if collection fails or the Host is unavailable.
+   */
+  async indexInjections(): Promise<readonly unknown[]> {
+    const response = await this.control({ type: 'index-injections' }, 10_000, 'desktop boot: index injection collection timed out')
+    if (response.type !== 'index-injections') throw new Error('desktop boot: Host answered with a different control response')
+    return response.injections
+  }
+
   private async control(
-    request: { readonly type: 'update-tasks'; readonly action: 'inspect' | 'lock' | 'unlock' } | { readonly type: 'quit-inspection' },
+    request: { readonly type: 'update-tasks'; readonly action: 'inspect' | 'lock' | 'unlock' }
+      | { readonly type: 'quit-inspection' | 'index-injections' },
     deadlineMs: number, deadlineMessage: string,
   ): Promise<DesktopHostControlResponse> {
     const child = this.child
     if (child === undefined || !child.connected || this.failureReported || this.stopping) {
-      throw new Error(`${request.type === 'update-tasks' ? 'desktop update' : 'desktop quit'}: Host is unavailable`)
+      throw new Error(`${request.type === 'update-tasks' ? 'desktop update' : request.type === 'quit-inspection' ? 'desktop quit' : 'desktop boot'}: Host is unavailable`)
     }
     const requestId = this.nextControlId++
     let timer: ReturnType<typeof setTimeout> | undefined

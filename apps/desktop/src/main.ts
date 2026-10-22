@@ -403,7 +403,6 @@ async function main(): Promise<void> {
   let hostUrl: string | undefined
   let hostCookie: string | undefined
   const browserGuests = new DesktopBrowserGuests(() => hostUrl)
-  let injections: readonly unknown[] = []
   let welcomeBackend: DesktopWelcomeBackend | undefined
   let reportedLaunch = false
   let analyticsEnabled = false
@@ -453,8 +452,6 @@ async function main(): Promise<void> {
         const ready = await host.start()
         hostCookie = await authenticateWebHost(ready.url)
         hostUrl = ready.url
-        if (ready.injections === undefined) throw new Error('Desktop Host did not provide boot injections')
-        injections = ready.injections
         welcomeBackend = await connectDesktopWelcome(ready.url, (input, init) => net.fetch(input, init), async () => (await session.defaultSession.cookies.get({ url: ready.url })).map(cookie => `${cookie.name}=${cookie.value}`).join('; '))
         analyticsEnabled = await welcomeBackend.analyticsEnabled().catch(() => false)
         if (!reportedLaunch) { reportedLaunch = true; void track('desktop_app_launch', {}) }
@@ -509,6 +506,7 @@ async function main(): Promise<void> {
       },
       updateTasks: (action: 'inspect' | 'lock' | 'unlock') => host.updateTasks(action),
       inspectQuit: () => host.inspectQuit(),
+      indexInjections: () => host.indexInjections(),
     }
   }, (state) => {
     if (state.phase === 'error') reportFatal(state.failure, 'host')
@@ -690,8 +688,9 @@ async function main(): Promise<void> {
   ipcMain.handle(DESKTOP_IPC.boot, async (event) => {
     assertDesktopSender(event, ['app'])
     await startup
-    if (backend.host === undefined || hostUrl === undefined) throw new Error('Desktop Host is unavailable')
-    return { injections, streamBaseUrl: new URL(hostUrl).origin }
+    const host = backend.host
+    if (host === undefined || hostUrl === undefined) throw new Error('Desktop Host is unavailable')
+    return { injections: await host.indexInjections(), streamBaseUrl: new URL(hostUrl).origin }
   })
 
   ipcMain.handle(DESKTOP_IPC.bootFailed, (event, message: unknown) => {

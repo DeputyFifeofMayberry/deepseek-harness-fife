@@ -30,6 +30,11 @@ server.listen(0, '127.0.0.1', () => {
   process.send({ type: 'ready', url: 'http://127.0.0.1:' + server.address().port + '/?token=fixture' })
 })
 process.on('message', message => {
+  if (message.type === 'index-injections') {
+    process.send({ type: 'index-injections', requestId: message.requestId,
+      injections: [{ kind: 'global', name: 'revision', value: message.requestId }] })
+    return
+  }
   if (message.type === 'update-tasks') {
     process.send({ type: 'update-tasks', requestId: message.requestId, active: message.action === 'lock' })
     return
@@ -73,6 +78,27 @@ afterEach(async () => {
 })
 
 describe('desktop host process', () => {
+  it.each([
+    ['collection failed', "{ type: 'index-injections', requestId: message.requestId, injections: [], error: 'collection failed' }"],
+    ['different control response', "{ type: 'update-tasks', requestId: message.requestId, active: false }"],
+    ['invalid IPC event', "{ type: 'index-injections', requestId: message.requestId, injections: 'invalid' }"],
+  ])('rejects page initialization after %s', async (diagnostic, reply) => {
+    const source = HTTP_HOST.replace(
+      "{ type: 'index-injections', requestId: message.requestId,\n      injections: [{ kind: 'global', name: 'revision', value: message.requestId }] }", reply,
+    )
+    const host = hostProcess(projectWithHost(source))
+    await host.start()
+    await expect(host.indexInjections()).rejects.toThrow(diagnostic)
+  })
+  it('collects fresh index injections for each page initialization', async () => {
+    const host = hostProcess(projectWithHost())
+    await expect(host.indexInjections()).rejects.toThrow('Host is unavailable')
+    await host.start()
+    expect(await host.indexInjections()).toEqual([{ kind: 'global', name: 'revision', value: 1 }])
+    expect(await host.indexInjections()).toEqual([{ kind: 'global', name: 'revision', value: 2 }])
+    await host.stop(true)
+    await expect(host.indexInjections()).rejects.toThrow('Host is unavailable')
+  })
   it('correlates task inspections and admission changes over private IPC', async () => {
     const host = hostProcess(projectWithHost())
     await expect(host.updateTasks('inspect')).rejects.toThrow('Host is unavailable')
