@@ -3,62 +3,32 @@
  */
 
 import { z } from 'zod'
-import { lastAssistantStreamChunk, type TokenUsage } from '@deepseek-ai/dsh-llm'
+import type { TokenUsage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-llm-retry/types'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
-import type { ContextPressureProjection, TokenUsageProjection } from './projection.ts'
+import type { ContextPressureProjection } from './projection.ts'
 import { foldSurfaceProjection } from './surface-projection.ts'
-
-const zeroBuckets = (): TokenUsageProjection => ({
-  uncachedInputTokens: 0,
-  outputTokens: 0,
-  cacheReadTokens: 0,
-  cacheWriteTokens: 0,
-})
-
-const bucketsFrom = (usage: TokenUsage): TokenUsageProjection => ({
-  uncachedInputTokens: usage.inputTokens,
-  outputTokens: usage.outputTokens,
-  cacheReadTokens: usage.cacheReadTokens ?? 0,
-  cacheWriteTokens: usage.cacheWriteTokens ?? 0,
-})
-
-const bucketsEqual = (left: TokenUsageProjection, right: TokenUsageProjection): boolean =>
-  left.uncachedInputTokens === right.uncachedInputTokens
-  && left.outputTokens === right.outputTokens
-  && left.cacheReadTokens === right.cacheReadTokens
-  && left.cacheWriteTokens === right.cacheWriteTokens
-
-const addReplacing = (
-  totals: TokenUsageProjection,
-  previous: TokenUsageProjection | undefined,
-  next: TokenUsageProjection,
-): TokenUsageProjection => ({
-  uncachedInputTokens: totals.uncachedInputTokens - (previous?.uncachedInputTokens ?? 0) + next.uncachedInputTokens,
-  outputTokens: totals.outputTokens - (previous?.outputTokens ?? 0) + next.outputTokens,
-  cacheReadTokens: totals.cacheReadTokens - (previous?.cacheReadTokens ?? 0) + next.cacheReadTokens,
-  cacheWriteTokens: totals.cacheWriteTokens - (previous?.cacheWriteTokens ?? 0) + next.cacheWriteTokens,
-})
-
-const projectionSchema = z.object({
-  uncachedInputTokens: z.number().int().nonnegative(),
-  outputTokens: z.number().int().nonnegative(),
-  cacheReadTokens: z.number().int().nonnegative(),
-  cacheWriteTokens: z.number().int().nonnegative(),
-}).strict()
+import {
+  addUsageBuckets,
+  eventUsage,
+  sameUsageBuckets,
+  subtractUsageBuckets,
+  usageBucketsOf,
+  usageBucketsSchema,
+  zeroUsageBuckets,
+} from './usage-fold.ts'
 
 /**
  * The token-usage unit's state schema — the one definition of the state
  * shape; the state type is inferred from it.
  */
 const tokenUsageStateSchema = z.object({
-  totals: projectionSchema,
+  totals: usageBucketsSchema,
   last: z.object({
     turn: z.number().int().nonnegative(),
     step: z.number().int().nonnegative(),
-    buckets: projectionSchema,
+    buckets: usageBucketsSchema,
   }).nullable(),
 }).strict()
 
@@ -77,13 +47,6 @@ const pressureSchema: z.ZodType<ContextPressureProjection> = z.object({
 /** Prompt-side pressure of one request: input plus cache traffic, no output. */
 const pressureFrom = (usage: TokenUsage): number =>
   usage.inputTokens + (usage.cacheReadTokens ?? 0) + (usage.cacheWriteTokens ?? 0)
-
-/** The usage one durable Assistant settlement reports for its attempt, if any. */
-function usageOf(event: SessionEvent): TokenUsage | undefined {
-  if (event.type === 'assistant/message' && event.data.usage !== undefined) return event.data.usage
-  if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') return undefined
-  return lastAssistantStreamChunk(event.data.stream, 'usage')?.usage
-}
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionStateMap {
@@ -118,7 +81,7 @@ export const tokenUsageProjectionDefinition = {
   key: 'tokenUsage',
   stateVersion: 2,
   stateSchema: tokenUsageStateSchema,
-  init: () => ({ totals: zeroBuckets(), last: null }),
+  init: () => ({ totals: zeroUsageBuckets(), last: null }),
   apply: (state, event) => {
     if (event.type === 'llm/retry-started') {
       return state.last?.turn === event.data.turn && state.last.step === event.data.step
@@ -128,25 +91,24 @@ export const tokenUsageProjectionDefinition = {
     if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') {
       return state
     }
-    const sample = usageOf(event)
+    const sample = eventUsage(event)
     if (sample === undefined) return state
     const { turn, step } = event.data
-    const usage: TokenUsage = sample
 
-    const buckets = bucketsFrom(usage)
+    const buckets = usageBucketsOf(sample)
     const previous = state.last !== null
       && state.last.turn === turn
       && state.last.step === step
       ? state.last.buckets
       : undefined
-    if (previous !== undefined && bucketsEqual(previous, buckets)) return state
+    if (previous !== undefined && sameUsageBuckets(previous, buckets)) return state
 
     return {
-      totals: addReplacing(state.totals, previous, buckets),
+      totals: addUsageBuckets(subtractUsageBuckets(state.totals, previous ?? zeroUsageBuckets()), buckets),
       last: { turn, step, buckets },
     }
   },
-  wire: { viewSchema: projectionSchema, view: state => state.totals },
+  wire: { viewSchema: usageBucketsSchema, view: state => state.totals },
 } satisfies ProjectionDefinition<'tokenUsage', TokenUsageState>
 
 /**
@@ -189,7 +151,7 @@ export const contextPressureProjectionDefinition = {
         }
       }
     }
-    const usage = usageOf(event)
+    const usage = eventUsage(event)
     if (usage !== undefined) {
       const pressureTokens = pressureFrom(usage)
       if (pressureTokens !== next.pressureTokens || next.sampledSurfaceTokens !== next.surfaceTokens) {
