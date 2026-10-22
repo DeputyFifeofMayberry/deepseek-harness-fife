@@ -6,12 +6,11 @@
  *
  * @module @deepseek-ai/dsh-client-ui-price-phase/PricePhaseChip
  */
-import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { HostObservable, PropsHooks, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
-import { pricePhase } from './price-phase.ts'
+import type { PricePhaseReading } from './price-phase.ts'
 import css from './PricePhaseChip.module.css'
 
 /** Locale seat of this plugin's namespace. */
@@ -29,39 +28,18 @@ function boundaryText(at: number, t: ChipTranslate): string {
 
 /** Component props: the sidebar's column state plus this namespace's locale seat. */
 export type PricePhaseChipProps =
-  PropsRuntime<'sidebar.footer.action'> & PropsLocale<'pricePhase'>
+  PropsRuntime<'sidebar.footer.action'>
+  & PropsLocale<'pricePhase'>
+  & PropsHooks<{ phase: HostObservable<PricePhaseReading> }>
 
 /**
  * Render the chip: a quiet dot with the phase word when the sidebar is wide,
  * the dot alone on the collapsed rail — the tooltip carries the detail either way.
- * @param props - sidebar column state and the locale seat.
+ * @param props - sidebar column state, the shared phase reading, and the locale seat.
  * @returns the chip.
  */
-export function PricePhaseChip({ wide, t }: PricePhaseChipProps): ReactNode {
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    // Arm one timeout at the next phase boundary: the schedule is piecewise
-    // constant, so a per-second tick would buy nothing. A visibility flip
-    // re-arms, so a suspended tab catches up on return.
-    const arm = (): void => {
-      const at = Date.now()
-      setNow(at)
-      const { nextBoundary } = pricePhase(at)
-      timer = setTimeout(arm, Math.max(nextBoundary - at, 0) + 1)
-    }
-    arm()
-    const onVisibility = (): void => {
-      if (document.visibilityState === 'visible') arm()
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [])
-
-  const reading = pricePhase(now)
+export function PricePhaseChip({ wide, usePhase, t }: PricePhaseChipProps): ReactNode {
+  const reading = usePhase(reading => reading)
   const peak = reading.phase === 'peak'
   const phase = t(peak ? 'phase.peak' : 'phase.offPeak')
   const tooltip = t(peak ? 'tooltip.peak' : 'tooltip.offPeak', {

@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-当你希望工作节奏跟随 DeepSeek API 计价时使用 `dsh-client-ui-price-phase`：API 只在公布的高峰时段按峰值计价，其余时间（含周末与中国法定节假日）一律按半价低谷计费。本包在侧栏底部操作位挂载一枚安静的角标，一眼可读当前计价时段，悬停可看下一次时段翻转的时刻，且在显示侧栏的所有页面可见。
+当你希望工作节奏跟随 DeepSeek API 计价时使用 `dsh-client-ui-price-phase`：API 只在公布的高峰时段按峰值计价，其余时间（含周末与中国法定节假日）一律按半价低谷计费。本包在侧栏底部操作位挂载一枚安静的角标，一眼可读当前计价时段，悬停可看下一次时段翻转的时刻，且在显示侧栏的所有页面可见。它还公布一份共享的时段读数，供其他客户端表面计价。
 
 ## 目录
 
@@ -27,10 +27,12 @@ Web 应用包默认挂载本包；移除其 `ui-price-phase` 行即移除角标�
 
 宽侧栏：一个小圆点加本地化时段词（"高峰" / "低谷"）。折叠栏：仅剩圆点。两种形态下悬停都会说明当前时段、按读者时区显示的下一次翻转时刻，以及公布的高峰时段定义。
 
+本包通过客户端 `pricePhase` 服务公布该读数：`ctx.pricePhase.reading` 是随时段翻转更新的快照，`ctx.pricePhase.at(at)` 是纯时刻表函数。需要为历史用量计价的表面注入该服务，读取同一份快照，而无需再维护第二个计时器。
+
 <a id="understand-the-implementation"></a>
 ## 理解实现
 
-[`src/client/price-phase.ts`](src/client/price-phase.ts) 中的 `pricePhase(at)` 用纯 UTC 运算按公布时刻表计算时段：高峰窗口为周一至周五的 UTC 01:00–04:00 与 06:00–10:00（[模型与定价](https://api-docs.deepseek.com/quick_start/pricing)）。读数附带 `nextBoundary`，即时段翻转的时刻；角标在该时刻只设置一个超时，而不是每秒轮询；可见性变化时重新设置超时，挂起的页签恢复后即可跟上。角标背后没有 Host 服务、存储或网络——时刻表是本包内的编译期常量，计价调整只需改 `PEAK_WINDOWS` 一行并同步文档。
+[`src/client/price-phase.ts`](src/client/price-phase.ts) 中的 `pricePhase(at)` 用纯 UTC 运算按公布时刻表计算时段：高峰窗口为周一至周五的 UTC 01:00–04:00 与 06:00–10:00（[模型与定价](https://api-docs.deepseek.com/quick_start/pricing)）。读数附带 `nextBoundary`，即时段翻转的时刻。[`src/client/phase-source.ts`](src/client/phase-source.ts) 中一个应用级来源在该时刻设置单个超时，而不是每秒轮询；可见性变化会重新设置，因此挂起的页签在恢复后能够跟上，角标则渲染公布的快照。角标背后没有 Host 服务、存储或网络——时刻表是本包内的编译期常量，计价调整只需改 `PEAK_WINDOWS` 一行并同步文档。
 
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制与后续工作
