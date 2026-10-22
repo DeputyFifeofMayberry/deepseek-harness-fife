@@ -7,7 +7,7 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
 当你希望工作节奏跟随 DeepSeek API 计价时使用 `dsh-client-ui-price-phase`：API 只在公布的高峰时段按峰值计价，其余时间（含周末与中国法定节假日）一律按半价低谷计费。本包在侧栏底部操作位挂载一枚安静的角标，一眼可读当前计价时段，悬停可看下一次时段翻转的时刻，且在显示侧栏的所有页面可见。
 
@@ -16,6 +16,7 @@ kind: "package-reference"
 - [使用本包](#use-this-package)
 - [理解实现](#understand-the-implementation)
 - [已知限制与后续工作](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 -----
 
@@ -36,3 +37,15 @@ Web 应用包默认挂载本包；移除其 `ui-price-phase` 行即移除角标�
 
 - **不追踪中国法定节假日。** 公布时刻表将节假日全天视为低谷，但节假日日期每年公布，内置表格会无声过期。在这些日期的工作日高峰窗口内，角标可能显示"高峰"而实际计价为低谷——宁可高估成本，也不掩盖成本。角标提示中写明节假日规则，读者可自行消解歧义。
 - 角标描述官方 DeepSeek API 的计价时刻表；经中转或自定义供应商路由的请求不按这些窗口计费，角标也不检查当前路由。
+
+-----
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者的工作上下文——点击展开</summary>
+
+无。
+
+</details>

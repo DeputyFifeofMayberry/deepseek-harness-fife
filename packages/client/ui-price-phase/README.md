@@ -16,6 +16,7 @@ Use `dsh-client-ui-price-phase` when work should follow DeepSeek API pricing: th
 - [Use this package](#use-this-package)
 - [Understand the implementation](#understand-the-implementation)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 -----
 
@@ -36,3 +37,15 @@ Wide sidebar: a small dot with the localized phase word ("Peak" / "Off-peak"). C
 
 - **Chinese public holidays are not tracked.** The published schedule makes every holiday hour off-peak, but holiday dates are announced per year and a bundled table would go stale silently. On those weekdays the chip may read "peak" during window hours while billing is actually off-peak — the direction that overstates cost rather than hiding it. The tooltip states the holiday rule so the reader can resolve the ambiguity.
 - The chip describes the official DeepSeek API billing schedule; requests routed through a relay or a custom provider do not bill on these windows, and the chip does not inspect the active route.
+
+-----
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+None.
+
+</details>
