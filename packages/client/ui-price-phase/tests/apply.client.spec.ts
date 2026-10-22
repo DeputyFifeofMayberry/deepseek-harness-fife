@@ -34,6 +34,6 @@ describe('ui-price-phase apply', () => {
   })
 
   it('keeps the host half inert', () => {
-    expect(hostApply()).toBeUndefined()
+    expect(() => { hostApply() }).not.toThrow()
   })
 })

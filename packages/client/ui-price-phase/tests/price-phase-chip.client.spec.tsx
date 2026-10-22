@@ -69,7 +69,7 @@ describe('PricePhaseChip', () => {
     const source = createPricePhaseSource()
     sources.push(source)
     const usePhase = (selector: (reading: PricePhaseReading) => PricePhaseReading): PricePhaseReading =>
-      selector(useSyncExternalStore(source.subscribe, source.getSnapshot))
+      selector(useSyncExternalStore(listener => source.subscribe(listener), () => source.getSnapshot()))
     const view = render(<PricePhaseChip {...chipProps({
       wide: true, t: makeTranslate(en), usePhase,
     })} />)
