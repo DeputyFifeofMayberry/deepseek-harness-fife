@@ -9,7 +9,7 @@ kind: "package-reference"
 
 ## 概述
 
-`dsh-bash-local` 是 POSIX 以及装有 Git for Windows 的 Windows 主机上的默认 Bash 执行器：每条命令都以全新的非登录 `bash -c` 进程运行，不读取 rc 文件，因此调用之间不会残留任何 shell 状态。在 Windows 上，执行器会优先解析 Git Bash，而不是 PATH 上裸 `bash` 会命中的 WSL 启动器。它会为每条命令应用已配置的预算——工作目录、超时、输出上限——对超时与取消进行分类，并在流溢出时返回有界输出与 spill 文件恢复。命令以 harness 进程自身的权限运行：本执行器不做任何隔离，需要沙箱能力时请组合 `dsh-bash-sandbox`。挂载后，面向模型的 `bash` 工具会与它对接。
+`dsh-bash-local` 是 POSIX 主机以及装有 Git for Windows 的 Windows 主机上的默认 Bash 执行器：每条命令都以全新的非登录 `bash -c` 进程运行，不读取 rc 文件，因此调用之间不会残留 shell 状态。在 Windows 上，它优先解析 Git Bash，而不是 PATH 上的 WSL 启动器。它为每条命令应用已配置的工作目录、超时和输出上限，对超时与取消进行分类，并在流溢出时返回有界输出与 spill 文件恢复。命令以 harness 进程自身的权限运行：本执行器不做任何隔离；需要沙箱能力时请组合 `dsh-bash-sandbox`。挂载后，面向模型的 `bash` 工具会与它对接。
 
 ## 目录
 

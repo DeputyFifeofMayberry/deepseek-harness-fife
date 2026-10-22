@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-bash-local` is the default Bash executor for POSIX and for Windows hosts with Git for Windows: every command runs as a fresh, non-login `bash -c` process with no rc files, so no shell state survives between calls. On Windows the executor resolves Git Bash before the WSL launcher that a bare `bash` on PATH would reach. It applies configured budgets — working directory, timeout, output caps — to each command, classifies timeouts and cancellations, and returns bounded output with spill-file recovery when a stream overflows. Commands run with the harness process's own authority: this executor confines nothing, so compose `dsh-bash-sandbox` when commands need the sandbox capability. The model-facing `bash` tool talks to it once it is mounted.
+`dsh-bash-local` is the default Bash executor for POSIX hosts and for Windows hosts with Git for Windows: every command runs as a fresh, non-login `bash -c` process with no rc files, so no shell state survives. On Windows it prefers Git Bash over the WSL launcher on PATH. It applies the configured working directory, timeout, and output caps per command, classifies timeouts and cancellations, and returns bounded output with spill-file recovery. Commands run with the harness process's own authority: this executor confines nothing; compose `dsh-bash-sandbox` when commands need the sandbox. The model-facing `bash` tool talks to it once mounted.
 
 ## Table of Contents
 

@@ -12,17 +12,23 @@
   en: 683a6841300a0aef
   zh: 5f6479f478ac11b9
 /deepseek-ai-dsh-client-ui-price-phase/table-of-contents:
-  en: 9be40445baed505c
-  zh: 358f99776a9273f0
+  en: 76368b6b1da79c80
+  zh: ddafa933c150c4d1
 /deepseek-ai-dsh-client-ui-price-phase/use-this-package:
   en: 33dcb25488a1914a
   zh: 70ceec011d8f32de
 /deepseek-ai-dsh-client-ui-price-phase/understand-the-implementation:
-  en: c9271879da07b6d6
-  zh: 4d0ad973b32701ed
+  en: 7d7fd08baf89e7e8
+  zh: 3fb684bc581c95a9
+/deepseek-ai-dsh-client-ui-price-phase/model-experience:
+  en: 8a7b9e13506566e2
+  zh: 25cba00d074ddcb3
+/deepseek-ai-dsh-client-ui-price-phase/model-experience/kv-cache-effect:
+  en: ba911c9591195a02
+  zh: 6916ea56be9a3d8d
 /deepseek-ai-dsh-client-ui-price-phase/known-limitations-and-deferred-work:
-  en: 2cc57d4994e4ebdf
-  zh: 9a6dabae76a825db
+  en: d0c95cf4e7a310af
+  zh: 0e19720bd1cda801
 /deepseek-ai-dsh-client-ui-price-phase/known-limitations-and-deferred-work/dev-note:
   en: e67f633dc6fe7773
   zh: 3bb0c20c93f16f98
