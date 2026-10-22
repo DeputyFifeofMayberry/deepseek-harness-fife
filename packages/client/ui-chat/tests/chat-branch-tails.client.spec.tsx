@@ -174,7 +174,7 @@ describe('MessageItem arms', () => {
       configurable: true,
       value: { writeText },
     })
-    // Same-day clock: construct "today at 14:24" so the label stays `HH:mm`.
+    // Same-day clock: construct "today at 14:24" so the label stays the 12-hour `下午2:24`.
     const now = new Date()
     const time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 24).getTime()
     const view = render(
@@ -185,11 +185,11 @@ describe('MessageItem arms', () => {
       }}
       />,
     )
-    expect(screen.getByText('14:24')).toBeTruthy()
+    expect(screen.getByText('下午2:24')).toBeTruthy()
     expect(screen.getByRole('button', { name: '复制' })).toBeTruthy()
     const stack = view.getByText('hello bubble').closest('div')?.parentElement
     expect(stack?.parentElement).toBe(view.container.firstElementChild)
-    expect(stack?.contains(screen.getByText('14:24'))).toBe(false)
+    expect(stack?.contains(screen.getByText('下午2:24'))).toBe(false)
     expect(stack?.contains(screen.getByRole('button', { name: '复制' }))).toBe(false)
     expect(stack?.nextElementSibling?.contains(screen.getByRole('button', { name: '复制' }))).toBe(true)
     expect(screen.queryByRole('button', { name: '在新对话中分支' })).toBeNull()
@@ -1010,16 +1010,16 @@ describe('MessageItem arms', () => {
 describe('formatMessageClock', () => {
   const now = new Date(2026, 6, 29, 10, 0).getTime()
 
-  it('keeps HH:mm on the same calendar day', () => {
-    expect(formatMessageClock(new Date(2026, 6, 29, 14, 24).getTime(), t, now)).toBe('14:24')
+  it('keeps the 12-hour clock on the same calendar day', () => {
+    expect(formatMessageClock(new Date(2026, 6, 29, 14, 24).getTime(), t, now)).toBe('下午2:24')
   })
 
   it('prefixes month and day across days in the same year', () => {
-    expect(formatMessageClock(new Date(2026, 0, 1, 14, 24).getTime(), t, now)).toBe('1月1日 14:24')
+    expect(formatMessageClock(new Date(2026, 0, 1, 14, 24).getTime(), t, now)).toBe('1月1日 下午2:24')
   })
 
   it('prefixes year, month, and day across years', () => {
-    expect(formatMessageClock(new Date(2025, 11, 31, 9, 5).getTime(), t, now)).toBe('2025年12月31日 09:05')
+    expect(formatMessageClock(new Date(2025, 11, 31, 9, 5).getTime(), t, now)).toBe('2025年12月31日 上午9:05')
   })
 
   it('arms the next local midnight from an in-day instant', () => {
@@ -1049,11 +1049,11 @@ describe('useCalendarDay boundary refresh', () => {
       }}
       />,
     )
-    expect(screen.getByText('14:24')).toBeTruthy()
+    expect(screen.getByText('下午2:24')).toBeTruthy()
     act(() => {
       vi.advanceTimersByTime(msUntilNextLocalMidnight(dayStart) + 1)
     })
-    expect(screen.getByText('7月29日 14:24')).toBeTruthy()
+    expect(screen.getByText('7月29日 下午2:24')).toBeTruthy()
   })
 })
 

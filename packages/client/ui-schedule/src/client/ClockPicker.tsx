@@ -1,5 +1,8 @@
 /**
- * Three-column clock picker for one staged Run time value.
+ * Column clock picker for one staged Run time value, shown on the 12-hour
+ * clock: a 01–12 hour column, minutes, optionally seconds, and an AM/PM
+ * column. The staged value stays a 24-hour `HH:MM:SS` clock — the columns
+ * translate between the display scale and the stored one on every pick.
  *
  * The picker owns only the panel: the row renders the read-only trigger that
  * shows the value, and its Escape guard closes the panel and hands focus back.
@@ -21,12 +24,91 @@ function padded(count: number): readonly string[] {
   return Array.from({ length: count }, (_value, index) => String(index).padStart(2, '0'))
 }
 
-/** The picker's columns in display order, each with the label row copy names it by. */
-const COLUMNS = [
-  { label: 'timing.hour', options: padded(24) },
-  { label: 'timing.minute', options: padded(60) },
-  { label: 'timing.second', options: padded(60) },
-] as const satisfies readonly { readonly label: TaskManagerKey; readonly options: readonly string[] }[]
+/** The 12-scale hour column, one through twelve. */
+const HOURS_12 = Array.from({ length: 12 }, (_value, index) => String(index + 1).padStart(2, '0'))
+const MINUTES_60 = padded(60)
+const SECONDS_60 = padded(60)
+
+/** Two-digit spelling of a 24-scale hour. */
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+/** The 12-scale hour a 24-scale hour reads as: 0 and 12 both read 12. */
+function hour12(value: number): number {
+  return value % 12 === 0 ? 12 : value % 12
+}
+
+/** The 24-scale hour one whole-second clock names. */
+function clockHour(clock: string): number {
+  return Number(clock.slice(0, 2))
+}
+
+/** One column's option list with how it reads and rewrites the staged clock. */
+interface ClockColumn {
+  /** The label row copy names the column by. */
+  readonly label: TaskManagerKey
+  /** The options the column lists, in display order. */
+  readonly options: readonly string[]
+  /** The option text one whole-second clock selects in this column. */
+  readonly selected: (clock: string) => string
+  /** The whole-second clock after picking the option at `index`. */
+  readonly apply: (clock: string, index: number) => string
+}
+
+/** Hour column: 01–12; the pick keeps the staged value's own meridiem. */
+const HOUR_COLUMN: ClockColumn = {
+  label: 'timing.hour',
+  options: HOURS_12,
+  selected: clock => twoDigits(hour12(clockHour(clock))),
+  apply: (clock, index) => `${twoDigits(((index + 1) % 12) + (clockHour(clock) < 12 ? 0 : 12))}${clock.slice(2)}`,
+}
+
+/** Minute column: the staged clock's own `MM` slice, rewritten in place. */
+const MINUTE_COLUMN: ClockColumn = {
+  label: 'timing.minute',
+  options: MINUTES_60,
+  selected: clock => clock.slice(3, 5),
+  apply: (clock, index) => {
+    const minute = MINUTES_60[index] ?? clock.slice(3, 5)
+    return clock.slice(0, 3) + minute + clock.slice(5)
+  },
+}
+
+/** Second column: the staged clock's own `SS` slice, rewritten in place. */
+const SECOND_COLUMN: ClockColumn = {
+  label: 'timing.second',
+  options: SECONDS_60,
+  selected: clock => clock.slice(6, 8),
+  apply: (clock, index) => clock.slice(0, 6) + (SECONDS_60[index] ?? clock.slice(6, 8)),
+}
+
+/**
+ * Meridiem column: the staged hour's own half-day; a pick keeps the displayed
+ * hour and moves it across noon, so `12 AM` ↔ `12 PM` and `3 AM` ↔ `3 PM`.
+ */
+function meridiemColumn(t: Translate): ClockColumn {
+  return {
+    label: 'timing.meridiem',
+    options: [t('timing.am'), t('timing.pm')],
+    selected: clock => t(clockHour(clock) < 12 ? 'timing.am' : 'timing.pm'),
+    apply: (clock, index) => `${twoDigits((clockHour(clock) % 12) + index * 12)}${clock.slice(2)}`,
+  }
+}
+
+/**
+ * The panel's columns in display order. A cron rule has no seconds field, so
+ * its form omits that column; a pick there keeps the staged clock's seconds.
+ * @param seconds - whether the panel offers the seconds column.
+ * @param t - row copy naming the columns and the meridiem options.
+ * @returns hour, minutes, optionally seconds, then AM/PM.
+ */
+function clockColumns(seconds: boolean, t: Translate): readonly ClockColumn[] {
+  return [
+    ...(seconds ? [HOUR_COLUMN, MINUTE_COLUMN, SECOND_COLUMN] : [HOUR_COLUMN, MINUTE_COLUMN]),
+    meridiemColumn(t),
+  ]
+}
 
 /** A whole-second clock, the only text a pick composes onto. */
 const CLOCK_SECONDS = /^\d{2}:\d{2}:\d{2}$/
@@ -42,24 +124,6 @@ const CLOCK_SECONDS = /^\d{2}:\d{2}:\d{2}$/
 function clockBase(value: string): string {
   const seconds = secondPrecision(value)
   return CLOCK_SECONDS.test(seconds) ? seconds : '00:00:00'
-}
-
-/** One column's position in display order. */
-type ClockColumnIndex = 0 | 1 | 2
-
-/** The picker's columns in display order, by position. */
-const COLUMN_INDICES: readonly ClockColumnIndex[] = [0, 1, 2]
-
-/**
- * Index of one column's option for one clock.
- * @param clock - whole-second clock text.
- * @param column - column index in display order.
- * @returns that column's option index, or the first option for a value the column does not list.
- */
-function columnIndex(clock: string, column: ClockColumnIndex): number {
-  const options = COLUMNS[column].options
-  const start = column === 0 ? 0 : column * 3
-  return Math.max(0, options.indexOf(clock.slice(start, start + 2)))
 }
 
 /** One option the panel shows as highlighted and holds the keyboard on. */
@@ -93,34 +157,42 @@ export interface ClockPickerProps {
 }
 
 /**
- * Render the clock panel: hours, minutes, and optionally seconds, one scrolling column each.
+ * Render the clock panel: 12-scale hours, minutes, optionally seconds, and the
+ * meridiem, one scrolling column each.
  * @param props - open state, the trigger, the staged clock, the pick and close callbacks, the seconds-column switch, and row copy.
  * @returns the anchored panel while open, and nothing while closed.
  */
 export function ClockPicker({ open, anchorRef, value, onPick, onClose, seconds = true, t }: ClockPickerProps): ReactNode {
-  const columns = seconds ? COLUMNS : COLUMNS.slice(0, 2)
+  const columns = clockColumns(seconds, t)
   const refs = useRef(new Map<string, HTMLDivElement>())
   const valueRef = useRef(value)
   valueRef.current = value
   const base = clockBase(value)
-  const picked = [base.slice(0, 2), base.slice(3, 5), base.slice(6, 8)]
+  const selectedValues = columns.map(column => column.selected(base))
+  /** Option index each column's staged value occupies, clamped to the first row. */
+  const stagedIndices = (clock: string): readonly number[] =>
+    columns.map((column) => {
+      const index = column.options.indexOf(column.selected(clock))
+      return index < 0 ? 0 : index
+    })
   // Each column keeps one focusable entry: the row its own value occupies, so
-  // the keyboard reaches minutes and seconds, and each column's arrows walk
-  // from the value it shows. The live cursor adds the row the keyboard moved
-  // onto while it stays inside that column.
-  const columnIndices = COLUMN_INDICES.map(column => columnIndex(base, column))
-  const [cursor, setCursor] = useState<ClockCursor>({ column: 0, index: columnIndex(base, 0) })
+  // the keyboard reaches minutes, seconds, and the meridiem, and each column's
+  // arrows walk from the value it shows. The live cursor adds the row the
+  // keyboard moved onto while it stays inside that column.
+  const selectedIndices = stagedIndices(base)
+  const [cursor, setCursor] = useState<ClockCursor>({ column: 0, index: selectedIndices[0] ?? 0 })
 
   // Opening starts on the clock the row shows, with every column scrolled to
   // that value: the first arrow key then walks from the current time in the
   // column the keyboard enters rather than from midnight.
   useEffect(() => {
     if (!open) return
-    setCursor({ column: 0, index: columnIndex(clockBase(valueRef.current), 0) })
-    for (const column of COLUMN_INDICES) {
-      refs.current.get(`${column}:${columnIndex(clockBase(valueRef.current), column)}`)
-        ?.scrollIntoView({ block: 'nearest' })
+    const indices = stagedIndices(clockBase(valueRef.current))
+    setCursor({ column: 0, index: indices[0] ?? 0 })
+    for (const [at, index] of indices.entries()) {
+      refs.current.get(`${at}:${index}`)?.scrollIntoView({ block: 'nearest' })
     }
+    // `stagedIndices` follows the columns, which follow `seconds` and `t`.
   }, [open])
 
   // The cursor owns the keyboard: a pick, an arrow, or the open itself moves the
@@ -132,43 +204,41 @@ export function ClockPicker({ open, anchorRef, value, onPick, onClose, seconds =
   }, [open, cursor])
 
   /**
-   * Stage one option and move the cursor onto it.
-   * @param column - column index the option belongs to.
-   * @param option - padded option text.
+   * Stage the option the keyboard or pointer is on and move the cursor onto it.
+   * @param column - column index in display order.
    * @param index - option index inside that column.
    */
-  const pick = (column: number, option: string, index: number): void => {
+  const pick = (column: number, index: number): void => {
+    const picked = columns[column]
+    if (picked === undefined) return
     setCursor({ column, index })
-    const next = [...picked]
-    next[column] = option
-    onPick(next.join(':'))
+    onPick(clockBase(picked.apply(base, index)))
   }
 
   /**
    * Move inside one column, move between columns, or stage the option the
    * keyboard is on.
    * @param event - keydown from that option.
-   * @param column - column index the option belongs to.
+   * @param column - column index in display order.
    * @param index - option index inside that column.
-   * @param option - padded option text.
    * @param count - number of options in the column.
    */
   const onOptionKeyDown = (
-    event: KeyboardEvent<HTMLDivElement>, column: number, index: number, option: string, count: number,
+    event: KeyboardEvent<HTMLDivElement>, column: number, index: number, count: number,
   ): void => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
-      pick(column, option, index)
+      pick(column, index)
       return
     }
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault()
-      const next = columns[column + (event.key === 'ArrowRight' ? 1 : -1)]
-      if (next === undefined) return
+      const target = column + (event.key === 'ArrowRight' ? 1 : -1)
+      const nextColumn = columns[target]
+      if (nextColumn === undefined) return
       // Columns hold different counts, so the row carried across stays inside
       // the target column.
-      const target = columns.indexOf(next)
-      setCursor({ column: target, index: Math.min(index, next.options.length - 1) })
+      setCursor({ column: target, index: Math.min(index, nextColumn.options.length - 1) })
       return
     }
     if (event.key === 'Home' || event.key === 'End') {
@@ -200,13 +270,13 @@ export function ClockPicker({ open, anchorRef, value, onPick, onClose, seconds =
               else refs.current.set(key, element)
             }}
             role="option"
-            aria-selected={option === picked[at]}
+            aria-selected={option === selectedValues[at]}
             tabIndex={
-              (cursor.column === at ? cursor.index : columnIndices[at]) === index ? 0 : -1
+              (cursor.column === at ? cursor.index : selectedIndices[at]) === index ? 0 : -1
             }
-            className={clsx(css.option, option === picked[at] && css.selected)}
-            onClick={() => { pick(at, option, index) }}
-            onKeyDown={(event) => { onOptionKeyDown(event, at, index, option, column.options.length) }}
+            className={clsx(css.option, option === selectedValues[at] && css.selected)}
+            onClick={() => { pick(at, index) }}
+            onKeyDown={(event) => { onOptionKeyDown(event, at, index, column.options.length) }}
           >{option}</div>
         ))}
       </div>

@@ -1205,12 +1205,19 @@ describe.skipIf(MODE === 'record')('web e2e: active Schedule catalog', () => {
       // The frequency line names the stored zone by its localized label: the
       // current UTC offset and the ICU generic name of that zone. Both parts
       // come from the same ICU data the app reads, so the assertion follows the
-      // runtime's own zone names.
+      // runtime's own zone names. The clock reads on the 12-hour scale.
       const zoneName = new Intl.DateTimeFormat('en', { timeZone, timeZoneName: 'longGeneric' })
         .formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value
       const zoneOffset = new Intl.DateTimeFormat('en', { timeZone, timeZoneName: 'longOffset' })
         .formatToParts(new Date()).find(part => part.type === 'timeZoneName')?.value?.replace(/^GMT/, 'UTC')
-      const frequency = `Daily at ${time.replace(/:00$/, '')} (${zoneOffset} · ${zoneName})`
+      const display = (stored: string): string => {
+        const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(stored)
+        if (match === null) return stored
+        const hours = Number(match[1])
+        const seconds = match[3] === undefined || match[3] === '00' ? '' : `:${match[3]}`
+        return `${hours % 12 === 0 ? 12 : hours % 12}:${match[2]}${seconds} ${hours < 12 ? 'AM' : 'PM'}`
+      }
+      const frequency = `Daily at ${display(time)} (${zoneOffset} · ${zoneName})`
       expect(await row.textContent()).toContain(frequency)
       await row.click()
       const detail = manager.getByRole('complementary', { name: 'Task details' })
@@ -1224,15 +1231,16 @@ describe.skipIf(MODE === 'record')('web e2e: active Schedule catalog', () => {
       // Zone rows lead with the current offset and the localized zone name, so
       // the browser's own zone is the row marked as the system one.
       await page.getByRole('menuitem', { name: /China Standard Time \(system\)$/ }).click()
-      // The Time row opens three clock columns; a pick stages the clock itself,
-      // and the stored rule keeps the millisecond precision the picker writes.
+      // The Time row opens the 12-hour clock columns; a pick stages the clock
+      // itself, and the stored rule keeps the millisecond precision the picker
+      // writes. The staged 23-hour clock is in PM, so picking `12` lands on 12 PM.
       await timeField.click()
       expect(await timeField.getAttribute('aria-expanded')).toBe('true')
       await page.getByRole('listbox', { name: 'Hour', exact: true }).getByRole('option', { name: '12', exact: true }).click()
       await page.getByRole('listbox', { name: 'Minute', exact: true }).getByRole('option', { name: '34', exact: true }).click()
       await page.getByRole('listbox', { name: 'Second', exact: true }).getByRole('option', { name: '56', exact: true }).click()
       await page.keyboard.press('Escape')
-      expect(await timeField.textContent()).toBe('12:34:56')
+      expect(await timeField.textContent()).toBe('12:34:56 PM')
       await expect.poll(() => detail.getByText('Unsaved changes', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
       // The staged draft reaches the Host only through the save bar's Save action.
       await detail.getByRole('button', { name: 'Save changes', exact: true }).click()
@@ -1244,7 +1252,7 @@ describe.skipIf(MODE === 'record')('web e2e: active Schedule catalog', () => {
         kind: 'daily', time: '12:34:56.000', timeZone: 'Asia/Shanghai',
       })
       // A stored zone equal to the browser zone is omitted from the frequency line.
-      await expect.poll(() => detail.getByText('Daily at 12:34:56', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
+      await expect.poll(() => detail.getByText('Daily at 12:34:56 PM', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
       expect(await scaffold.ctx.schedule.history({ sessionId: CATALOG_SESSION_ID, id: created.id, limit: 20 }))
         .toEqual({ id: created.id, records: [], earlierRecordsUnavailable: false,
           earlierRecordsPruned: false, retention: { days: 30, records: 200 } })

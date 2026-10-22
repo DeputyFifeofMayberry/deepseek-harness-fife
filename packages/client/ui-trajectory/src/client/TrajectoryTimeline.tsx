@@ -96,7 +96,8 @@ function timelineKindLabel(kind: TrajectoryCellKind, t: TrajectoryTranslate): st
 
 function formatRecordedTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString(undefined, {
-    hour: '2-digit',
+    hour: 'numeric',
+    hour12: true,
     minute: '2-digit',
     second: '2-digit',
     fractionalSecondDigits: 3,

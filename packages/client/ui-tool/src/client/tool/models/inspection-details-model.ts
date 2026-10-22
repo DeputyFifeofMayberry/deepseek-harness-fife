@@ -10,7 +10,11 @@ function dateText(value: string | number, locale: string): string {
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return String(value)
   try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+    // Component options instead of dateStyle/timeStyle: the style shorthands
+    // cannot combine with `hour12`, and the 12-hour clock is forced everywhere.
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+    }).format(date)
   } catch {
     return String(value)
   }

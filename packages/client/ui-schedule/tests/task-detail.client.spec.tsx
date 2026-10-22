@@ -89,7 +89,8 @@ afterEach(cleanup)
 beforeEach(() => { Element.prototype.scrollIntoView = vi.fn() })
 
 /**
- * The Time row's picker trigger, whose text is the staged 24-hour clock.
+ * The Time row's picker trigger, whose text shows the staged clock on the
+ * 12-hour display while the staged value stays a 24-hour one.
  * @returns the trigger button.
  */
 function timeField(): HTMLButtonElement {
@@ -268,11 +269,11 @@ describe('TaskDetail authoritative refresh', () => {
   it('shows the refreshed stored rule while the draft is clean', () => {
     const h = mount([daily])
     selectTask('Daily weather')
-    expect(timeField().textContent).toBe('23:00:00')
+    expect(timeField().textContent).toBe('11:00 PM')
 
     const refreshed: ScheduleCatalogEntry = { ...daily, time: '21:15:00.000' }
     h.update([refreshed])
-    expect(timeField().textContent).toBe('21:15:00')
+    expect(timeField().textContent).toBe('9:15 PM')
     // The replaced values are the stored ones, so the draft is still clean.
     expect(screen.queryByRole('button', { name: en['rule.save'] })).toBeNull()
   })
@@ -301,7 +302,7 @@ describe('TaskDetail authoritative refresh', () => {
     // so the refreshed record replaces the card as its own clean rule instead of
     // leaving the old interval rule staged against the new kind.
     h.update([movedToDaily])
-    expect(timeField().textContent).toBe('09:30:00')
+    expect(timeField().textContent).toBe('9:30 AM')
     expect(screen.queryByLabelText(en['timing.interval'])).toBeNull()
     expect(screen.queryByRole('button', { name: en['rule.save'] })).toBeNull()
   })
@@ -347,7 +348,7 @@ describe('TaskDetail authoritative refresh', () => {
     h.update([refreshed])
     expect(screen.getByLabelText<HTMLInputElement>(en['detail.name']).value).toBe('Weather check')
     // The concurrent remote edit to another field survives the unsaved name.
-    expect(timeField().textContent).toBe('21:15:00')
+    expect(timeField().textContent).toBe('9:15 PM')
     expect(screen.getByRole('button', { name: en['rule.save'] })).toBeDefined()
   })
 
@@ -979,7 +980,7 @@ describe('TaskDetail cron rows', () => {
     // `* * * * *` states neither an hour nor a minute of its own, so both come
     // from the committed occurrence in the staged zone.
     chooseCronShape('cronForm.daily')
-    expect(timeField().textContent).toBe('01:30')
+    expect(timeField().textContent).toBe('1:30 AM')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: minutely.sessionId, id: minutely.id, expected: timingSnapshot(minutely),

@@ -422,16 +422,16 @@ describe('ScheduleCatalogAction rows', () => {
   })
 
   it.each([
-    ['23:00:00.000', '23:00'],
-    ['23:00:15.000', '23:00:15'],
-    ['23:00:00.125', '23:00'],
-    ['23:00:15.500', '23:00:15'],
-  ])('trims fractional and zero seconds off a daily rule clock: %s', (time, displayed) => {
+    ['23:00:00.000', '11:00 PM', '下午11:00'],
+    ['23:00:15.000', '11:00:15 PM', '下午11:00:15'],
+    ['23:00:00.125', '11:00 PM', '下午11:00'],
+    ['23:00:15.500', '11:00:15 PM', '下午11:00:15'],
+  ])('trims fractional and zero seconds off a daily rule clock: %s', (time, displayed, displayedZh) => {
     const item = record('daily-clock', 'daily', START + 3_600_000, { time, timeZone: 'America/New_York' })
     expect(formatScheduleFrequency(item, makeTranslate(en)))
       .toBe(`Daily at ${displayed} (${zoneLabel('America/New_York', makeTranslate(managerEn))})`)
     expect(formatScheduleFrequency(item, makeTranslate(zh)))
-      .toBe(`每天 ${displayed}（${zoneLabel('America/New_York', makeTranslate(managerZh))}）`)
+      .toBe(`每天 ${displayedZh}（${zoneLabel('America/New_York', makeTranslate(managerZh))}）`)
   })
 
   it('labels a weekly rule with its localized weekday set, clock, and zone', () => {
@@ -439,24 +439,24 @@ describe('ScheduleCatalogAction rows', () => {
       time: '09:00:00.000', timeZone: 'Asia/Shanghai', weekdays: [1, 3],
     })
     expect(formatScheduleFrequency(item, makeTranslate(en)))
-      .toBe(`Weekly on Mon, Wed at 09:00 (${zoneLabel('Asia/Shanghai', makeTranslate(managerEn))})`)
+      .toBe(`Weekly on Mon, Wed at 9:00 AM (${zoneLabel('Asia/Shanghai', makeTranslate(managerEn))})`)
     expect(formatScheduleFrequency(item, makeTranslate(zh)))
-      .toBe(`每周一、三 09:00（${zoneLabel('Asia/Shanghai', makeTranslate(managerZh))}）`)
+      .toBe(`每周一、三 上午9:00（${zoneLabel('Asia/Shanghai', makeTranslate(managerZh))}）`)
   })
 
   it('labels a weekly rule with whole seconds and for a single weekday', () => {
     const seconds = record('weekly-seconds', 'weekly', START + 3_600_000, {
       time: '09:00:15.000', timeZone: 'UTC', weekdays: [7],
     })
-    expect(formatScheduleFrequency(seconds, makeTranslate(en))).toBe('Weekly on Sun at 09:00:15 (UTC+00:00)')
-    expect(formatScheduleFrequency(seconds, makeTranslate(zh))).toBe('每周日 09:00:15（UTC+00:00）')
+    expect(formatScheduleFrequency(seconds, makeTranslate(en))).toBe('Weekly on Sun at 9:00:15 AM (UTC+00:00)')
+    expect(formatScheduleFrequency(seconds, makeTranslate(zh))).toBe('每周日 上午9:00:15（UTC+00:00）')
     const milliseconds = record('weekly-milliseconds', 'weekly', START + 3_600_000, {
       time: '09:00:00.125', timeZone: 'UTC', weekdays: [1, 2, 3, 4, 5, 6, 7],
     })
     expect(formatScheduleFrequency(milliseconds, makeTranslate(en)))
-      .toBe('Weekly on Mon, Tue, Wed, Thu, Fri, Sat, Sun at 09:00 (UTC+00:00)')
+      .toBe('Weekly on Mon, Tue, Wed, Thu, Fri, Sat, Sun at 9:00 AM (UTC+00:00)')
     expect(formatScheduleFrequency(milliseconds, makeTranslate(zh)))
-      .toBe('每周一、二、三、四、五、六、日 09:00（UTC+00:00）')
+      .toBe('每周一、二、三、四、五、六、日 上午9:00（UTC+00:00）')
   })
 
   it('labels a cron rule with its described sentence and zone', () => {
@@ -464,9 +464,9 @@ describe('ScheduleCatalogAction rows', () => {
       expression: '0 9 * * 1-5', timeZone: 'America/New_York',
     })
     expect(formatScheduleFrequency(item, makeTranslate(en)))
-      .toBe(`Mon–Fri at 09:00 (${zoneLabel('America/New_York', makeTranslate(managerEn))})`)
+      .toBe(`Mon–Fri at 9:00 AM (${zoneLabel('America/New_York', makeTranslate(managerEn))})`)
     expect(formatScheduleFrequency(item, makeTranslate(zh)))
-      .toBe(`周一至周五 09:00（${zoneLabel('America/New_York', makeTranslate(managerZh))}）`)
+      .toBe(`周一至周五 上午9:00（${zoneLabel('America/New_York', makeTranslate(managerZh))}）`)
   })
 
   it('omits a cron rule zone equal to the host zone and names another zone', () => {
@@ -502,7 +502,7 @@ describe('ScheduleCatalogAction rows', () => {
     render(<ScheduleCatalogAction {...props([item, other])} />)
     fireEvent.click(screen.getByRole('button', { name: '2 reminders' }))
     const list = screen.getByRole('list', { name: en['list.aria'] })
-    expect(within(list).getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(managerEn))})`, { exact: true })).toBeDefined()
+    expect(within(list).getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(managerEn))})`, { exact: true })).toBeDefined()
     expect(within(list).queryByText(en['frequency.once'], { exact: true })).toBeNull()
   })
 

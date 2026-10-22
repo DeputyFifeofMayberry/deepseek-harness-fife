@@ -197,6 +197,9 @@ export const zh = {
   'layout.toolsRemovedCount': '移除 {count} 个',
   'layout.systemPromptAndToolsUpdated': '系统提示词和工具已更新',
   'layout.compactionInterrupted': '上下文压缩在完成前被中断。',
+  'time.clock': '{ampm}{h}:{mm}:{ss}.{mmm}',
+  'time.am': '上午',
+  'time.pm': '下午',
 } as const
 
 /** The trajectory dictionary key union. */
@@ -407,4 +410,7 @@ export const en: Record<TrajectoryKey, string> = {
   'layout.toolsRemovedCount': '{count} removed',
   'layout.systemPromptAndToolsUpdated': 'System Prompt and Tools Updated',
   'layout.compactionInterrupted': 'Compaction was interrupted before completion.',
+  'time.clock': '{h}:{mm}:{ss}.{mmm} {ampm}',
+  'time.am': 'AM',
+  'time.pm': 'PM',
 }

@@ -238,7 +238,7 @@ describe('formatScheduleAbsolute', () => {
   /** Independent absolute rendering of one instant in the device zone. */
   const expected = (locale: string, namesYear: boolean): string => new Intl.DateTimeFormat(locale, {
     month: 'short', day: 'numeric', ...(namesYear ? { year: 'numeric' as const } : {}),
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    hour: 'numeric', minute: '2-digit', hour12: true,
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }).format(Date.parse(INSTANT))
 
@@ -271,25 +271,25 @@ describe('formatScheduleNextRun', () => {
   const yearIn = (timeZone: string): string =>
     new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone }).format(Date.now())
 
-  // The month is a locale-owned name plus the locale's own clock: en writes
-  // `Oct 1, 3:00 PM` and zh-CN writes `10月1日 23:00`. Neither locale can emit
-  // the retired zero-padded `MM-DD` pair.
+  // The month is a locale-owned name plus the locale's own 12-hour clock: en
+  // writes `Oct 1, 3:00 PM` and zh-CN writes `10月1日 下午3:00`. Neither locale
+  // can emit the retired zero-padded `MM-DD` pair.
   it('names the month and the clock field pair in each locale, in the given zone', () => {
     expect(formatScheduleNextRun(`${yearIn('UTC')}-10-01T15:00:00.000Z`, 'en', 'UTC')).toBe('Oct 1, 3:00 PM')
     expect(formatScheduleNextRun(`${yearIn('Asia/Shanghai')}-10-01T15:00:00.000Z`, 'en', 'Asia/Shanghai')).toBe('Oct 1, 11:00 PM')
-    expect(formatScheduleNextRun(`${yearIn('UTC')}-12-31T15:00:00.000Z`, 'zh-CN', 'UTC')).toBe('12月31日 15:00')
-    expect(formatScheduleNextRun(`${yearIn('Asia/Shanghai')}-12-31T15:00:00.000Z`, 'zh-CN', 'Asia/Shanghai')).toBe('12月31日 23:00')
+    expect(formatScheduleNextRun(`${yearIn('UTC')}-12-31T15:00:00.000Z`, 'zh-CN', 'UTC')).toBe('12月31日 下午3:00')
+    expect(formatScheduleNextRun(`${yearIn('Asia/Shanghai')}-12-31T15:00:00.000Z`, 'zh-CN', 'Asia/Shanghai')).toBe('12月31日 下午11:00')
   })
 
   it('adds the year when the instant falls outside the display zone\'s current year', () => {
     expect(formatScheduleNextRun('2001-10-01T15:00:00.000Z', 'en', 'UTC')).toBe('Oct 1, 2001, 3:00 PM')
-    expect(formatScheduleNextRun('2001-10-01T15:00:00.000Z', 'zh-CN', 'Asia/Shanghai')).toBe('2001年10月1日 23:00')
+    expect(formatScheduleNextRun('2001-10-01T15:00:00.000Z', 'zh-CN', 'Asia/Shanghai')).toBe('2001年10月1日 下午11:00')
   })
 
   it('matches the universal card field pair and never emits a padded month-day pair', () => {
     const at = `${yearIn('UTC')}-10-01T15:00:00.000Z`
     const expected = (locale: string, timeZone: string): string => new Intl.DateTimeFormat(locale, {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone,
+      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone,
     }).format(Date.parse(at))
     for (const [locale, timeZone] of [['en', 'UTC'], ['zh-CN', 'UTC']] as const) {
       const shown = formatScheduleNextRun(at, locale, timeZone)
