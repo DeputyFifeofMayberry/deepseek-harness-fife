@@ -76,7 +76,7 @@ The kernel owns exactly three things: the module system, the Cordis Loader, and 
 
 The boot page is plain DOM with local CSS whose fallback fonts and colors match the theme tokens that arrive during loading. `internal/status` events drive one spinner node and per-entry labels; hydration preserves the node and animation phase through the application commit, and `fail()` renders the thrown reason. React mounting, slot rendering, and assembly live in `ui-renderer`; `ui-layout` owns the assembled browser-title projection.
 
-The boot kernel delegates manifest entry creation to Client Modules so live graph synchronization owns the same entry identities after startup. The initial activation audit remains strict; later page-local failures appear in Settings → Plugins → Plugin list.
+The boot kernel delegates manifest entry creation to Client Modules so live graph synchronization owns the same entry identities after startup. Before live reconciliation tears down any plugin, the kernel unmounts the application synchronously and shows the framework-free loading page. It remounts only after reconciliation finishes without failures and the renderer is available; transient component state resets, while Host tasks and persisted Sessions continue. Reconciliation failures stay visible on that page until a successful retry or page reload.
 
 ### Source map
 

@@ -133,6 +133,7 @@ const harness = await vi.hoisted(async () => {
   class FakeHost {
     readonly updateTasks = vi.fn(async (_action: 'inspect' | 'lock' | 'unlock') => false)
     readonly inspectQuit = vi.fn(async () => ({ activeTasks: false, scheduledTasks: false }))
+    readonly indexInjections = vi.fn<() => Promise<readonly unknown[]>>(async () => [])
     url = 'http://127.0.0.1:3080/?token=test'
     fetch = vi.fn(async () => Response.json({ hasApiKey: true, writable: true, localePreference: null }))
     readonly ready = deferred()
@@ -1185,6 +1186,13 @@ describe('desktop main startup', () => {
     expect(settled).toBe(false)
     harness.hosts[0]!.ready.resolve()
     await expect(boot).resolves.toEqual({ injections: [], streamBaseUrl: 'http://127.0.0.1:3080' })
+    const fresh = [{ kind: 'script-src', placement: 'head', src: 'plugins/current.js' }]
+    harness.hosts[0]!.indexInjections.mockResolvedValueOnce(fresh)
+    await expect(handler({ senderFrame: { url: 'dsh-app://app/' } })).resolves.toEqual({
+      injections: fresh, streamBaseUrl: 'http://127.0.0.1:3080',
+    })
+    harness.hosts[0]!.indexInjections.mockRejectedValueOnce(new Error('collection failed'))
+    await expect(handler({ senderFrame: { url: 'dsh-app://app/' } })).rejects.toThrow('collection failed')
     expect(harness.windows[0]!.urls).toEqual(['dsh-app://app/'])
   })
 

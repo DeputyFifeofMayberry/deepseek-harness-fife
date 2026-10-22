@@ -72,10 +72,15 @@ function BootHandoff(props: { app: () => ReactNode; boot: BootSnapshot }): React
 function mountApp(container: HTMLElement, app: () => ReactNode): Root {
   const boot = container.querySelector<HTMLElement>(':scope > [data-dsh-boot]')
   if (boot !== null) {
-    return hydrateRoot(container, createElement(BootHandoff, {
-      app,
-      boot: { className: boot.className, html: boot.innerHTML },
-    }))
+    let root!: Root
+    // Reconciliation may unmount immediately after this call; hydration must finish before disposal can own the DOM.
+    flushSync(() => {
+      root = hydrateRoot(container, createElement(BootHandoff, {
+        app,
+        boot: { className: boot.className, html: boot.innerHTML },
+      }))
+    })
+    return root
   }
   const root = createRoot(container)
   flushSync(() => { root.render(app()) })

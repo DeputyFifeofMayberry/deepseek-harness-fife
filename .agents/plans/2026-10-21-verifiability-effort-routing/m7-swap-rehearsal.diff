@@ -1,0 +1,670 @@
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/agent-options.ts" "b/packages\\llm\\effort-policy\\src/agent-options.ts"
+index e373b73df2..1f271c816e 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/agent-options.ts"
++++ "b/packages\\llm\\effort-policy\\src/agent-options.ts"
+@@ -5,7 +5,7 @@
+  * @module @deepseek-ai/dsh-effort-policy/agent-options
+  */
+
+-import type { DelegationOperation } from './types.ts'
++import type { DelegationOperation } from '@mayberry/effort-policy-core'
+
+ declare module '@deepseek-ai/dsh-agent' {
+   interface AgentOptions {
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/config.ts" "b/packages\\llm\\effort-policy\\src/config.ts"
+index 76a9fbe071..3a9151d5ab 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/config.ts"
++++ "b/packages\\llm\\effort-policy\\src/config.ts"
+@@ -5,7 +5,7 @@
+  */
+
+ import z from '@deepseek-ai/schemastery'
+-import type { EffortLevel } from './types.ts'
++import type { EffortLevel } from '@mayberry/effort-policy-core'
+
+ /** How one verifier's result is read: its text, or the tool's error flag. */
+ export interface VerifierRule {
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/core.ts" "b/packages\\llm\\effort-policy\\src/core.ts"
+index a89552b7ae..4ba7f56094 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/core.ts"
++++ "b/packages\\llm\\effort-policy\\src/core.ts"
+@@ -1,9 +1,8 @@
+ /**
+- * The portable decision core. Import this entry from a host that does not use
+- * Cordis; it pulls in no adapter code and no harness dependency.
++ * The portable decision core, re-exported from its owning package. Import this
++ * entry from a host that does not use Cordis; the path and the names are
++ * unchanged, so no consumer moves.
+  * @module @deepseek-ai/dsh-effort-policy/core
+  */
+
+-export * from './types.ts'
+-export * from './levels.ts'
+-export * from './policy.ts'
++export * from '@mayberry/effort-policy-core'
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/events.ts" "b/packages\\llm\\effort-policy\\src/events.ts"
+index 4df91cda14..3fa84b7197 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/events.ts"
++++ "b/packages\\llm\\effort-policy\\src/events.ts"
+@@ -6,9 +6,9 @@
+  */
+
+ import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
++import { EFFORT_POLICY_PROTOCOL_VERSION } from '@mayberry/effort-policy-core'
++import type { DecisionRule, EffortLevel } from '@mayberry/effort-policy-core'
+ import { z as zod } from 'zod'
+-import { EFFORT_POLICY_PROTOCOL_VERSION } from './types.ts'
+-import type { DecisionRule, EffortLevel } from './types.ts'
+
+ /** Durable policy state for one Session: the last base choice and the open failure. */
+ export interface EffortStateRecord {
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/levels.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/levels.ts"
+deleted file mode 100644
+index 1732eaff59..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/levels.ts"
++++ /dev/null
+@@ -1,74 +0,0 @@
+-/**
+- * Level-to-effort resolution against one adapter-owned vocabulary. No host
+- * types and no I/O: every input is plain data.
+- * @module @deepseek-ai/dsh-effort-policy/levels
+- */
+-
+-import type { EffortCapability, EffortLevel } from './types.ts'
+-
+-/** Level order, least to most expensive. */
+-const LEVEL_ORDER: readonly EffortLevel[] = ['low', 'standard', 'deep']
+-
+-/**
+- * Rank one level by cost.
+- * @param level - the level to rank.
+- * @returns its zero-based position in level order.
+- */
+-function rank(level: EffortLevel): number {
+-  return LEVEL_ORDER.indexOf(level)
+-}
+-
+-/**
+- * Raise one level, capped at `deep`.
+- * @param level - starting level.
+- * @returns the next level, or the same level at the cap.
+- */
+-export function higherLevel(level: EffortLevel): EffortLevel {
+-  switch (level) {
+-    case 'low':
+-      return 'standard'
+-    case 'standard':
+-    case 'deep':
+-      return 'deep'
+-  }
+-}
+-
+-/**
+- * Compare two levels by cost.
+- * @param left - first level.
+- * @param right - second level.
+- * @returns the more expensive level.
+- */
+-export function higherOf(left: EffortLevel, right: EffortLevel): EffortLevel {
+-  return rank(left) >= rank(right) ? left : right
+-}
+-
+-/**
+- * Resolve one level to an effort the route advertises.
+- *
+- * `low` prefers `low`, then the least advertised effort that is not `off`, then
+- * `off`. `standard` is the adapter's default effort. `deep` prefers `max`, then
+- * the most advertised effort. A route that advertises nothing cannot take an
+- * effort and resolves to `undefined`.
+- *
+- * @param capability - the exact route's advertised efforts and default.
+- * @param level - level to resolve.
+- * @returns an effort the route advertises, or `undefined` to leave the request untouched.
+- */
+-export function resolveLevelEffort(
+-  capability: EffortCapability,
+-  level: EffortLevel,
+-): string | undefined {
+-  const { efforts, defaultEffort } = capability
+-  if (efforts.length === 0) return undefined
+-  if (level === 'low') {
+-    if (efforts.includes('low')) return 'low'
+-    const leastThinking = efforts.find(effort => effort !== 'off')
+-    return leastThinking ?? efforts[0]
+-  }
+-  if (level === 'standard') {
+-    return defaultEffort !== undefined && efforts.includes(defaultEffort) ? defaultEffort : undefined
+-  }
+-  if (efforts.includes('max')) return 'max'
+-  return efforts[efforts.length - 1]
+-}
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/policy.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/policy.ts"
+deleted file mode 100644
+index b1569d19fb..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/policy.ts"
++++ /dev/null
+@@ -1,120 +0,0 @@
+-/**
+- * The effort decision itself: precedence, evidence transitions, and the
+- * operation table. Pure functions over plain data; no host types, no I/O.
+- * @module @deepseek-ai/dsh-effort-policy/policy
+- */
+-
+-import { higherLevel, higherOf, resolveLevelEffort } from './levels.ts'
+-import type {
+-  Decision,
+-  DecisionRule,
+-  DelegationOperation,
+-  EffortCapability,
+-  EffortLevel,
+-  EffortState,
+-  EvidenceObservation,
+-} from './types.ts'
+-
+-/**
+- * The level a session runs at before escalation: the base, raised by a mode pin.
+- * @param state - observed state.
+- * @returns the effective base level.
+- */
+-export function effectiveBase(state: EffortState): EffortLevel {
+-  return state.pin === undefined ? state.base : higherOf(state.base, state.pin)
+-}
+-
+-/**
+- * The level a delegated child starts at for its operation.
+- * @param operation - the delegation's declared operation.
+- * @returns the starting level.
+- */
+-export function operationStart(operation: DelegationOperation): EffortLevel {
+-  switch (operation) {
+-    case 'plan':
+-    case 'review':
+-      return 'deep'
+-    case 'mechanical':
+-      return 'low'
+-    case 'general':
+-    case 'explore':
+-    case 'implement':
+-      return 'standard'
+-  }
+-}
+-
+-/**
+- * The lowest level a delegation may request for its operation. It constrains a
+- * model-facing `reasoning_effort` only; it never floors a session base or an
+- * inherited level.
+- * @param operation - the delegation's declared operation.
+- * @returns the minimum level.
+- */
+-export function operationMinimum(operation: DelegationOperation): EffortLevel {
+-  return operationStart(operation)
+-}
+-
+-/**
+- * Apply one observation to the durable state.
+- *
+- * A failure opens an escalation. An infrastructure observation changes nothing.
+- * A pass clears the open failure only when it is the same verifier, observed
+- * later, and taken at a revision that is not older than the failing one; every
+- * other pass is stale.
+- *
+- * @param state - current state.
+- * @param observation - the observed outcome.
+- * @returns the next state, or the same state when the observation changes nothing.
+- */
+-export function applyEvidence(state: EffortState, observation: EvidenceObservation): EffortState {
+-  if (observation.kind === 'infrastructure') return state
+-  if (observation.kind === 'verification-failure') {
+-    return {
+-      ...state,
+-      openFailure: {
+-        verifier: observation.verifier,
+-        sequence: observation.sequence,
+-        revision: observation.revision,
+-      },
+-    }
+-  }
+-  const open = state.openFailure
+-  if (open === undefined) return state
+-  if (open.verifier !== observation.verifier) return state
+-  if (observation.sequence <= open.sequence) return state
+-  if (observation.revision < open.revision) return state
+-  const { openFailure: _cleared, ...rest } = state
+-  return rest
+-}
+-
+-/**
+- * Decide the effort for one request.
+- *
+- * An exact base wins verbatim. Otherwise the level is the effective base, raised
+- * one step while a failure is unresolved. Nothing is written when the level is
+- * already the adapter's default or the route advertises no reasoning, because a
+- * written default is a different durable fact from an adapter default.
+- *
+- * @param capability - the exact route's advertised efforts.
+- * @param state - observed state.
+- * @returns the decision, including the rule that produced it.
+- */
+-export function decide(capability: EffortCapability, state: EffortState): Decision {
+-  if (state.exact !== undefined) {
+-    return capability.efforts.includes(state.exact)
+-      ? { rule: 'exact-base', effort: state.exact }
+-      : { rule: 'untouched' }
+-  }
+-  const base = effectiveBase(state)
+-  const escalated = state.openFailure !== undefined
+-  const level = escalated ? higherLevel(base) : base
+-  const rule: DecisionRule = escalated
+-    ? 'escalated'
+-    : state.pin !== undefined && higherOf(state.base, state.pin) !== state.base
+-      ? 'mode-pin'
+-      : 'base'
+-  const effort = resolveLevelEffort(capability, level)
+-  if (effort === undefined) return { rule: 'untouched' }
+-  if (effort === capability.defaultEffort) return { rule, level }
+-  return { rule, level, effort }
+-}
+diff --git "a/packages\\llm\\effort-policy\\src/protocol.ts" "b/packages\\llm\\effort-policy\\src/protocol.ts"
+new file mode 100644
+index 0000000000..ebff18adb5
+--- /dev/null
++++ "b/packages\\llm\\effort-policy\\src/protocol.ts"
+@@ -0,0 +1,29 @@
++/**
++ * The core protocol this adapter implements. The decision vocabulary lives in
++ * `@mayberry/effort-policy-core`, so a core that changed a level rule, an
++ * operation minimum, or a decision field writes records this adapter would
++ * misread; the mismatch is refused while the package loads, not at the first
++ * request.
++ * @module @deepseek-ai/dsh-effort-policy/protocol
++ */
++
++import { EFFORT_POLICY_PROTOCOL_VERSION } from '@mayberry/effort-policy-core'
++
++/** Protocol version this adapter writes into `effort/decision` records. */
++export const SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION = 1
++
++/**
++ * Refuse a core whose protocol this adapter does not implement.
++ * @param version - `EFFORT_POLICY_PROTOCOL_VERSION` exported by the installed core.
++ * @throws when the version differs from the one this adapter writes.
++ */
++export function assertCoreProtocol(version: number): void {
++  if (version === SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION) return
++  throw new Error(
++    `effort-policy: the installed @mayberry/effort-policy-core implements protocol ${version}, `
++    + `but this adapter writes protocol ${SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION}; `
++    + 'install the core version this adapter was built against',
++  )
++}
++
++assertCoreProtocol(EFFORT_POLICY_PROTOCOL_VERSION)
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/service.ts" "b/packages\\llm\\effort-policy\\src/service.ts"
+index ac5ffb63f5..d24ba3256e 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/service.ts"
++++ "b/packages\\llm\\effort-policy\\src/service.ts"
+@@ -18,14 +18,15 @@ import {
+   effortStateSchema,
+   type EffortStateRecord,
+ } from './events.ts'
+-import { applyEvidence, decide, operationStart } from './policy.ts'
++import { applyEvidence, decide, operationStart } from '@mayberry/effort-policy-core'
+ import type {
+   Decision,
+   DelegationOperation,
+   EffortCapability,
+   EffortLevel,
+   EffortState,
+-} from './types.ts'
++} from '@mayberry/effort-policy-core'
++import './protocol.ts'
+
+ /** Raised when a dependency the policy needs is absent or failed. */
+ export class EffortPolicyUnavailableError extends Error {
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/types.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/types.ts"
+deleted file mode 100644
+index c597097be3..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\src/types.ts"
++++ /dev/null
+@@ -1,75 +0,0 @@
+-/**
+- * Portable effort-policy vocabulary: the values that cross the boundary between
+- * the decision core and any adapter, including a future non-Cordis host.
+- * @module @deepseek-ai/dsh-effort-policy/types
+- */
+-
+-/**
+- * Version of the decision data that crosses the core boundary. A host refuses
+- * a core whose version it does not know, and a change to level rules, operation
+- * minimums, or decision fields increments it.
+- */
+-export const EFFORT_POLICY_PROTOCOL_VERSION = 1
+-
+-/** Automatic effort levels, ordered from least to most expensive. */
+-export type EffortLevel = 'low' | 'standard' | 'deep'
+-
+-/** What a delegated child is being asked to do; it fixes the child's start level. */
+-export type DelegationOperation = 'general' | 'explore' | 'implement' | 'plan' | 'review' | 'mechanical'
+-
+-/** Adapter-owned effort vocabulary for one exact route. */
+-export interface EffortCapability {
+-  /** Advertised efforts, ordered from least to most expensive. */
+-  readonly efforts: readonly string[]
+-  /** The effort the adapter uses when a request names none. */
+-  readonly defaultEffort?: string
+-}
+-
+-/** Which rule produced a decision; recorded so every request is auditable. */
+-export type DecisionRule =
+-  | 'exact-base'
+-  | 'mode-pin'
+-  | 'base'
+-  | 'escalated'
+-  | 'untouched'
+-
+-/** One observed verification outcome, correlated to a verifier and a work revision. */
+-export interface EvidenceObservation {
+-  /** Outcome class; infrastructure failures never change the level. */
+-  readonly kind: 'verification-failure' | 'verification-pass' | 'infrastructure'
+-  /** Verifier identity: tool, normalized arguments, and working directory. */
+-  readonly verifier: string
+-  /** Monotonic observation order within the session. */
+-  readonly sequence: number
+-  /** Workspace mutation counter when the observation was made. */
+-  readonly revision: number
+-}
+-
+-/** Observed state the policy decides from. Pure data; no host types. */
+-export interface EffortState {
+-  /** The configured or user-selected base level. */
+-  readonly base: EffortLevel
+-  /** A user-selected exact effort, which the policy writes verbatim and never escalates. */
+-  readonly exact?: string
+-  /** A level raised by session mode, such as plan mode. */
+-  readonly pin?: EffortLevel
+-  /** The unresolved failure that keeps the level raised. */
+-  readonly openFailure?: {
+-    /** Verifier identity that failed. */
+-    readonly verifier: string
+-    /** Observation order of the failure. */
+-    readonly sequence: number
+-    /** Workspace revision at the failure. */
+-    readonly revision: number
+-  }
+-}
+-
+-/** The policy's answer for one request. */
+-export interface Decision {
+-  /** Rule that produced this answer. */
+-  readonly rule: DecisionRule
+-  /** Automatic level, absent for an exact base or an untouched route. */
+-  readonly level?: EffortLevel
+-  /** Exact effort to write; absent means leave the request untouched. */
+-  readonly effort?: string
+-}
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/events.spec.ts" "b/packages\\llm\\effort-policy\\tests/events.spec.ts"
+index 96a61f40ba..77885198f1 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/events.spec.ts"
++++ "b/packages\\llm\\effort-policy\\tests/events.spec.ts"
+@@ -1,6 +1,6 @@
+ import { describe, expect, it } from 'vitest'
+ import { decisionRecord, stateOfRecord } from '../src/events.ts'
+-import { EFFORT_POLICY_PROTOCOL_VERSION } from '../src/types.ts'
++import { EFFORT_POLICY_PROTOCOL_VERSION } from '@mayberry/effort-policy-core'
+
+ describe('decisionRecord', () => {
+   it('carries the protocol version and the rule that produced the state', () => {
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/import-boundary.spec.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/import-boundary.spec.ts"
+deleted file mode 100644
+index 827b45170d..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/import-boundary.spec.ts"
++++ /dev/null
+@@ -1,28 +0,0 @@
+-import { readFileSync } from 'node:fs'
+-import { describe, expect, it } from 'vitest'
+-
+-const CORE_FILES = ['types.ts', 'levels.ts', 'policy.ts'] as const
+-
+-function source(file: string): string {
+-  return readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8')
+-}
+-
+-describe('portable core boundary', () => {
+-  it('imports only sibling core modules', () => {
+-    for (const file of CORE_FILES) {
+-      const specifiers = [...source(file).matchAll(/from\s+'([^']+)'/g)].map(match => match[1])
+-      expect(specifiers.every(specifier => specifier !== undefined && specifier.startsWith('./')))
+-        .toBe(true)
+-    }
+-  })
+-
+-  it('reaches no harness package, Node API, clock, or process state', () => {
+-    for (const file of CORE_FILES) {
+-      const text = source(file)
+-      expect(text).not.toMatch(/from\s+'@deepseek-ai\//)
+-      expect(text).not.toMatch(/from\s+'node:/)
+-      expect(text).not.toMatch(/\bDate\s*\.\s*now\b|\bprocess\s*\./)
+-      expect(text).not.toMatch(/\bContext\b|\bSession\b/)
+-    }
+-  })
+-})
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/levels.spec.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/levels.spec.ts"
+deleted file mode 100644
+index 7b40bf63e7..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/levels.spec.ts"
++++ /dev/null
+@@ -1,50 +0,0 @@
+-import { describe, expect, it } from 'vitest'
+-import { higherLevel, higherOf, resolveLevelEffort } from '../src/levels.ts'
+-
+-describe('resolveLevelEffort', () => {
+-  const full = { efforts: ['off', 'low', 'high', 'max'], defaultEffort: 'high' }
+-
+-  it('maps each level onto the advertised vocabulary', () => {
+-    expect(resolveLevelEffort(full, 'low')).toBe('low')
+-    expect(resolveLevelEffort(full, 'standard')).toBe('high')
+-    expect(resolveLevelEffort(full, 'deep')).toBe('max')
+-  })
+-
+-  it('uses the least non-off effort when low is not advertised', () => {
+-    const capability = { efforts: ['off', 'high', 'max'], defaultEffort: 'high' }
+-    expect(resolveLevelEffort(capability, 'low')).toBe('high')
+-  })
+-
+-  it('falls back to off on an off-only route', () => {
+-    const capability = { efforts: ['off'], defaultEffort: 'off' }
+-    expect(resolveLevelEffort(capability, 'low')).toBe('off')
+-    expect(resolveLevelEffort(capability, 'standard')).toBe('off')
+-    expect(resolveLevelEffort(capability, 'deep')).toBe('off')
+-  })
+-
+-  it('returns undefined when the route advertises no reasoning', () => {
+-    expect(resolveLevelEffort({ efforts: [] }, 'deep')).toBeUndefined()
+-  })
+-
+-  it('returns undefined when the default is not advertised', () => {
+-    expect(resolveLevelEffort({ efforts: ['low', 'high'], defaultEffort: 'max' }, 'standard')).toBeUndefined()
+-  })
+-
+-  it('uses the highest effort when max is not advertised', () => {
+-    expect(resolveLevelEffort({ efforts: ['low', 'high'], defaultEffort: 'high' }, 'deep')).toBe('high')
+-  })
+-})
+-
+-describe('level ordering', () => {
+-  it('raises one level and caps at deep', () => {
+-    expect(higherLevel('low')).toBe('standard')
+-    expect(higherLevel('standard')).toBe('deep')
+-    expect(higherLevel('deep')).toBe('deep')
+-  })
+-
+-  it('compares levels by cost', () => {
+-    expect(higherOf('low', 'deep')).toBe('deep')
+-    expect(higherOf('standard', 'low')).toBe('standard')
+-    expect(higherOf('deep', 'deep')).toBe('deep')
+-  })
+-})
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/policy.spec.ts" "b/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/policy.spec.ts"
+deleted file mode 100644
+index 55b57d3d4b..0000000000
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\tests/policy.spec.ts"
++++ /dev/null
+@@ -1,122 +0,0 @@
+-import { describe, expect, it } from 'vitest'
+-import {
+-  applyEvidence,
+-  decide,
+-  effectiveBase,
+-  operationMinimum,
+-  operationStart,
+-} from '../src/policy.ts'
+-import type { EffortState, EvidenceObservation } from '../src/types.ts'
+-
+-const CAPABILITY = { efforts: ['off', 'low', 'high', 'max'], defaultEffort: 'high' }
+-
+-function observation(
+-  kind: EvidenceObservation['kind'],
+-  overrides: Partial<EvidenceObservation> = {},
+-): EvidenceObservation {
+-  return { kind, verifier: 'pwsh::npm test', sequence: 1, revision: 0, ...overrides }
+-}
+-
+-describe('decision precedence', () => {
+-  it('records the level but writes nothing when it resolves to the adapter default', () => {
+-    expect(decide(CAPABILITY, { base: 'standard' })).toEqual({ rule: 'base', level: 'standard' })
+-  })
+-
+-  it('writes the low effort for a low base', () => {
+-    expect(decide(CAPABILITY, { base: 'low' })).toEqual({ rule: 'base', level: 'low', effort: 'low' })
+-  })
+-
+-  it('raises the base by a mode pin', () => {
+-    expect(decide(CAPABILITY, { base: 'low', pin: 'deep' }))
+-      .toEqual({ rule: 'mode-pin', level: 'deep', effort: 'max' })
+-  })
+-
+-  it('writes an exact base verbatim, including off', () => {
+-    expect(decide(CAPABILITY, { base: 'low', exact: 'off' }))
+-      .toEqual({ rule: 'exact-base', effort: 'off' })
+-  })
+-
+-  it('leaves a route untouched when the exact base is not advertised', () => {
+-    expect(decide(CAPABILITY, { base: 'low', exact: 'minimal' })).toEqual({ rule: 'untouched' })
+-  })
+-
+-  it('leaves a route without reasoning untouched', () => {
+-    expect(decide({ efforts: [] }, { base: 'deep' })).toEqual({ rule: 'untouched' })
+-  })
+-})
+-
+-describe('evidence transitions', () => {
+-  it('escalates one level above the effective base on failure', () => {
+-    const failed = applyEvidence({ base: 'low' }, observation('verification-failure'))
+-    expect(decide(CAPABILITY, failed)).toEqual({ rule: 'escalated', level: 'standard' })
+-  })
+-
+-  it('escalates above a mode pin rather than the raw base', () => {
+-    const failed = applyEvidence({ base: 'low', pin: 'standard' }, observation('verification-failure'))
+-    expect(decide(CAPABILITY, failed)).toEqual({ rule: 'escalated', level: 'deep', effort: 'max' })
+-  })
+-
+-  it('ignores infrastructure observations', () => {
+-    const state: EffortState = { base: 'low' }
+-    expect(applyEvidence(state, observation('infrastructure'))).toBe(state)
+-  })
+-
+-  it('clears when the same verifier passes later at the same or newer revision', () => {
+-    const failed = applyEvidence({ base: 'low' }, observation('verification-failure', { sequence: 4, revision: 7 }))
+-    const cleared = applyEvidence(failed, observation('verification-pass', { sequence: 9, revision: 7 }))
+-    expect(cleared.openFailure).toBeUndefined()
+-    expect(decide(CAPABILITY, cleared)).toEqual({ rule: 'base', level: 'low', effort: 'low' })
+-  })
+-
+-  it('keeps the escalation when the pass precedes the failure', () => {
+-    const failed = applyEvidence({ base: 'low' }, observation('verification-failure', { sequence: 4 }))
+-    const stale = applyEvidence(failed, observation('verification-pass', { sequence: 3 }))
+-    expect(stale.openFailure).toBeDefined()
+-  })
+-
+-  it('keeps the escalation when the pass predates a later mutation', () => {
+-    const failed = applyEvidence({ base: 'low' }, observation('verification-failure', { sequence: 4, revision: 8 }))
+-    const stale = applyEvidence(failed, observation('verification-pass', { sequence: 9, revision: 7 }))
+-    expect(stale.openFailure).toBeDefined()
+-  })
+-
+-  it('keeps the escalation when another verifier passes', () => {
+-    const failed = applyEvidence({ base: 'low' }, observation('verification-failure'))
+-    const other = applyEvidence(failed, observation('verification-pass', { verifier: 'pwsh::npm run lint', sequence: 9 }))
+-    expect(other.openFailure).toBeDefined()
+-  })
+-
+-  it('ignores a pass when nothing is open', () => {
+-    const state: EffortState = { base: 'low' }
+-    expect(applyEvidence(state, observation('verification-pass'))).toBe(state)
+-  })
+-})
+-
+-describe('operation table', () => {
+-  it('starts reasoning delegations deep', () => {
+-    expect(operationStart('plan')).toBe('deep')
+-    expect(operationStart('review')).toBe('deep')
+-  })
+-
+-  it('starts ordinary delegations standard', () => {
+-    expect(operationStart('general')).toBe('standard')
+-    expect(operationStart('explore')).toBe('standard')
+-    expect(operationStart('implement')).toBe('standard')
+-  })
+-
+-  it('starts a bounded mechanical delegation low', () => {
+-    expect(operationStart('mechanical')).toBe('low')
+-  })
+-
+-  it('applies the operation minimum', () => {
+-    expect(operationMinimum('mechanical')).toBe('low')
+-    expect(operationMinimum('review')).toBe('deep')
+-  })
+-})
+-
+-describe('effective base', () => {
+-  it('takes the higher of base and pin', () => {
+-    expect(effectiveBase({ base: 'low', pin: 'standard' })).toBe('standard')
+-    expect(effectiveBase({ base: 'deep', pin: 'low' })).toBe('deep')
+-  })
+-})
+diff --git "a/packages\\llm\\effort-policy\\tests/protocol.spec.ts" "b/packages\\llm\\effort-policy\\tests/protocol.spec.ts"
+new file mode 100644
+index 0000000000..cba62a7642
+--- /dev/null
++++ "b/packages\\llm\\effort-policy\\tests/protocol.spec.ts"
+@@ -0,0 +1,18 @@
++import { describe, expect, it } from 'vitest'
++import {
++  SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION,
++  assertCoreProtocol,
++} from '../src/protocol.ts'
++
++describe('core protocol refusal', () => {
++  it('accepts the protocol this adapter writes', () => {
++    expect(() => { assertCoreProtocol(SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION) }).not.toThrow()
++  })
++
++  it('refuses a core whose protocol differs, naming both versions', () => {
++    const other = SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION + 1
++    expect(() => { assertCoreProtocol(other) }).toThrow(
++      new RegExp(`core implements protocol ${String(other)}, but this adapter writes protocol ${String(SUPPORTED_EFFORT_POLICY_PROTOCOL_VERSION)}`),
++    )
++  })
++})
+diff --git "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\package.json" "b/packages\\llm\\effort-policy\\package.json"
+index 1aeac1bb54..c7e707fcc6 100644
+--- "a/Y:\\deepseek-harness_fife\\.agents\\plans\\2026-10-21-verifiability-effort-routing\\m7-backup-20261021-174449\\effort-policy\\package.json"
++++ "b/packages\\llm\\effort-policy\\package.json"
+@@ -33,6 +33,7 @@
+   "license": "MIT",
+   "dependencies": {
+     "@deepseek-ai/schemastery": "workspace:~",
++    "@mayberry/effort-policy-core": "0.1.0",
+     "zod": "4.4.3"
+   },
+   "peerDependencies": {

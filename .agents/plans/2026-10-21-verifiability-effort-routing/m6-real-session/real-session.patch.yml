@@ -1,0 +1,65 @@
+# Ad-hoc M6 evidence composition: the fork's real verifier over the shipped
+# headless profile, with the model scripted so the real `pnpm run typecheck`
+# runs against this repository.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: session-log-deepseek
+  config:
+    enabled: false
+
+- id: session-title-llm
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: real-check
+    model: real-check
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+- id: effort-policy
+  config:
+    enabled: true
+    baseLevel: low
+    verifiers:
+      - tool: pwsh
+        commandPattern: 'pnpm( run)? typecheck'
+        passPattern: 'run-gates: \d+ passed, 0 failed'
+        failPattern: 'error TS\d+|[1-9]\d* failed'
+        outcome: text
+      - tool: bash
+        commandPattern: 'pnpm( run)? typecheck'
+        passPattern: 'run-gates: \d+ passed, 0 failed'
+        failPattern: 'error TS\d+|[1-9]\d* failed'
+        outcome: text
+    readOnlyCommands:
+      - 'git (status|diff|log|show|branch|rev-parse)\b'
+      - '(Get-Content|Get-ChildItem|Select-String|Test-Path|Get-Item)\b'
+
+- id: tool-subagent
+  config:
+    provider: spawn
+    toolName: subagent
+    effortPolicy: true
+
+- id: tool-subagent-fork
+  config:
+    provider: fork
+    toolName: subagent_fork
+    effortPolicy: true
+
+- insert:
+    - id: real-check-llm
+      name: './real-check-llm.ts'
+    - id: real-check-agent
+      name: './real-check-agent.ts'
