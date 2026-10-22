@@ -15,6 +15,7 @@ Use `dsh-client-ui-price-phase` when work should follow DeepSeek API pricing: th
 
 - [Use this package](#use-this-package)
 - [Understand the implementation](#understand-the-implementation)
+- [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 - [Dev Note](#dev-note)
 
@@ -34,7 +35,14 @@ The package publishes the reading as the client `pricePhase` service: `ctx.price
 
 `pricePhase(at)` in [`src/client/price-phase.ts`](src/client/price-phase.ts) computes the phase from the published schedule with pure UTC arithmetic: peak windows are 01:00–04:00 and 06:00–10:00 UTC, Monday through Friday ([Models & Pricing](https://api-docs.deepseek.com/quick_start/pricing)). The reading carries `nextBoundary`, the instant the phase flips. One application-wide source in [`src/client/phase-source.ts`](src/client/phase-source.ts) arms a single timeout at that instant instead of ticking per second; a visibility change re-arms, so a suspended tab catches up when it returns, and the chip renders from the published snapshot. There is no Host service, storage, or network behind the chip — the schedule is a compiled constant of this package, and a pricing change is a one-line edit to `PEAK_WINDOWS` plus a documentation update.
 
-<a id="known-limitations-and-deferred-work"></a>
+## Model Experience
+
+None, as the package is a browser-side UI layer that registers nothing model-facing.
+
+#### KV Cache effect
+
+None; this package neither assembles nor sends a provider request.
+
 ## Known Limitations and Deferred Work
 
 - **Chinese public holidays are not tracked.** The published schedule makes every holiday hour off-peak, but holiday dates are announced per year and a bundled table would go stale silently. On those weekdays the chip may read "peak" during window hours while billing is actually off-peak — the direction that overstates cost rather than hiding it. The tooltip states the holiday rule so the reader can resolve the ambiguity.

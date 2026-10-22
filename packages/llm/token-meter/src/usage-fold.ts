@@ -18,7 +18,10 @@ export const usageBucketsSchema = z.object({
   cacheWriteTokens: z.number().int().nonnegative(),
 }).strict()
 
-/** Zero usage in the four disjoint provider buckets. */
+/**
+ * Zero usage in the four disjoint provider buckets.
+ * @returns an all-zero bucket set.
+ */
 export function zeroUsageBuckets(): TokenUsageProjection {
   return {
     uncachedInputTokens: 0,
@@ -28,7 +31,11 @@ export function zeroUsageBuckets(): TokenUsageProjection {
   }
 }
 
-/** Detach one provider report into the projection's disjoint buckets. */
+/**
+ * Detach one provider report into the projection's disjoint buckets.
+ * @param usage - provider-reported usage for one attempt.
+ * @returns the four bucket counters, with absent cache fields as zero.
+ */
 export function usageBucketsOf(usage: TokenUsage): TokenUsageProjection {
   return {
     uncachedInputTokens: usage.inputTokens,
@@ -38,7 +45,12 @@ export function usageBucketsOf(usage: TokenUsage): TokenUsageProjection {
   }
 }
 
-/** Add one bucket set to another, one field at a time. */
+/**
+ * Add one bucket set to another, one field at a time.
+ * @param totals - accumulated buckets.
+ * @param next - buckets to add.
+ * @returns the summed buckets.
+ */
 export function addUsageBuckets(
   totals: TokenUsageProjection,
   next: TokenUsageProjection,
@@ -51,7 +63,12 @@ export function addUsageBuckets(
   }
 }
 
-/** Subtract a previously counted sample from a bucket set. */
+/**
+ * Subtract a previously counted sample from a bucket set.
+ * @param totals - accumulated buckets.
+ * @param previous - buckets to remove.
+ * @returns the reduced buckets.
+ */
 export function subtractUsageBuckets(
   totals: TokenUsageProjection,
   previous: TokenUsageProjection,
@@ -64,7 +81,12 @@ export function subtractUsageBuckets(
   }
 }
 
-/** Whether two bucket sets hold identical counters. */
+/**
+ * Whether two bucket sets hold identical counters.
+ * @param left - one bucket set.
+ * @param right - the other bucket set.
+ * @returns whether every counter matches.
+ */
 export function sameUsageBuckets(
   left: TokenUsageProjection,
   right: TokenUsageProjection,
@@ -75,7 +97,11 @@ export function sameUsageBuckets(
     && left.cacheWriteTokens === right.cacheWriteTokens
 }
 
-/** The usage one durable Assistant settlement reports for its attempt, if any. */
+/**
+ * The usage one durable Assistant settlement reports for its attempt, if any.
+ * @param event - durable session event to inspect.
+ * @returns the settled usage, or undefined when the event reports none.
+ */
 export function eventUsage(event: SessionEvent): TokenUsage | undefined {
   if (event.type === 'assistant/message' && event.data.usage !== undefined) return event.data.usage
   if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') return undefined
