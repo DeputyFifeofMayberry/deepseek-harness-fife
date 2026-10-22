@@ -468,6 +468,11 @@
     - id: ui-price-phase
       name: '@deepseek-ai/dsh-client-ui-price-phase'
 
+    # Session spend and account balance on the sidebar footer panel seat,
+    # priced from provider-reported usage and the catalog rate cards.
+    - id: ui-usage-panel
+      name: '@deepseek-ai/dsh-client-ui-usage-panel'
+
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #
 # Every row below composes what ONE agent contributes to the host registries:
