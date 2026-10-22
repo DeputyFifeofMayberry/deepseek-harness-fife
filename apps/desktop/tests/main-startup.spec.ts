@@ -64,6 +64,7 @@ const harness = await vi.hoisted(async () => {
   const updateCheck = vi.fn(async (_manual?: boolean): Promise<DesktopUpdateState> => updateState)
   const updateDownload = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
   const updateInstall = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
+  const describeUpdateSource = vi.fn(() => 'desktop update: source=packaged channel=nightly version=1.0.0')
   const popup = vi.fn<(options: { window: FakeWindow; x?: number; y?: number; callback?: () => void }) => void>()
   const menuBuilder = vi.fn<(template: MenuItemConstructorOptions[]) => { popup: typeof popup }>(() => ({ popup }))
   const menu = Object.assign(menuBuilder, { buildFromTemplate: menuBuilder, setApplicationMenu: vi.fn() })
@@ -201,6 +202,7 @@ const harness = await vi.hoisted(async () => {
     windows, hosts, handlers, app, FakeWindow, FakeHost, powerMonitor, nativeTheme, analytics,
     trays, FakeTray, backgroundNotice, shellDialog, notices, FakeNotice,
     menu, popup, socketHeaders: vi.fn(), loginShell, readLoginShell, updateCheck, updateDownload, updateInstall,
+    describeUpdateSource,
     platformDispose,
     platformCloseAndWait,
 
@@ -261,6 +263,7 @@ const harness = await vi.hoisted(async () => {
       loginShell.mockReset().mockImplementation(base => readLoginShell(base))
       updateDownload.mockReset().mockImplementation(async () => updateState)
       updateInstall.mockReset().mockImplementation(async () => updateState)
+      describeUpdateSource.mockReset().mockImplementation(() => 'desktop update: source=packaged channel=nightly version=1.0.0')
       nativeTheme.themeSource = 'system'; nativeTheme.shouldUseDarkColors = false
       preparing = deferred(); prepared = deferred(); hostStarted = deferred()
       navigated = deferred(); dialogShown = deferred(); quitCompleted = deferred()
@@ -355,6 +358,7 @@ vi.mock('../src/update-coordinator.ts', () => ({ DesktopUpdateCoordinator: class
   readonly check = harness.updateCheck
   readonly download = harness.updateDownload
   readonly install = harness.updateInstall
+  readonly describeSource = harness.describeUpdateSource
   readonly dispose = vi.fn()
 } }))
 vi.mock('../src/platform-view.ts', async importOriginal => ({
@@ -1671,6 +1675,29 @@ describe('desktop main startup', () => {
     expect(harness.updateDownload).not.toHaveBeenCalled()
   })
 
+  it('explains an unavailable update source without offering a download', async () => {
+    await readyForUpdate()
+    harness.updateCheck.mockResolvedValueOnce({ phase: 'unavailable', reason: 'development',
+      technicalDetails: 'desktop update: source=development channel=nightly version=1.0.0' })
+    harness.dialog.showMessageBox.mockResolvedValue({ response: 0 })
+    await invoke(DESKTOP_IPC.updatesOpen, 'app')
+    expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'info',
+      message: en.updateUnavailableDevelopment,
+      technicalDetails: 'desktop update: source=development channel=nightly version=1.0.0' }))
+    expect(harness.updateDownload).not.toHaveBeenCalled()
+  })
+
+  it('names the missing configuration for a packaged build without a feed', async () => {
+    await readyForUpdate()
+    harness.updateCheck.mockResolvedValueOnce({ phase: 'unavailable', reason: 'missing-configuration',
+      technicalDetails: 'desktop update: source=missing-configuration channel=nightly version=1.0.0 config=C:\\app\\resources\\app-update.yml' })
+    harness.dialog.showMessageBox.mockResolvedValue({ response: 0 })
+    await invoke(DESKTOP_IPC.updatesOpen, 'app')
+    expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'info',
+      message: en.updateUnavailableConfiguration }))
+    expect(harness.updateDownload).not.toHaveBeenCalled()
+  })
+
   it('reports a stale download confirmation as a download failure', async () => {
     await readyForUpdate()
     harness.updateCheck.mockResolvedValueOnce({ phase: 'available', version: '1.0.1-nightly.1' })
@@ -2240,7 +2267,8 @@ describe('desktop main startup', () => {
         profilePatchBackup: 'desktop-test-profile/cordis.patch.yml.bak-1789555200000', homePatch: 'unchanged',
       })
     } else {
-      expect(console.info).not.toHaveBeenCalled()
+      // Startup always reports its resolved update source; only recovery logging is absent here.
+      expect(console.info).not.toHaveBeenCalledWith('Desktop profile recovery completed:', expect.anything())
     }
     expect(harness.dialog.showMessageBox).toHaveBeenCalledOnce()
     expect(harness.windows[0]!.urls).toEqual(['dsh-app://app/'])

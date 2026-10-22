@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { isAbsolute, join } from 'node:path'
+import { isAbsolute, join, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import {
@@ -13,6 +13,7 @@ import {
   resolveFifeFeedUrl,
 } from './desktop-auto-update-environment.mjs'
 import { desktopBuildVersionPrefix, validateDesktopBuildVersion } from './desktop-build-version.mjs'
+import { verifyWindowsAppUpdateConfig, verifyWindowsUpdateMetadata } from './windows-app-update-config.mjs'
 
 const APP_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const UNSIGNED_ARTIFACTS = join(APP_ROOT, '.desktop-build', 'targets', 'win-x64', 'unsigned-artifacts')
@@ -150,12 +151,19 @@ async function main(env, requestedNotes, requestedFeedUrl) {
     { inputEnv: { ...shellSettings, [FIFE_DESKTOP_UPDATE_FEED_URL_ENV]: feedUrl }, shell: true })
 
   const installer = join(UNSIGNED_ARTIFACTS, `deepseek-harness-${buildVersion}-win-x64-unsigned.exe`)
-  const assets = [installer, `${installer}.blockmap`, join(UNSIGNED_ARTIFACTS, desktopUpdateMetadataFilename(buildVersion, 'win32', channel))]
+  const metadata = join(UNSIGNED_ARTIFACTS, desktopUpdateMetadataFilename(buildVersion, 'win32', channel))
+  const assets = [installer, `${installer}.blockmap`, metadata]
   const missing = assets.filter(asset => !existsSync(asset))
   if (missing.length > 0) {
     throw new Error(`fife desktop release: missing packaging outputs ${missing.map(asset => JSON.stringify(asset)).join(', ')}; ${
       existsSync(UNSIGNED_ARTIFACTS) ? readdirSync(UNSIGNED_ARTIFACTS).join(', ') : `${UNSIGNED_ARTIFACTS} does not exist`}`)
   }
+  // Publishing an application whose packaged feed is missing or stale produces an installed app that
+  // reports "no update source" at runtime, so the source is proved before the release exists.
+  await verifyWindowsAppUpdateConfig(join(UNSIGNED_ARTIFACTS, 'win-unpacked', 'resources'),
+    { publicUrl: feedUrl, channel })
+  await verifyWindowsUpdateMetadata(metadata, { version: buildVersion, installerName: basename(installer) })
+  process.stdout.write('fife desktop release: packaged update source verified\n')
 
   const commit = run(['git', 'rev-parse', '--short', 'HEAD'])
   const notes = [`Build ${buildVersion} from ${commit}.`, ...(requestedNotes === undefined ? [] : [requestedNotes])].join('\n\n')

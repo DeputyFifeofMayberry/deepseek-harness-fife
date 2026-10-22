@@ -541,7 +541,8 @@ async function main(): Promise<void> {
     return shown
   }
   const publishUpdate = (state: DesktopUpdateState): DesktopUpdateState => {
-    updateJournal?.state(state)
+    // An unavailable source is a structural property, not updater evidence the qualifier accepts.
+    if (state.phase !== 'unavailable') updateJournal?.state(state)
     updateState = state
     mandatoryUI?.sync()
     for (const window of BrowserWindow.getAllWindows()) {
@@ -653,6 +654,8 @@ async function main(): Promise<void> {
     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
     updateChannel,
   )
+  // One startup line identifies which app this is for later support questions.
+  console.info(updates.describeSource())
 
   const updateSchedule = new DesktopUpdateSchedule(updates, resolveDesktopUpdateScheduleConfig(process.env))
 
@@ -849,6 +852,14 @@ async function main(): Promise<void> {
             void checkPolicyManually('deferred').catch((error: unknown) => { console.error(error) })
           }
           state = await updateSchedule.check(true)
+        }
+        if (state.phase === 'unavailable') {
+          await ordinaryMessageBox({ type: 'info', title: locale.messages.updateUnavailableTitle,
+            message: state.reason === 'development'
+              ? locale.messages.updateUnavailableDevelopment
+              : locale.messages.updateUnavailableConfiguration,
+            technicalDetails: state.technicalDetails ?? '' })
+          return
         }
         if (isMandatory()) { mandatoryUI?.focus(); return }
         if (state.phase === 'error' && state.failedOperation === 'check') { await showUpdateFailure(state); return }

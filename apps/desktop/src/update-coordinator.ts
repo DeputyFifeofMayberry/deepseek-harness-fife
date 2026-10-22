@@ -1,15 +1,25 @@
 /** User-authorized downloads and separate installation of one version-bound Desktop release. */
 
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { app } from 'electron'
 import electronUpdater, { type AppUpdater, type ProgressInfo, type UpdateInfo } from 'electron-updater'
 import { gt, valid } from 'semver'
 import type { DesktopUpdateState } from './ipc.ts'
 import { DesktopUpdateHttpExecutor } from './update-http-executor.ts'
 import { DesktopUpdatePreparationError } from './update-error.ts'
+import { describeDesktopUpdateSource, resolveDesktopUpdateSource, type DesktopUpdateSource } from './update-source.ts'
 
 const { autoUpdater } = electronUpdater
+
+/** Read the live process packaging state; the updater is available only to a packaged build with its feed. */
+function processUpdateSource(): DesktopUpdateSource {
+  return resolveDesktopUpdateSource({
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
+    exists: path => existsSync(path),
+  })
+}
 
 /** Owns one updater target until its download and installation settle. */
 export class DesktopUpdateCoordinator {
@@ -43,7 +53,7 @@ export class DesktopUpdateCoordinator {
    * @param publish - Receives observable states for every Desktop window.
    * @param beforeRestart - Completes task authorization, admission locking, and owned-process shutdown.
    * @param updater - Process-owned Electron updater, replaceable at the network/platform test boundary.
-   * @param enabled - Whether this process has a packaged update source.
+   * @param source - Resolves this process's update source; development runs report it as unavailable.
    * @param currentVersion - Actual installed application version.
    * @param channel - Installed package channel; omitted test/local callers retain nightly.
    * @param downloadResult - Once per completed download attempt, including platform preparation failures.
@@ -52,7 +62,7 @@ export class DesktopUpdateCoordinator {
     private readonly publish: (state: DesktopUpdateState) => DesktopUpdateState,
     private readonly beforeRestart: () => Promise<boolean>,
     private readonly updater: AppUpdater = autoUpdater,
-    private readonly enabled: () => boolean = () => app.isPackaged && existsSync(join(process.resourcesPath, 'app-update.yml')),
+    private readonly source: () => DesktopUpdateSource = processUpdateSource,
     private readonly currentVersion: () => string = () => app.getVersion(),
     private readonly downloadResult?: (success: boolean, reason?: string) => void,
     private readonly channel: 'nightly' | 'latest' = 'nightly',
@@ -79,6 +89,14 @@ export class DesktopUpdateCoordinator {
 
   /** Latest observable state; complete download identity remains main-process-owned. */
   get state(): DesktopUpdateState { return this.current }
+
+  /**
+   * One diagnostic line naming the resolved source, channel, version, and configuration path.
+   * @returns Printable facts safe for logs and the user-expandable technical details.
+   */
+  describeSource(): string {
+    return describeDesktopUpdateSource(this.source(), { channel: this.channel, version: this.currentVersion() })
+  }
 
   /**
    * Check metadata without downloading, joining any current check.
@@ -168,13 +186,13 @@ export class DesktopUpdateCoordinator {
     return state
   }
 
-  private failure(error: unknown, failedOperation: 'check' | 'download' | 'install'): DesktopUpdateState {
-    return { phase: 'error', ...this.target(), failedOperation,
-      message: error instanceof Error ? error.message : String(error),
-      ...(error instanceof DesktopUpdatePreparationError ? {
-        preparationFailure: error.kind,
-        ...(error.technicalDetails === undefined ? {} : { technicalDetails: error.technicalDetails }),
-      } : {}) }
+  private failure(error: unknown, failedOperation: 'check' | 'download' | 'install', context?: string): DesktopUpdateState {
+    const preparation = error instanceof DesktopUpdatePreparationError ? error : undefined
+    const message = error instanceof Error ? error.message : String(error)
+    const details = preparation?.technicalDetails ?? (context === undefined ? undefined : `${context}\n${message}`)
+    return { phase: 'error', ...this.target(), failedOperation, message,
+      ...(details === undefined ? {} : { technicalDetails: details }),
+      ...(preparation === undefined ? {} : { preparationFailure: preparation.kind }) }
   }
 
   private target(): { version?: string } {
@@ -184,7 +202,13 @@ export class DesktopUpdateCoordinator {
   private async doCheck(): Promise<DesktopUpdateState> {
     try {
       this.assertLive()
-      if (!this.enabled()) throw new Error('desktop update: this application has no packaged update source')
+      const source = this.source()
+      if (source.kind !== 'packaged') {
+        this.candidate = undefined
+        return this.setState({ phase: 'unavailable',
+          reason: source.kind === 'development' ? 'development' : 'missing-configuration',
+          technicalDetails: describeDesktopUpdateSource(source, { channel: this.channel, version: this.currentVersion() }) })
+      }
       const result = await this.updater.checkForUpdates()
       if (result === null) throw new Error('desktop update: no check result was returned')
       const version = result.updateInfo.version
@@ -193,7 +217,7 @@ export class DesktopUpdateCoordinator {
       this.candidate = result.isUpdateAvailable && gt(version, this.currentVersion()) ? version : undefined
       return this.setState(this.candidate === undefined ? { phase: 'idle' } : { phase: 'available', version })
     } catch (error) {
-      return this.failure(error, 'check')
+      return this.failure(error, 'check', this.describeSource())
     }
   }
 }
