@@ -446,8 +446,16 @@ describe('Web session model selection', () => {
 
   it('preserves optional catalog metadata and string provider failures', async () => {
     const { ctx } = await harness()
+    const pricing = {
+      currency: 'USD',
+      inputPerMillion: 0.3,
+      outputPerMillion: 1.2,
+      cacheReadPerMillion: 0.006,
+      cacheWritePerMillion: 0.3,
+      offPeakMultiplier: 0.5,
+    }
     ctx.llm.registerAdapter(['plain'], new CatalogAdapter('Plain', [
-      { provider: 'plain', id: 'plain-model', name: 'Plain Model' },
+      { provider: 'plain', id: 'plain-model', name: 'Plain Model', pricing },
     ]))
     ctx.llm.registerAdapter(['described-reasoning'], new CatalogAdapter('Described Reasoning', [
       { provider: 'described-reasoning', id: 'reasoning-model', name: 'Reasoning Model' },
@@ -467,7 +475,7 @@ describe('Web session model selection', () => {
 
     const catalog = await buildModelCatalog(ctx)
     expect(catalog.groups).toEqual(expect.arrayContaining([
-      { id: 'plain', name: 'Plain', models: [{ id: 'plain-model', name: 'Plain Model' }] },
+      { id: 'plain', name: 'Plain', models: [{ id: 'plain-model', name: 'Plain Model', pricing }] },
       {
         id: 'described-reasoning',
         name: 'Described Reasoning',

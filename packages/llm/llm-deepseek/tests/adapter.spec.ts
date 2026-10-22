@@ -602,6 +602,24 @@ it('rejects invalid catalog context windows at the options resolver', () => {
   expect(() => Messages.resolveAdapterOptions({ models: [{ id: 'invalid-window', contextWindow: 0 }] })).toThrow('contextWindow must be a positive integer')
 })
 
+it('validates catalog pricing and carries valid rates into the connection', () => {
+  const pricing = {
+    currency: 'USD',
+    inputPerMillion: 0.3,
+    outputPerMillion: 1.2,
+    cacheReadPerMillion: 0.006,
+    cacheWritePerMillion: 0.3,
+    offPeakMultiplier: 0.5,
+  }
+  expect(Messages.resolveAdapterOptions({ models: [{ id: 'priced', pricing }] }).models[0]?.pricing).toEqual(pricing)
+  expect(() => Messages.resolveAdapterOptions({
+    models: [{ id: 'bad-currency', pricing: { ...pricing, currency: 'usd' } }],
+  })).toThrow(/currency/)
+  expect(() => Messages.resolveAdapterOptions({
+    models: [{ id: 'bad-multiplier', pricing: { ...pricing, offPeakMultiplier: 1.5 } }],
+  })).toThrow(/offPeakMultiplier/)
+})
+
 
 it.each([
   ['https://api.deepseek.com', 'account-token'],

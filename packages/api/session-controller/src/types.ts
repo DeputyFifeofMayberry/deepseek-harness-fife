@@ -6,7 +6,7 @@ import type {
 } from '@deepseek-ai/dsh-attachment'
 import type { Branded } from '@deepseek-ai/dsh-brand'
 import type { LlmAttemptId, MessageId } from '@deepseek-ai/dsh-llm/brand'
-import type { TextBlock } from '@deepseek-ai/dsh-llm'
+import type { LlmModelPricing, TextBlock } from '@deepseek-ai/dsh-llm'
 import type { SessionId, SessionSeqCursor } from '@deepseek-ai/dsh-session/types'
 import type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/types'
 import type { Principal } from '@deepseek-ai/dsh-typert-protocol'
@@ -139,6 +139,8 @@ export interface ModelCatalogModel {
   readonly name: string
   readonly description?: string
   readonly reasoning?: ModelReasoning
+  /** Published token prices for this route; absent means spend cannot be calculated. */
+  readonly pricing?: LlmModelPricing
 }
 
 /** One provider and its successfully loaded model catalog. */
