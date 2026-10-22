@@ -57,6 +57,8 @@ The command derives the next build version (`<product version>.<date>.<index>`, 
 
 The build needs `apps/desktop/.env.windows` to declare `DSH_DESKTOP_APP_ID=com.deepseek.harness` and `DSH_DESKTOP_AUTO_UPDATE_ENV=fife`; the script creates that file when it is missing and refuses to rewrite one that exists. The feed URL defaults to this repository's `releases/latest/download` address and can be overridden with `FIFE_DESKTOP_UPDATE_FEED_URL` or `--feed-url`. The fife deployment skips signing and the mandatory-update policy service, so unsigned builds carry a working update source with checksum-only verification.
 
+Local packaging takes eleven to thirteen minutes and cannot resume, so a cancelled run always starts over. Prefer the **fife Desktop release** workflow (`.github/workflows/fife-desktop-release.yml`) instead: dispatch it from `master` with `confirm: publish`, and a `windows-latest` runner installs the workspace, runs `fife-release.mjs`, and publishes the same three assets while this machine stays free. The job needs only the workflow's own `GITHUB_TOKEN` (`contents: write`); no signing or update secrets exist. Use the local command for offline work or when the runner is unavailable, and let it finish when you do.
+
 Diagnose an update problem in this order:
 
 1. The app's **View technical details** names the resolved source, channel, installed version, configuration path, and the updater error.
