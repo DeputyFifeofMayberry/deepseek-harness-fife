@@ -1,0 +1,604 @@
+{
+  "pack": "mayberry",
+  "pack_version": "0.2.0",
+  "skills": [
+    "mayberry",
+    "mayberry-onboard",
+    "mayberry-change",
+    "mayberry-implement",
+    "mayberry-verify",
+    "mayberry-status",
+    "mayberry-handoff"
+  ],
+  "files": [
+    {
+      "path": ".mayberry/config.yaml",
+      "sha256": "e07c5fe1f0a720fea7599d06c5c22a225bf7c4479c32cd1db3b9f02093ea23bf",
+      "baseline_sha256": "e07c5fe1f0a720fea7599d06c5c22a225bf7c4479c32cd1db3b9f02093ea23bf",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/state.yaml",
+      "sha256": "f59af0967411b44d5bd42838baaf996935ffc5d444f476ea88ef395c0a28f5ba",
+      "baseline_sha256": "f59af0967411b44d5bd42838baaf996935ffc5d444f476ea88ef395c0a28f5ba",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry/SKILL.md",
+      "sha256": "f107b6c4c6628c765b7cbc5fb916c7f45e0e05259a62c1ac0b14c80da30b708f",
+      "baseline_sha256": "f107b6c4c6628c765b7cbc5fb916c7f45e0e05259a62c1ac0b14c80da30b708f",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-onboard/SKILL.md",
+      "sha256": "084ac2b9d42059ef2da9eb0e3cfffad26a4b8d4b4006f911d464ec9781e5459a",
+      "baseline_sha256": "084ac2b9d42059ef2da9eb0e3cfffad26a4b8d4b4006f911d464ec9781e5459a",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-change/SKILL.md",
+      "sha256": "d234062b34bb8f8a7e06bad64f24da1a19489e8a80b56b2ce442ef187dd1a7b6",
+      "baseline_sha256": "d234062b34bb8f8a7e06bad64f24da1a19489e8a80b56b2ce442ef187dd1a7b6",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-implement/SKILL.md",
+      "sha256": "ddcc45de821c69918e728cf9132f709adf7bbf9456026c42cf532b468a3edb0f",
+      "baseline_sha256": "ddcc45de821c69918e728cf9132f709adf7bbf9456026c42cf532b468a3edb0f",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-verify/SKILL.md",
+      "sha256": "ccdc620d36d45ebf840999ca85485cd01ae98af2458a3f70ed2c3472ac07d8a2",
+      "baseline_sha256": "ccdc620d36d45ebf840999ca85485cd01ae98af2458a3f70ed2c3472ac07d8a2",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-status/SKILL.md",
+      "sha256": "f4f7830725879a26abb77b5c763e9c0f345abb20e3b253c11e860a70a5bf0daf",
+      "baseline_sha256": "f4f7830725879a26abb77b5c763e9c0f345abb20e3b253c11e860a70a5bf0daf",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".agents/skills/mayberry-handoff/SKILL.md",
+      "sha256": "9c0113e9dceadb86a441c64b30e839b337a78697c1bc6239ea73e83193f23562",
+      "baseline_sha256": "9c0113e9dceadb86a441c64b30e839b337a78697c1bc6239ea73e83193f23562",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W01_Project_Idea_and_Problem_Canvas.md",
+      "sha256": "5f79823b685a64d7e6ea44f5c1f8d84e570c34cceab63d414f0a92bd36189035",
+      "baseline_sha256": "5f79823b685a64d7e6ea44f5c1f8d84e570c34cceab63d414f0a92bd36189035",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W02_Research_Gate_and_Assumption_Test.md",
+      "sha256": "2cde164bd8e4fd2b4beae7fddd7f447ebee4c484c2a313ec100b2f2e3c3412d3",
+      "baseline_sha256": "2cde164bd8e4fd2b4beae7fddd7f447ebee4c484c2a313ec100b2f2e3c3412d3",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W03_Product_Contract_Requirements_and_MVP.md",
+      "sha256": "a1a031f076fae77193dec30fbe3a52405688147549c0f5e0f5236a388d609767",
+      "baseline_sha256": "a1a031f076fae77193dec30fbe3a52405688147549c0f5e0f5236a388d609767",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W04_Project_X-Ray_Architecture_and_Data_Flow.md",
+      "sha256": "7d8284e530d67915c686a3873f46f48c063718e83b60cdf7be1ca9bce591aa6f",
+      "baseline_sha256": "7d8284e530d67915c686a3873f46f48c063718e83b60cdf7be1ca9bce591aa6f",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W05_Dependency_Inventory.md",
+      "sha256": "5854f78cb718efa720c52dd45a9f1602f20ae98e0eea90418c3c6bdd5773cb71",
+      "baseline_sha256": "5854f78cb718efa720c52dd45a9f1602f20ae98e0eea90418c3c6bdd5773cb71",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W06_Risk_Assumption_and_Technical_Unknown_Register.md",
+      "sha256": "4f486afe21f9950fb8d857714ef2afd1c31ba1ad4bdb884e526cb7c471b8b756",
+      "baseline_sha256": "4f486afe21f9950fb8d857714ef2afd1c31ba1ad4bdb884e526cb7c471b8b756",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W07_Consequential_Decision_Record_ADR.md",
+      "sha256": "77a941a6a03154a60ba9727d8b70d81667ba71cc0026ccaf7f87ab78900672aa",
+      "baseline_sha256": "77a941a6a03154a60ba9727d8b70d81667ba71cc0026ccaf7f87ab78900672aa",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W08_Roadmap_and_Milestone_Definition.md",
+      "sha256": "04e5e07e400bdf27182fe6a874a83a3e805afc42fcb20d236077994767a7268c",
+      "baseline_sha256": "04e5e07e400bdf27182fe6a874a83a3e805afc42fcb20d236077994767a7268c",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W09_Feature_Change_Brief.md",
+      "sha256": "ba416522e1664cca67ed7c8c4d7d2a8d2950713801a1dbd378164d89a29bb8e8",
+      "baseline_sha256": "ba416522e1664cca67ed7c8c4d7d2a8d2950713801a1dbd378164d89a29bb8e8",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W10_Human_Checkpoint.md",
+      "sha256": "b78b36529fc7a74b484b0c4c9d3ed3224b105e6503ece2da4657dc5bdd9bc3cd",
+      "baseline_sha256": "b78b36529fc7a74b484b0c4c9d3ed3224b105e6503ece2da4657dc5bdd9bc3cd",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W11_Bug_Investigation.md",
+      "sha256": "1e991d7936eebbd636a684a314a17617d02195ea0f4b5355ed727c88892bb4d6",
+      "baseline_sha256": "1e991d7936eebbd636a684a314a17617d02195ea0f4b5355ed727c88892bb4d6",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W12_Root-Cause_and_Prevention_Review.md",
+      "sha256": "8142fc7a776a3e70817934e338305d1a17cf399d58b3cff8eaec1322e084bbe5",
+      "baseline_sha256": "8142fc7a776a3e70817934e338305d1a17cf399d58b3cff8eaec1322e084bbe5",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W13_Test_and_Verification_Plan.md",
+      "sha256": "c4d9bac68ce36712c222deaaf8293a7f74967ded092e79dfd95a633c6c3fd922",
+      "baseline_sha256": "c4d9bac68ce36712c222deaaf8293a7f74967ded092e79dfd95a633c6c3fd922",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W14_Change_Review_Checklist.md",
+      "sha256": "713cf9b68c071e1da255d859e6e1bbf98f922cbc40fc375093386129fb8acde1",
+      "baseline_sha256": "713cf9b68c071e1da255d859e6e1bbf98f922cbc40fc375093386129fb8acde1",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W15_Dependency_Evaluation.md",
+      "sha256": "f190fc97504863568cea48c30574c6ddad7fb8442e43842b9ad2c7b2bb503682",
+      "baseline_sha256": "f190fc97504863568cea48c30574c6ddad7fb8442e43842b9ad2c7b2bb503682",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W16_Security_Escalation_and_Threat_Check.md",
+      "sha256": "657eacfc5883aefc35903739911ebdff74101883b93b0b0e45c4571814d9e664",
+      "baseline_sha256": "657eacfc5883aefc35903739911ebdff74101883b93b0b0e45c4571814d9e664",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W17_Release_Readiness.md",
+      "sha256": "a6ce69f6d1bc4c7772d4fc0a1ae72c82bd5bfa895b345f7ea37fc373006f78bc",
+      "baseline_sha256": "a6ce69f6d1bc4c7772d4fc0a1ae72c82bd5bfa895b345f7ea37fc373006f78bc",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W18_Release_Runbook.md",
+      "sha256": "d3c28a484bede041889a3d8500442a0eb473cb2d133d6c07cbe99c084b6e08d6",
+      "baseline_sha256": "d3c28a484bede041889a3d8500442a0eb473cb2d133d6c07cbe99c084b6e08d6",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W19_Migration_Backup_and_Recovery_Plan.md",
+      "sha256": "1767b5257f0d0fc234ae927423f9dbe08c783c74be5ba22df1577544c3edf614",
+      "baseline_sha256": "1767b5257f0d0fc234ae927423f9dbe08c783c74be5ba22df1577544c3edf614",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W20_Post-Release_and_Incident_Review.md",
+      "sha256": "dfd3b1f991bc786f44c4256dca74b752b23ddebc8177fba40d3ce16c65d4264b",
+      "baseline_sha256": "dfd3b1f991bc786f44c4256dca74b752b23ddebc8177fba40d3ce16c65d4264b",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W21_Periodic_Maintenance_Review.md",
+      "sha256": "5a032cd281decc731e4e8b3bada573fa559718868965b39c0c478a16851cf11c",
+      "baseline_sha256": "5a032cd281decc731e4e8b3bada573fa559718868965b39c0c478a16851cf11c",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W22_Refactor_Replace_Rewrite_or_Leave_It.md",
+      "sha256": "68fdb95776b571be70691e2794689f70a936d371f0769ec8b76bcee3ae8a72f8",
+      "baseline_sha256": "68fdb95776b571be70691e2794689f70a936d371f0769ec8b76bcee3ae8a72f8",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W23_Major_Transition_Deprecation_and_Retirement.md",
+      "sha256": "ec0091da51cd4328f5e69195e1ea830b9fe8c497a7fb67f9129b8609aac24c96",
+      "baseline_sha256": "ec0091da51cd4328f5e69195e1ea830b9fe8c497a7fb67f9129b8609aac24c96",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W24_Project_Status_and_Agent_Session_Handoff.md",
+      "sha256": "80e516b23399bc28dd702aa555b113c8e28549a6029982eaba14cd211ee25183",
+      "baseline_sha256": "80e516b23399bc28dd702aa555b113c8e28549a6029982eaba14cd211ee25183",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W25_Learning_and_Teach-Back_Review.md",
+      "sha256": "9549ae49d591e6a211c5addeb5d1233453d6063ab938a9afa161d3e39e5958ea",
+      "baseline_sha256": "9549ae49d591e6a211c5addeb5d1233453d6063ab938a9afa161d3e39e5958ea",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W26_Completed_Stale_Scan_Example.md",
+      "sha256": "de7212215f65c3c32bdbf1dbccb03a01175d551a486df027360e976766f9d7a0",
+      "baseline_sha256": "de7212215f65c3c32bdbf1dbccb03a01175d551a486df027360e976766f9d7a0",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W27_Actionable_Technical_Debt_Register.md",
+      "sha256": "05c36b94b1f43e43dcba477d59a99f8f45dc9eacadef4cbf6f39ec11355449a3",
+      "baseline_sha256": "05c36b94b1f43e43dcba477d59a99f8f45dc9eacadef4cbf6f39ec11355449a3",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W28_user_flow_interaction_states_and_usability.md",
+      "sha256": "756f3ff7accd94663a2d36252c65503e7e604502c26be40540325bdfd09a61ba",
+      "baseline_sha256": "756f3ff7accd94663a2d36252c65503e7e604502c26be40540325bdfd09a61ba",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W29_data_model_ownership_and_lifecycle.md",
+      "sha256": "eaac895171c217f482603baad6da6315574949669ae74e1cc4a3045590c48f32",
+      "baseline_sha256": "eaac895171c217f482603baad6da6315574949669ae74e1cc4a3045590c48f32",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W30_api_and_integration_contract.md",
+      "sha256": "d4e044fd9af9e827a2f26e232b645e8006fe048489df4761aa277776900ca4e2",
+      "baseline_sha256": "d4e044fd9af9e827a2f26e232b645e8006fe048489df4761aa277776900ca4e2",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W31_outcome_measurement_and_product_decision.md",
+      "sha256": "44dbcb60f6e45d29a0b012f034b932fd41b1f69e04cb0731dbfaae59d5fa75e5",
+      "baseline_sha256": "44dbcb60f6e45d29a0b012f034b932fd41b1f69e04cb0731dbfaae59d5fa75e5",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W32_hosting_environments_and_operational_responsibility.md",
+      "sha256": "4a095938e389ce5f7768422332799ae62acbd41c7defd3e30c3cb2538ba9715f",
+      "baseline_sha256": "4a095938e389ce5f7768422332799ae62acbd41c7defd3e30c3cb2538ba9715f",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W33_ai_feature_contract_and_evaluation.md",
+      "sha256": "8a1a13236d7043533100e52826184488f7ebfd16245f20fd768fa3ba909a6aba",
+      "baseline_sha256": "8a1a13236d7043533100e52826184488f7ebfd16245f20fd768fa3ba909a6aba",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W34_Verification_Operating_Map.md",
+      "sha256": "96244f0e86dab01763116768e2be083a077bc35077deea9176c68af9896e7922",
+      "baseline_sha256": "96244f0e86dab01763116768e2be083a077bc35077deea9176c68af9896e7922",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W35_Installed-Version_and_Upgrade_Plan.md",
+      "sha256": "5f9db226f3eef96abfa01f4294ecad1752895006af8135473e4138f75724499f",
+      "baseline_sha256": "5f9db226f3eef96abfa01f4294ecad1752895006af8135473e4138f75724499f",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/worksheets/W36_Performance_Investigation_Record.md",
+      "sha256": "ea57cd26c1f9c2fcdc1d506e20a32302244fdf343d404efd996cf025e01f314e",
+      "baseline_sha256": "ea57cd26c1f9c2fcdc1d506e20a32302244fdf343d404efd996cf025e01f314e",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P01.md",
+      "sha256": "3ace017fbe01c4766f1373234a9040dfa7e5965c276b3aa3f32f7b2675d13174",
+      "baseline_sha256": "3ace017fbe01c4766f1373234a9040dfa7e5965c276b3aa3f32f7b2675d13174",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P02.md",
+      "sha256": "b99f920ac0dee380e668b73945854180443755bb8e33b815f0b0788da9e25ec2",
+      "baseline_sha256": "b99f920ac0dee380e668b73945854180443755bb8e33b815f0b0788da9e25ec2",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P03.md",
+      "sha256": "c5daf24cde8785beece7bc44e43326ab593776f4c58bf91057b3823f4ce8786d",
+      "baseline_sha256": "c5daf24cde8785beece7bc44e43326ab593776f4c58bf91057b3823f4ce8786d",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P04.md",
+      "sha256": "085eb0c3240b29a88d197f9784a61c047d580215322c3ed11e84cb21bddb79e1",
+      "baseline_sha256": "085eb0c3240b29a88d197f9784a61c047d580215322c3ed11e84cb21bddb79e1",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P05.md",
+      "sha256": "ddb6a0418ac345a6c91645fb7133f17f9f798e20ee183d6681ee78409d53b297",
+      "baseline_sha256": "ddb6a0418ac345a6c91645fb7133f17f9f798e20ee183d6681ee78409d53b297",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P06.md",
+      "sha256": "32556fa3d22e979cce7eaa6b3895a46ee071281105f32af129d59fc5d0c6a868",
+      "baseline_sha256": "32556fa3d22e979cce7eaa6b3895a46ee071281105f32af129d59fc5d0c6a868",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P07.md",
+      "sha256": "7add5141ba37c6c8bae52f3f5e18247f0f57697aff9fc8ebb6be4d97339284e5",
+      "baseline_sha256": "7add5141ba37c6c8bae52f3f5e18247f0f57697aff9fc8ebb6be4d97339284e5",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P08.md",
+      "sha256": "ea9433ec6b5e4c13a342a2eab6ec22778dedecd7ab5197f2d766b59414f0767b",
+      "baseline_sha256": "ea9433ec6b5e4c13a342a2eab6ec22778dedecd7ab5197f2d766b59414f0767b",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P09.md",
+      "sha256": "434d7425d262077b8f8c3c1ccb70bc62b24b3e127d4da344d35b08d4c53843ea",
+      "baseline_sha256": "434d7425d262077b8f8c3c1ccb70bc62b24b3e127d4da344d35b08d4c53843ea",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P10.md",
+      "sha256": "d2f438716e57a8bc34d004f17057865c3ac59db509a89fa66121b44562253848",
+      "baseline_sha256": "d2f438716e57a8bc34d004f17057865c3ac59db509a89fa66121b44562253848",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P11.md",
+      "sha256": "4beae9b0cb2c9d3fa86ddaa7d864c1bfed5a843aa511d45a9b610f3a63cb3a92",
+      "baseline_sha256": "4beae9b0cb2c9d3fa86ddaa7d864c1bfed5a843aa511d45a9b610f3a63cb3a92",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P12.md",
+      "sha256": "4a7ecf70365201e2a56deb6d211edc8c4c217a7f7900cf9abd21ec24cbc3da2e",
+      "baseline_sha256": "4a7ecf70365201e2a56deb6d211edc8c4c217a7f7900cf9abd21ec24cbc3da2e",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P13.md",
+      "sha256": "e5f48709e2bc9ba0c266ccc7e511a639de0530898056abb26e061f2eff7fea18",
+      "baseline_sha256": "e5f48709e2bc9ba0c266ccc7e511a639de0530898056abb26e061f2eff7fea18",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P14.md",
+      "sha256": "06da29f539266ca59e1f74a83dca5bdff083cc2ee16a61c749fc6613b5fcccb5",
+      "baseline_sha256": "06da29f539266ca59e1f74a83dca5bdff083cc2ee16a61c749fc6613b5fcccb5",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P15.md",
+      "sha256": "c82bf47eb6bae31059f085b756f09ae7fa457de09ba9ed9a45a80a70be271ffb",
+      "baseline_sha256": "c82bf47eb6bae31059f085b756f09ae7fa457de09ba9ed9a45a80a70be271ffb",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P16.md",
+      "sha256": "2964d732c28df50f8e26c4fc101d1e59445c64d64258b71a644ad06b60260745",
+      "baseline_sha256": "2964d732c28df50f8e26c4fc101d1e59445c64d64258b71a644ad06b60260745",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P17.md",
+      "sha256": "8fe1d2cb4c84afd4e948d22d6c995791b7fe4598a7846a7c57c8d01624de69f8",
+      "baseline_sha256": "8fe1d2cb4c84afd4e948d22d6c995791b7fe4598a7846a7c57c8d01624de69f8",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P18.md",
+      "sha256": "f59c7dba68a254caed0cb25c9272fe99578670509c64d560e3bf930bd1535dff",
+      "baseline_sha256": "f59c7dba68a254caed0cb25c9272fe99578670509c64d560e3bf930bd1535dff",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P19.md",
+      "sha256": "7cbb61e161956cf7bc169a3787999e8f0fa66943b829a3622cab3c01887e2f0a",
+      "baseline_sha256": "7cbb61e161956cf7bc169a3787999e8f0fa66943b829a3622cab3c01887e2f0a",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P20.md",
+      "sha256": "7d3e7d9a142e5403afd01c995a2daac2e22f71c557c3ab2f138898fd08bf7577",
+      "baseline_sha256": "7d3e7d9a142e5403afd01c995a2daac2e22f71c557c3ab2f138898fd08bf7577",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P21.md",
+      "sha256": "6c8ee8dc7104775b45c43d8240f86dc3e2d84e7a7b6993338cb49b8472098c75",
+      "baseline_sha256": "6c8ee8dc7104775b45c43d8240f86dc3e2d84e7a7b6993338cb49b8472098c75",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P22.md",
+      "sha256": "cd883d592b6d37b277dfdb8744639c24b6369d46251ad4a33603e6fabf59ad76",
+      "baseline_sha256": "cd883d592b6d37b277dfdb8744639c24b6369d46251ad4a33603e6fabf59ad76",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P23.md",
+      "sha256": "b3a1dc27a0aff2d3cff882eacbbd670275178987bae9c116af2d85179555527e",
+      "baseline_sha256": "b3a1dc27a0aff2d3cff882eacbbd670275178987bae9c116af2d85179555527e",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P24.md",
+      "sha256": "93b065b349d6476dcdaac0538e88fa2c58af50e715a247ddfdcb77f563ec245a",
+      "baseline_sha256": "93b065b349d6476dcdaac0538e88fa2c58af50e715a247ddfdcb77f563ec245a",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P25.md",
+      "sha256": "629850b7121d7362b2b4da3befd3fdbdf6355b1d91b3ab576a9171458e6fd8ed",
+      "baseline_sha256": "629850b7121d7362b2b4da3befd3fdbdf6355b1d91b3ab576a9171458e6fd8ed",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P26.md",
+      "sha256": "8e070d84027ab22e5248e547faab5507304e687b74353319dd3f7f6f414a5346",
+      "baseline_sha256": "8e070d84027ab22e5248e547faab5507304e687b74353319dd3f7f6f414a5346",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P27.md",
+      "sha256": "c5093740541dafe60e47fa0f652d396e410d53681fe6f90af275de39e95c7d3d",
+      "baseline_sha256": "c5093740541dafe60e47fa0f652d396e410d53681fe6f90af275de39e95c7d3d",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P28.md",
+      "sha256": "07df0f5ceb61378d533cf8525d9e2f8e1e125dc15470ba6b0fb4051e5be90705",
+      "baseline_sha256": "07df0f5ceb61378d533cf8525d9e2f8e1e125dc15470ba6b0fb4051e5be90705",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P29.md",
+      "sha256": "d745607522860b3aa315ba8d571b4f030608235f80e3f1f8748b6d85d60beb33",
+      "baseline_sha256": "d745607522860b3aa315ba8d571b4f030608235f80e3f1f8748b6d85d60beb33",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P30.md",
+      "sha256": "6b708dd38a34a7c78fe5a0ad13ab2f12a3569437bfbfcd6e89ba8b4d769fbe68",
+      "baseline_sha256": "6b708dd38a34a7c78fe5a0ad13ab2f12a3569437bfbfcd6e89ba8b4d769fbe68",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P31.md",
+      "sha256": "12b24ab0bf9cbd7b3bd866021d88004a024af3afd479842583a467ad0d178498",
+      "baseline_sha256": "12b24ab0bf9cbd7b3bd866021d88004a024af3afd479842583a467ad0d178498",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P32.md",
+      "sha256": "531545c089f738daacb8e603539e643b9e2d20834a7c05fe3b635930a1aec674",
+      "baseline_sha256": "531545c089f738daacb8e603539e643b9e2d20834a7c05fe3b635930a1aec674",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P33.md",
+      "sha256": "2c8cc0128f09936b72cb503fb78644f43b0584a123e41bc87bcd8375d392f266",
+      "baseline_sha256": "2c8cc0128f09936b72cb503fb78644f43b0584a123e41bc87bcd8375d392f266",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P34.md",
+      "sha256": "6a73afe9762f2093c2765b2bb5a6cba0157043b481aa47264d156c913ed3c093",
+      "baseline_sha256": "6a73afe9762f2093c2765b2bb5a6cba0157043b481aa47264d156c913ed3c093",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P35.md",
+      "sha256": "624d08f5a4c1c1c316834ab2b9723d3738f2d0e547e551e09f423ee446c05471",
+      "baseline_sha256": "624d08f5a4c1c1c316834ab2b9723d3738f2d0e547e551e09f423ee446c05471",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P36.md",
+      "sha256": "cabd1092dd45b32bc37dbe0a55de5337e758d1f41e45f07291348bac6a284474",
+      "baseline_sha256": "cabd1092dd45b32bc37dbe0a55de5337e758d1f41e45f07291348bac6a284474",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P37.md",
+      "sha256": "5f52198e3da758425a9c840320fcb6efbf06798e6e0843ef27edc05dba77e151",
+      "baseline_sha256": "5f52198e3da758425a9c840320fcb6efbf06798e6e0843ef27edc05dba77e151",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P38.md",
+      "sha256": "98fe2ed8861364cf093c0de252a9d5a0fffa4e3c01094680c08ea454030a220e",
+      "baseline_sha256": "98fe2ed8861364cf093c0de252a9d5a0fffa4e3c01094680c08ea454030a220e",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P39.md",
+      "sha256": "f689c7f51ab08c45106f5c4dcb38e4c976f7b420bf41b53ffa3838fb4db7d2a2",
+      "baseline_sha256": "f689c7f51ab08c45106f5c4dcb38e4c976f7b420bf41b53ffa3838fb4db7d2a2",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P40.md",
+      "sha256": "cd19221ee61aca0ae19a326e4dffa46dd457531ee530e0f6080de012a362909e",
+      "baseline_sha256": "cd19221ee61aca0ae19a326e4dffa46dd457531ee530e0f6080de012a362909e",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/prompts/P41.md",
+      "sha256": "7fb0e0a09091e86e48d2f4da4de181e5f9c45f6689b6678827dfb85f67335139",
+      "baseline_sha256": "7fb0e0a09091e86e48d2f4da4de181e5f9c45f6689b6678827dfb85f67335139",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/_voice/plain/VOICE.md",
+      "sha256": "f7f50c1b8258b357bfcf294f1edf9c84eb896fd12e6c656f7683daf3c691a972",
+      "baseline_sha256": "f7f50c1b8258b357bfcf294f1edf9c84eb896fd12e6c656f7683daf3c691a972",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/DECISION_AIDS.md",
+      "sha256": "667c9912239ff045a2ea959c986a94d7a030896a43c60aa5dac46113de940f66",
+      "baseline_sha256": "667c9912239ff045a2ea959c986a94d7a030896a43c60aa5dac46113de940f66",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/QUICK_REFERENCE_CARDS.md",
+      "sha256": "43c6b533485d5fb2fa24c62e6c28914417a2b2b894c38d96e39d58f2ac6d6183",
+      "baseline_sha256": "43c6b533485d5fb2fa24c62e6c28914417a2b2b894c38d96e39d58f2ac6d6183",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/STEPS.md",
+      "sha256": "5999b0a7a5fffeb969672076c6261e5f07bb8e7012274be508f975a1824392b1",
+      "baseline_sha256": "5999b0a7a5fffeb969672076c6261e5f07bb8e7012274be508f975a1824392b1",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/RULES.md",
+      "sha256": "89e2c0c0ebb25fed07885d38d3a28924915c8c5e11add7a50d5e0fe91a585efe",
+      "baseline_sha256": "89e2c0c0ebb25fed07885d38d3a28924915c8c5e11add7a50d5e0fe91a585efe",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/mayberry-api.js",
+      "sha256": "875744ebdb22d281bf5917a82dd62b2b504136938792434364fcbc94b4e4722b",
+      "baseline_sha256": "875744ebdb22d281bf5917a82dd62b2b504136938792434364fcbc94b4e4722b",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/util-state.js",
+      "sha256": "ad5638c3a945c488cc6cd80dd5e0d56544cc5cf13b321fcfe14c2350e31218c7",
+      "baseline_sha256": "ad5638c3a945c488cc6cd80dd5e0d56544cc5cf13b321fcfe14c2350e31218c7",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/util-ledger.js",
+      "sha256": "a171917e31c748afd2ecb5e663d3a1d536e13a41c14531ae3f6d276176975e6d",
+      "baseline_sha256": "a171917e31c748afd2ecb5e663d3a1d536e13a41c14531ae3f6d276176975e6d",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/util-yaml.js",
+      "sha256": "f9fbcd829d187654378ad3e18eaf395d3ed148df80dd6823ca893b77e138b43c",
+      "baseline_sha256": "f9fbcd829d187654378ad3e18eaf395d3ed148df80dd6823ca893b77e138b43c",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/util-transitions.js",
+      "sha256": "1e8ef52715f2d5e433a9ee01ef05af5cede6a8cff0b08651966e8d10dfd54dc5",
+      "baseline_sha256": "1e8ef52715f2d5e433a9ee01ef05af5cede6a8cff0b08651966e8d10dfd54dc5",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/scripts/verify.js",
+      "sha256": "62fdd2496768d68f4599b2136ed81efb0360545d1093384368302ca3de6ff734",
+      "baseline_sha256": "62fdd2496768d68f4599b2136ed81efb0360545d1093384368302ca3de6ff734",
+      "ownership": "mayberry"
+    },
+    {
+      "path": ".mayberry/ledger.jsonl",
+      "sha256": "149ed291b7ae303ed67cf8f1bdb10f0705d1881df10540a5279d7c776ec69b0b",
+      "baseline_sha256": "149ed291b7ae303ed67cf8f1bdb10f0705d1881df10540a5279d7c776ec69b0b",
+      "ownership": "mayberry"
+    }
+  ],
+  "installed_at": "2026-10-22T12:16:45.937Z"
+}

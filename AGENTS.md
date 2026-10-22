@@ -163,6 +163,7 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 - **Labels:** one PR `kind/*`, all material `area/*`, and native Issue Type ([taxonomy](.agents/notes/implemented/process/2026-08-08-unified-github-label-taxonomy.md)).
 - TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
 - Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
+- **Mayberry pack:** generated worksheets, X-Ray, and handoff go under `.mayberry/instances/`; repository `docs/` remains canonical and additions there need bilingual pairs ([integration](.mayberry/INTEGRATION.md)). Where a Mayberry skill or `STEPS.md` shows `docs/`, follow repository instructions and write generated records under `.mayberry/instances/` instead.
 
 ## Defensive patterns
 
