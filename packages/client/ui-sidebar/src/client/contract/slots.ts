@@ -3,9 +3,9 @@
  * layout-owned `sidebar` slot, plus the holes this shell declares. The shell
  * owns column geometry, the brand row, New Session, and global panel rows;
  * everything between the workspace section header and the list bottom is the
- * `sidebar.workspaces` registrant's (ui-workspace), and the foot is the
- * `sidebar.settings` registrant's (ui-settings), followed by optional footer
- * actions in `sidebar.footer.action`.
+ * `sidebar.workspaces` registrant's (ui-workspace), and the foot holds an
+ * optional `sidebar.footer.panel` summary above the `sidebar.settings`
+ * registrant's (ui-settings) and optional `sidebar.footer.action` entries.
  */
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { ObservableSnapshot } from '@deepseek-ai/dsh-client-store'
@@ -46,6 +46,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * The sidebar passes only its column state — it holds no settings state.
      */
     'sidebar.settings': { kind: 'single'; scope: 'root'; owner: SidebarSettingsOwnerProps }
+    /**
+     * Optional summary panel above the Settings row and footer actions.
+     * Declared by this package's 'sidebar' entry; a usage or account surface
+     * registers one occupant here, and the shell passes only its column state.
+     */
+    'sidebar.footer.panel': { kind: 'single'; scope: 'root'; owner: SidebarFooterPanelOwnerProps }
     /**
      * Optional actions beside Settings at the sidebar foot. Declared by this
      * package's 'sidebar' entry; each action receives only the column state.
@@ -110,6 +116,12 @@ export interface SidebarFooterActionOwnerProps {
   wide: boolean
 }
 
+/** Owner share of the summary panel above the Settings row and footer actions. */
+export interface SidebarFooterPanelOwnerProps {
+  /** Whether the sidebar renders wide content (false = 56px rail). */
+  wide: boolean
+}
+
 /**
  * Registrant-private injected share (arrives via the register inject
  * factory). The renderer binds the panel metadata source to usePanels.
@@ -143,6 +155,7 @@ export type SidebarRootComponentProps =
     | 'sidebar.panellist'
     | 'sidebar.workspaces'
     | 'sidebar.settings'
+    | 'sidebar.footer.panel'
     | 'sidebar.footer.action'
   >
   & InjectFace<SidebarRootInjected> & PropsLocale<'sidebar'>

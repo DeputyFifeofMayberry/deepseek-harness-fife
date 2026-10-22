@@ -578,6 +578,7 @@
 }
 
 .settingsArea,
+.panelArea,
 .footerActions {
   flex: none;
   min-width: 0;
@@ -593,6 +594,7 @@
 }
 
 .collapsed .settingsArea,
+.collapsed .panelArea,
 .collapsed .footerActions {
   display: flex;
   justify-content: center;

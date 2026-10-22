@@ -83,6 +83,7 @@ export function apply(ctx: ClientContext): void {
       'sidebar.panellist': { kind: 'list', scope: 'root' },
       'sidebar.workspaces': { kind: 'single', scope: 'root' },
       'sidebar.settings': { kind: 'single', scope: 'root' },
+      'sidebar.footer.panel': { kind: 'single', scope: 'root' },
       'sidebar.footer.action': { kind: 'list', scope: 'root' },
     },
     inject: injectProps,

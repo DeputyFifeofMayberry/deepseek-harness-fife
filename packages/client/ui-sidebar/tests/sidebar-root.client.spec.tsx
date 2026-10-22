@@ -7,7 +7,7 @@ import { Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { allowAllAccess, makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
 import type { ReactNode } from 'react'
 import type {
-  SidebarFooterActionOwnerProps, SidebarRootComponentProps, SidebarSectionOwnerProps,
+  SidebarFooterActionOwnerProps, SidebarFooterPanelOwnerProps, SidebarRootComponentProps, SidebarSectionOwnerProps,
   SidebarSettingsOwnerProps,
 } from '../src/client/contract/slots.ts'
 import { HeaderLeadingControls, type HeaderLeadingControlsProps } from '../src/client/HeaderLeadingControls.tsx'
@@ -45,6 +45,7 @@ function mountShell({ collapsed = false, width = 300, shortcuts = [] }: {
   let regionOwner: SidebarSectionOwnerProps | undefined
   let settingsOwner: SidebarSettingsOwnerProps | undefined
   let footerActionOwner: SidebarFooterActionOwnerProps | undefined
+  let footerPanelOwner: SidebarFooterPanelOwnerProps | undefined
   const brandMark = <span data-testid="custom-brand-mark">M</span>
   const brandName = <span data-testid="custom-brand-name">Custom Brand</span>
   let current = { collapsed, width }
@@ -71,6 +72,10 @@ function mountShell({ collapsed = false, width = 300, shortcuts = [] }: {
           footerActionOwner = owner
           return <div data-testid="footer-action-seat" data-wide={owner.wide} />
         }
+        if (key === 'sidebar.footer.panel') {
+          footerPanelOwner = owner
+          return <div data-testid="footer-panel-seat" data-wide={owner.wide} />
+        }
         regionOwner = owner as SidebarSectionOwnerProps
         return <div data-testid="region" data-wide={owner.wide} />
       }) as SidebarRootComponentProps['renderSlot']}
@@ -91,6 +96,10 @@ function mountShell({ collapsed = false, width = 300, shortcuts = [] }: {
     footerActionOwner: () => {
       if (footerActionOwner === undefined) throw new Error('footer action owner not rendered')
       return footerActionOwner
+    },
+    footerPanelOwner: () => {
+      if (footerPanelOwner === undefined) throw new Error('footer panel owner not rendered')
+      return footerPanelOwner
     },
     rerender(next: Partial<typeof current>) {
       current = { ...current, ...next }
@@ -194,9 +203,16 @@ describe('SidebarRoot shell', () => {
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {
     const b = mountShell()
     expect(b.regionOwner().wide).toBe(true)
-    // The settings seat rides the same wide flag (ui-settings renders the row).
+    // The settings and footer seats ride the same wide flag (ui-settings renders the row).
     expect(b.settingsOwner().wide).toBe(true)
     expect(b.footerActionOwner().wide).toBe(true)
+    expect(b.footerPanelOwner().wide).toBe(true)
+    // The summary panel sits above the footer actions and the Settings row.
+    const panel = screen.getByTestId('footer-panel-seat')
+    const action = screen.getByTestId('footer-action-seat')
+    const settings = screen.getByTestId('settings-seat')
+    expect(panel.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(action.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     // Expanded: the request is a no-op (no accidental collapse).
     b.regionOwner().expandSidebar()
     expect(b.toggleSidebar).not.toHaveBeenCalled()
@@ -212,6 +228,7 @@ describe('SidebarRoot shell', () => {
     b.rerender({})
     expect(b.regionOwner().wide).toBe(false)
     expect(b.footerActionOwner().wide).toBe(false)
+    expect(b.footerPanelOwner().wide).toBe(false)
     expect(screen.getByTestId('region')).toBeTruthy()
     b.regionOwner().expandSidebar()
     expect(b.toggleSidebar).toHaveBeenCalledOnce()
