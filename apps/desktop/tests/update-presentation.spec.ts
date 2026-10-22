@@ -15,6 +15,13 @@ it('records visible ordinary-update states without authorizing downloads or inst
   await expect(JSON.stringify(states, null, 2) + '\n').toMatchFileSnapshot('./expected/update-status-zh.json')
 })
 
+it('publishes the unavailable reason without a failure classification', () => {
+  expect(presentDesktopUpdate({ phase: 'unavailable', reason: 'development', technicalDetails: 'desktop update: source=development' }))
+    .toEqual({ phase: 'unavailable', reason: 'development' })
+  expect(presentDesktopUpdate({ phase: 'unavailable', reason: 'missing-configuration' }))
+    .toEqual({ phase: 'unavailable', reason: 'missing-configuration' })
+})
+
 it('keeps raw diagnostics out of error tooltips in both locales', () => {
   for (const messages of [en, zh]) {
     for (const failedOperation of ['check', 'download', 'install'] as const) {

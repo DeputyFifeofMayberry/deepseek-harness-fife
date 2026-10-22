@@ -37,8 +37,11 @@ export const DESKTOP_IPC = {
 /** Desktop release update state rendered by desktop-owned UI. */
 export type DesktopUpdatePreparationFailureKind = 'stop-failed' | 'tasks-changed' | 'tasks-unavailable'
 
+/** Structural reason no update feed can be read; neither is a failed check. */
+export type DesktopUpdateUnavailableReason = 'development' | 'missing-configuration'
+
 export interface DesktopUpdateState {
-  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error'
+  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error' | 'unavailable'
   readonly version?: string
   readonly message?: string
   /** Main-owned diagnostics without subprocess output or credentials; hidden until expanded. */
@@ -47,6 +50,8 @@ export interface DesktopUpdateState {
   readonly failedOperation?: 'check' | 'download' | 'install'
   /** Main-owned preparation cause; UI wording is selected by the active locale. */
   readonly preparationFailure?: DesktopUpdatePreparationFailureKind
+  /** Present only with the unavailable phase; the shell never treats it as a failure. */
+  readonly reason?: DesktopUpdateUnavailableReason
 }
 
 /** Classified failure copy selected by the Web locale without exposing raw updater diagnostics. */
@@ -67,6 +72,8 @@ export interface DesktopUpdatePresentation {
   readonly version?: string
   readonly percent?: number
   readonly failure?: DesktopUpdateFailureKind
+  /** Present only with the unavailable phase. */
+  readonly reason?: DesktopUpdateUnavailableReason
 }
 
 /** Activity the product renderer reports for native background attention. */

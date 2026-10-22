@@ -14,10 +14,12 @@ export type DesktopUpdateFailureKind =
 
 /** Public semantic preload fields consumed by the settings row. */
 export interface DesktopUpdatePresentation {
-  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error'
+  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error' | 'unavailable'
   readonly version?: string
   readonly percent?: number
   readonly failure?: DesktopUpdateFailureKind
+  /** Structural reason no feed exists; present only with the unavailable phase. */
+  readonly reason?: 'development' | 'missing-configuration'
 }
 
 /** Optional carrier API; it cannot select artifacts or authorize installation. */
