@@ -40,6 +40,8 @@ export class AcpModelControl {
   constructor(
     private readonly llm: LlmRuntime,
     initial: ModelSelection | undefined,
+    /** Called after a successful config mutation so the owner can record it durably. */
+    private readonly onSelected?: (selection: ModelSelection) => void,
   ) {
     this.selected = initial
     const getCurrent = (): ModelSelection | undefined => this.turnSelection?.selection ?? this.selected
@@ -111,6 +113,7 @@ export class AcpModelControl {
         if (selected === undefined) throw new AcpModelConfigError(`unknown model option: ${value}`)
         await this.resolveSelection(selected, signal)
         this.selected = selected
+        this.onSelected?.(selected)
       } else if (configId === REASONING_CONFIG_ID) {
         const info = await this.llm.resolveModelInfo(current.provider, current.model, signal)
         const providerDefault = value === PROVIDER_DEFAULT_REASONING_VALUE
@@ -126,6 +129,7 @@ export class AcpModelControl {
           model: current.model,
           ...providerDefault ? {} : { reasoningEffort: ReasoningEffortId(value) },
         }, signal)
+        this.onSelected?.(this.selected)
       } else {
         throw new AcpModelConfigError(`unknown session config option: ${configId}`)
       }

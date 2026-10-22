@@ -4055,7 +4055,7 @@ export interface Config {
 
 - `inject`: `tools` · `subagents` · `systemPrompt` · `sessionProjections`
 - `refs`: [`AgentOptions`](subsystems/core.md)
-- `source`: [`packages/subagent/tool-subagent/src/index.ts:50`](../packages/subagent/tool-subagent/src/index.ts)
+- `source`: [`packages/subagent/tool-subagent/src/index.ts:55`](../packages/subagent/tool-subagent/src/index.ts)
 
 ```ts config-catalog
 /** Config: which registered provider this tool delegates to, plus child defaults. */
@@ -4087,6 +4087,14 @@ export interface Config extends PresetSelectionConfig {
    * the current Host subagent depth setting (default `1`) at each delegation.
    */
   maxDepth?: number | 'provider-managed'
+  /**
+   * Offer the effort-policy delegation fields (`operation`, `verification`,
+   * `inherit_effort`) and stamp `effortOperation`/`effortInherited` on the
+   * child. Off by default so the model-facing schema is unchanged; turning it on
+   * requires the `effort-policy` row enabled in the same composition, and the
+   * first delegation fails loud when it is not.
+   */
+  effortPolicy?: boolean
 }
 
 /** Optional default and model-selectable preset ids for a spawn tool. */
@@ -4754,6 +4762,7 @@ Imported as libraries by other packages; a `cordis.yml` cannot load them.
 | `@deepseek-ai/dsh-cmdline` | — | [`packages/boot/cmdline/src/index.ts`](../packages/boot/cmdline/src/index.ts) |
 | `@deepseek-ai/dsh-cua` | — | [`packages/experimental/cua/src/index.ts`](../packages/experimental/cua/src/index.ts) |
 | `@deepseek-ai/dsh-deque` | — | [`packages/util/deque/src/index.ts`](../packages/util/deque/src/index.ts) |
+| `@deepseek-ai/dsh-effort-policy` | — | [`packages/llm/effort-policy/src/index.ts`](../packages/llm/effort-policy/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-agent-team-profile` | — | [`packages/experimental/agent-team-profile/src/index.ts`](../packages/experimental/agent-team-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-badge-skill-bundle` | — | [`packages/experimental/badge-skill-bundle/src/index.ts`](../packages/experimental/badge-skill-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-browser-use-runtime` | — | [`packages/experimental/browser-use-runtime/src/index.ts`](../packages/experimental/browser-use-runtime/src/index.ts) |

@@ -9,6 +9,8 @@
 
 ```mermaid
 flowchart LR
+  pkg_effort_policy["effort-policy"]
+  svc_effortPolicy["ctx.effortPolicy<br/>Per-request reasoning effort"]
   pkg_experimental_client_ui_cot_translation["experimental-client-ui-cot-translation"]
   svc_cotTranslation["ctx.cotTranslation<br/>Reasoning translation Remote"]
   pkg_experimental_translator["experimental-translator"]
@@ -338,6 +340,7 @@ flowchart LR
   pkg_deepseek_account --> svc_deepseekAccount
   pkg_deepseek_account_platform --> svc_deepseekAccount
   pkg_deepseek_llm_api_extensions --> svc_deepseekLlmApiExtensions
+  pkg_effort_policy --> svc_effortPolicy
   pkg_experimental_agent_team --> svc_agentTeams
   pkg_experimental_api_speech_to_text --> svc_speechController
   pkg_experimental_browser_use_chrome_devtools_mcp --> svc_browserUse
@@ -613,6 +616,7 @@ flowchart LR
 
 | ctx 键 | 角色 | 所属包 | 实现 | 直接消费方 | 配套插件 | 说明 |
 | --- | --- | --- | --- | --- | --- | --- |
+| `ctx.effortPolicy` | `service` | [`effort-policy`](../packages/llm/effort-policy) | - | - | - | 根据操作与验证证据决定每个 Agent 请求的推理强度；默认关闭组合，启用前不写入任何内容。 |
 | `ctx.cotTranslation` | `service` | [`experimental-client-ui-cot-translation`](../packages/experimental/client-ui-cot-translation) | - | - | - | 为展开的思考内容提供有界的 Session 翻译请求，不改变模型可见历史。 |
 | `ctx.translator` | `service` | [`experimental-translator`](../packages/experimental/translator) | - | [`experimental-client-ui-cot-translation`](../packages/experimental/client-ui-cot-translation) | - | 解析 Google 或 Bing 请求，并可选保留统一的实验性 Session 记录。 |
 | `ctx.hmr` | `core` | [`hmr`](../packages/boot/hmr) | - | [`app-boot`](../packages/boot/app-boot) | - | 负责模块和精确配置监听；应用修改共用其队列，自动重载等待应用文件锁。 |

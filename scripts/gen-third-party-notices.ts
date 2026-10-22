@@ -88,6 +88,9 @@ const OVERRIDES: Record<string, { license?: string; repo?: string }> = {
   '@modelcontextprotocol/server-filesystem': { license: 'MIT / Apache-2.0', repo: 'https://github.com/modelcontextprotocol/servers' },
   // No repository field in the published manifest.
   'node-addon-require-builtin': { repo: 'https://www.npmjs.com/package/node-addon-require-builtin' },
+  // Installed from a git tag rather than the registry, so the manifest carries no
+  // `repository`; the tag's repository is the source until the npm release lands.
+  '@mayberry/effort-policy-core': { repo: 'https://github.com/DeputyFifeofMayberry/effort-policy-core' },
   // No `license` field in the published manifest; the tarball's LICENSE.txt is the MIT text.
 }
 

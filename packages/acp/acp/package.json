@@ -53,6 +53,7 @@
     "@deepseek-ai/dsh-agent-loop": "workspace:*",
     "@deepseek-ai/dsh-agent-loop-testkit": "workspace:*",
     "@deepseek-ai/dsh-attachment": "workspace:*",
+    "@deepseek-ai/dsh-effort-policy": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-mcp-client": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",

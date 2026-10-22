@@ -13,7 +13,8 @@ import {
   resolveTargetPolicy,
 } from '@deepseek-ai/dsh-compaction-basic/src/config.ts'
 import type { CompactionResult } from '@deepseek-ai/dsh-compaction'
-import LlmRuntime, { createUserMessage, ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, createSystemMessage, createToolResultMessage, LlmAdapter , createMessage } from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { createUserMessage, ToolCallId, CONTEXT_WINDOW_EXCEEDED_CODE, createSystemMessage, createToolResultMessage, LlmAdapter , createMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import EffortPolicy from '@deepseek-ai/dsh-effort-policy'
 import type { ContextFormed } from '@deepseek-ai/dsh-llm'
 import type {
   ContentBlock,
@@ -1574,6 +1575,63 @@ describe('default one-shot summarizer', () => {
     })
     expect(routedAdapter.lastOptions?.provider).toBe('routed-summary-provider')
     expect(routedAdapter.lastOptions?.model).toBe('routed-summary-model')
+  })
+
+  /** A scripted adapter whose route advertises a reasoning vocabulary. */
+  class ReasoningScriptedAdapter extends ScriptedAdapter {
+    override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+      return {
+        provider,
+        id: model,
+        name: model,
+        reasoning: {
+          efforts: [
+            { id: ReasoningEffortId('off'), name: 'Off' },
+            { id: ReasoningEffortId('low'), name: 'Low' },
+            { id: ReasoningEffortId('high'), name: 'High' },
+            { id: ReasoningEffortId('max'), name: 'Max' },
+          ],
+          defaultEffort: ReasoningEffortId('high'),
+        },
+      }
+    }
+  }
+
+  it('pins summarization to the low level when the effort policy is enabled', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SessionProjectionRegistry)
+    void new TokenMeter(ctx)
+    const adapter = new ReasoningScriptedAdapter([{ type: 'text', text: 'summary' }])
+    ctx.llm.registerAdapter([MODEL], adapter)
+    await ctx.plugin(EffortPolicy, { enabled: true, baseLevel: 'standard', verifiers: [], mutators: [], readOnlyCommands: [], ignoredArgumentKeys: [], infrastructureFailureCodes: [], shellTools: [] })
+    const compact = new ExposedCompactionEngine(ctx, { auto: false })
+    const session = conversation(3)
+    session.append('request/header', {
+      header: { config: { provider: MODEL, model: MODEL } },
+      reason: 'resume',
+    })
+    await compact.runSummarize(promptInput('history'), agent(session))
+    expect(adapter.lastOptions?.reasoningEffort).toBe('low')
+    expect(adapter.lastOptions?.provider).toBe(MODEL)
+  })
+
+  it('leaves summarization at the adapter default when the effort policy is disabled', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    await ctx.plugin(SessionProjectionRegistry)
+    void new TokenMeter(ctx)
+    const adapter = new ReasoningScriptedAdapter([{ type: 'text', text: 'summary' }])
+    ctx.llm.registerAdapter([MODEL], adapter)
+    await ctx.plugin(EffortPolicy, { enabled: false, baseLevel: 'standard', verifiers: [], mutators: [], readOnlyCommands: [], ignoredArgumentKeys: [], infrastructureFailureCodes: [], shellTools: [] })
+    const compact = new ExposedCompactionEngine(ctx, { auto: false })
+    const session = conversation(3)
+    session.append('request/header', {
+      header: { config: { provider: MODEL, model: MODEL } },
+      reason: 'resume',
+    })
+    await compact.runSummarize(promptInput('history'), agent(session))
+    expect(adapter.lastOptions?.reasoningEffort).toBe('high')
   })
 
   it('fails clearly when no complete summarization target can be resolved', async () => {

@@ -16,8 +16,8 @@ import type {
   LlmModelReasoningInfo, LlmProviderInfo, LlmResolvedModelInfo, StreamChunk,
   UserMessage,
 } from '@deepseek-ai/dsh-llm'
-import SessionStore from '@deepseek-ai/dsh-session'
-import type { SessionId } from '@deepseek-ai/dsh-session'
+import SessionStore, { Session, SessionId } from '@deepseek-ai/dsh-session'
+import EffortPolicy from '@deepseek-ai/dsh-effort-policy'
 import type { SessionPromptRequest, SessionRequestId } from '../src/types.ts'
 import { ApiSessionAgentController } from '../src/agent.ts'
 import { buildModelCatalog, hasProviderApiKey } from '../src/catalog.ts'
@@ -561,6 +561,115 @@ describe('Web session model selection', () => {
     })
     expect(currentSelection(ctx, sessionId))
       .toEqual({ provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'max' })
+    await ctx.fiber.dispose()
+  })
+
+  it('hands a picked effort to the policy base instead of competing with it', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    await ctx.plugin(EffortPolicy, {
+      enabled: true,
+      baseLevel: 'standard',
+      verifiers: [],
+      mutators: [],
+      readOnlyCommands: [],
+      infrastructureFailureCodes: [],
+      shellTools: [],
+      ignoredArgumentKeys: ['description'],
+    })
+    const remote = createSessionTestRemote(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      cwd: '/tmp',
+    })
+
+    // An effort outside the three levels is an exact base: written verbatim and
+    // never escalated, so `off` stays `off`.
+    expectValue(await remote.selectModel(request({
+      sessionId,
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+      reasoningEffort: 'off',
+    })))
+    expect(ctx.sessionProjections.stateOf(agent.session, 'effort')).toMatchObject({ exact: 'off' })
+
+    // Every later pick replaces the base the policy reads.
+    expectValue(await remote.selectModel(request({
+      sessionId,
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+      reasoningEffort: 'max',
+    })))
+    expect(ctx.sessionProjections.stateOf(agent.session, 'effort')).toMatchObject({ exact: 'max' })
+
+    // The provider default is the `standard` level, which resolves to whatever
+    // effort the route calls its default and clears the exact base.
+    expectValue(await remote.selectModel(request({
+      sessionId,
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+    })))
+    expect(ctx.sessionProjections.stateOf(agent.session, 'effort')).toEqual({ base: 'standard' })
+    await ctx.fiber.dispose()
+  })
+
+  it('retires a pending pick when its route is acknowledged at any effort', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    const remote = createSessionTestRemote(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      cwd: '/tmp',
+    })
+    expectValue(await remote.selectModel(request({
+      sessionId,
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+      reasoningEffort: 'off',
+    })))
+    expect(ctx.sessionProjections.stateOf(agent.session, 'modelSelection')?.pending)
+      .toMatchObject({ provider: 'deepseek-official', model: 'deepseek-reasoner', reasoningEffort: 'off' })
+
+    // The request runs at the effort the policy chose, not at the pick: the
+    // route is what acknowledges the pick.
+    agent.session.append('request/header', {
+      header: {
+        config: {
+          provider: 'deepseek-official',
+          model: 'deepseek-reasoner',
+          reasoningEffort: ReasoningEffortId('high'),
+        },
+      },
+      reason: 'initial',
+    })
+    expect(ctx.sessionProjections.stateOf(agent.session, 'modelSelection')?.pending).toBeNull()
+    expect(currentSelection(ctx, sessionId)).toEqual({
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+      reasoningEffort: 'high',
+    })
+
+    // A cold replay of the same two records reaches the same durable state.
+    const replayed = Session.create(SessionId('cold-selection'))
+    replayed.append('model/selection', {
+      provider: 'deepseek-official',
+      model: 'deepseek-reasoner',
+      reasoningEffort: ReasoningEffortId('off'),
+    })
+    replayed.append('request/header', {
+      header: {
+        config: {
+          provider: 'deepseek-official',
+          model: 'deepseek-reasoner',
+          reasoningEffort: ReasoningEffortId('high'),
+        },
+      },
+      reason: 'initial',
+    })
+    expect(ctx.sessionProjections.stateOf(replayed, 'modelSelection')).toEqual({
+      lastUsed: {
+        provider: 'deepseek-official',
+        model: 'deepseek-reasoner',
+        reasoningEffort: 'high',
+      },
+      pending: null,
+    })
     await ctx.fiber.dispose()
   })
 

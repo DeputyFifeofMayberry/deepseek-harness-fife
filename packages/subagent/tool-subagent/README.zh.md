@@ -77,6 +77,15 @@ kind: "package-reference"
 
 一次调用需同时提供 `provider` 与 `model`；当配置值、父 agent 值或提供方持有的默认值能提供路由时，也可只提供推理等级。静态的 `provider.agentRouteDefaults` 在存在时构成提供方／模型基线；工具配置与模型字段会在路由相关强度合并和确切路由预检前覆盖它。没有这些默认值的提供方会使用父 agent 最新已记录请求中的兼容值，再使用父级首次请求前的创建选项，并保留配置的 `maxTokens`。更改路由但未显式提供推理等级时，会清除继承的路由自有等级，使所选模型解析自己的默认值。实时 LLM 适配器在创建子 agent 前校验有效路由。目录成员资格只提供建议，因此适配器接受时，模型可以使用未列出的 id。
 
+<a id="routing-child-effort"></a>
+### 为子 agent 路由推理强度
+
+设置 `effortPolicy: true` 后，模型可以声明子 agent 要做什么，并由[推理强度策略](../../llm/effort-policy/README.zh.md)从该操作对应的等级启动子 agent。工具随即公开三个字段：`operation`（`general`、`explore`、`implement`、`plan`、`review` 或 `mechanical`；省略时为 `general`）、`verification` 与 `inherit_effort`。每个子 agent 的 `AgentOptions` 会带上 `effortOperation` 与 `effortInherited`；策略把操作映射为起始等级（`plan`／`review` 为 `deep`，`mechanical` 为 `low`，其余为 `standard`），只有 `inherit_effort` 为真时子 agent 才继承父级当前强度。
+
+仅打开该标志并不够：当服务缺失或被禁用时，首次委派会以错误结果失败，并同时点名工具行（`effortPolicy: true`）与策略行（`effort-policy` 的 `enabled: true`），而不是按子 agent 默认强度静默委派。`operation: mechanical` 要求提供 `verification`，因此最廉价的操作无法在不说明验证方式的情况下被请求；该值只用于校验，不会转发给子 agent。`reasoning_effort` 若为三档等级之一且低于操作的起始等级，会被拒绝并报出最低等级；其他任何被声明的强度会原样作为子 agent 的确切起始强度传入。
+
+这三个字段只在该标志下出现，因此从不启用它的部署会完全保留今天的 schema、继承与子级强度。进程外提供方只复制四个具名路由字段，因此 `effortOperation` 与 `effortInherited` 不会跨越进程边界：这类子 agent 从配置的基准等级启动。
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -138,11 +147,11 @@ kind: "package-reference"
 
 #### 模型看到什么
 
-提供方存在时，以配置的工具名称公开生成的默认 [`subagent` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent)。启用的 Session 策略会添加 `provider`、`model`、`reasoning_effort` 和路由指引；后端必须支持 `agentOptions`。`allowedAgentPresets` 增加 `agent_preset` 枚举和来自 preset 显示描述的引导。上下文继承和继续执行能力决定任务与后续消息的描述。工具限制会同时移除 schema 及其 `tool:<toolName>` 指引 section。
+提供方存在时，以配置的工具名称公开生成的默认 [`subagent` schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-subagent)。启用的 Session 策略会添加 `provider`、`model`、`reasoning_effort` 和路由指引；后端必须支持 `agentOptions`。`allowedAgentPresets` 增加 `agent_preset` 枚举和来自 preset 显示描述的引导。`effortPolicy: true` 增加 `operation`、`verification` 与 `inherit_effort`。上下文继承和继续执行能力决定任务与后续消息的描述。工具限制会同时移除 schema 及其 `tool:<toolName>` 指引 section。
 
 #### Token 影响
 
-每个父级请求支付固定的 schema 成本；LLM 选择增加三个参数，preset 选择增加一个枚举参数和 preset 描述。每个工具实例增加一个 schema 和一个简短的系统提示词 section。
+每个父级请求支付固定的 schema 成本；LLM 选择增加三个参数，强度路由再增加三个，preset 选择增加一个枚举参数和 preset 描述。每个工具实例增加一个 schema 和一个简短的系统提示词 section。
 
 #### KV Cache 影响
 

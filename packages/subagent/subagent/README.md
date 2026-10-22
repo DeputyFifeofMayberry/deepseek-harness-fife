@@ -129,6 +129,8 @@ An independently selected spawn records `agent-preset/selected` before its first
 
 Logs without that selection before the first own descriptor, including historical spawn and fork logs, retain `composeFrom` of the parent's current composition. A header preset id, an inherited selection, or a selection after the descriptor does not opt a child into independent restoration, including a fork with no inherited events. Session and descriptor formats are unchanged. Independent cold resume uses the currently registered preset definition, without preserving an earlier revision across restarts.
 
+The descriptor stores an effort, not an operation: a child created with `effortOperation` restores without it, so a cold-resumed child starts at the configured base level instead of its original operation. `resolveChildAgentOptions` drops the parent's inherited `reasoningEffort` when the delegation sets `effortInherited: false` and names no effort of its own; an explicit effort is kept either way.
+
 ### Ownership and invariants
 
 - **The manager owns accepted work** — unpublished failures roll back; published handles cancel their exact activation and await child-first disposal.

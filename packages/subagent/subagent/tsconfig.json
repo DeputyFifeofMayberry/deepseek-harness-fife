@@ -24,6 +24,9 @@
       "path": "../../core/agent"
     },
     {
+      "path": "../../llm/effort-policy"
+    },
+    {
       "path": "../../llm/llm"
     },
     {

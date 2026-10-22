@@ -129,6 +129,8 @@ kind: "package-reference"
 
 首条自有 descriptor 前没有该选择的日志，包括历史 spawn 与 fork 日志，继续通过 `composeFrom` 加入父方当前组装。header 中的 preset id、继承的选择或 descriptor 之后的选择，都不会让子级采用独立恢复；没有继承事件的 fork 也遵守此规则。Session 与 descriptor 格式不变。独立冷恢复使用当前注册的 preset 定义，不跨重启保留旧代际。
 
+descriptor 保存的是强度而不是操作：以 `effortOperation` 创建的 child 恢复后不再带有它，因此冷恢复的 child 从配置的基准等级启动，而不是其原始操作。当委派设置 `effortInherited: false` 且自身未指定强度时，`resolveChildAgentOptions` 会丢弃父级继承的 `reasoningEffort`；显式指定的强度在两种情况下都会保留。
+
 ### 所有权与不变式
 
 - **管理器拥有已接受工作**——未发布的失败会回滚；已发布句柄取消对应 activation，并等待子级优先释放。

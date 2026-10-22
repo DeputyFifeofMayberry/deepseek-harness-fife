@@ -77,7 +77,7 @@ kind: "package-reference"
 
 即使前一轮已经完成，追加 `turn/start` 或 `turn/end` 失败仍会使提示词请求失败。
 
-会话配置从实时 LLM（大语言模型）服务目录提供不透明的提供方／模型选项，并在确切模型声明推理选项时提供 `reasoning_effort`。提示词会在异步图片准入前快照该选择，并在该轮次的每个模型步骤中固定它；并发选项变更从下一轮次开始生效。ACP 客户端是受信控制器：stdio MCP 条目授权其绝对命令与环境，HTTP 条目授权其绝对 HTTP(S) URL 与 header；初始连接或发现失败会回滚尚未发布的 Agent。不支持的界面会被省略或拒绝：`session/load`、删除、fork、附加目录、SSE（Server-Sent Events）或 ACP 传输 MCP、mode、命令、计划、终端、客户端文件系统操作与 elicitation。
+会话配置从实时 LLM（大语言模型）服务目录提供不透明的提供方／模型选项，并在确切模型声明推理选项时提供 `reasoning_effort`。提示词会在异步图片准入前快照该选择，并在该轮次的每个模型步骤中固定它；并发选项变更从下一轮次开始生效。当强度策略被组合并启用时，被接受的变更还会通过 `setBase` 把强度记录为会话的持久路由基准，因此恢复的会话会保留它，而不是退回最后一次记录的请求。ACP 客户端是受信控制器：stdio MCP 条目授权其绝对命令与环境，HTTP 条目授权其绝对 HTTP(S) URL 与 header；初始连接或发现失败会回滚尚未发布的 Agent。不支持的界面会被省略或拒绝：`session/load`、删除、fork、附加目录、SSE（Server-Sent Events）或 ACP 传输 MCP、mode、命令、计划、终端、客户端文件系统操作与 elicitation。
 
 -----
 

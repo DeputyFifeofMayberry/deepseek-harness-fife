@@ -604,9 +604,25 @@ export class ReactLoopAgent implements Agent {
       preparedCall = await this.loopCtx.llm.prepareCall(proposedConfig, signal)
       config = preparedCall.config
     } catch (error: unknown) {
+      if (!(error instanceof LlmError)) throw error
       // Middleware may serve an unregistered route; terminal dispatch still requires an adapter.
-      if (!(error instanceof LlmError) || error.code !== 'NO_ADAPTER') throw error
-      config = proposedConfig
+      if (error.code === 'NO_ADAPTER') {
+        config = proposedConfig
+      } else if (error.code === 'UNSUPPORTED_REASONING_EFFORT' && proposedConfig.reasoningEffort !== undefined) {
+        // The effort was chosen against an earlier adapter registration (a
+        // policy or middleware resolved it before this bind). Send the request
+        // at the route's own default instead of failing the turn; the logged
+        // header then carries the dispatched effort, not the rejected one.
+        const { reasoningEffort: _rejected, ...withoutEffort } = proposedConfig
+        preparedCall = await this.loopCtx.llm.prepareCall(withoutEffort, signal)
+        config = preparedCall.config
+        this.loopCtx.logger.warn(
+          `agent "${this.id}" dropped unsupported reasoning effort "${proposedConfig.reasoningEffort}" `
+          + `for ${proposedConfig.provider}/${proposedConfig.model}; the route's default applies`,
+        )
+      } else {
+        throw error
+      }
     }
     signal.throwIfAborted()
     return { config, ...preparedCall === undefined ? {} : { preparedCall } }

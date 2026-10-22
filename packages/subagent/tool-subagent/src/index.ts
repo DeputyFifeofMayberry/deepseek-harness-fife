@@ -14,6 +14,11 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { Agent, AgentOptions } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+// Type-only: the delegation operation vocabulary and the `AgentOptions` fields
+// this tool stamps on the child, plus the `ctx.effortPolicy` service type. The
+// policy itself stays optional at runtime and is read through `ctx.get`.
+import type {} from '@deepseek-ai/dsh-effort-policy'
+import type { DelegationOperation } from '@deepseek-ai/dsh-effort-policy/core'
 import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { Session } from '@deepseek-ai/dsh-session'
 import {
@@ -75,6 +80,31 @@ export interface Config extends PresetSelectionConfig {
    * the current Host subagent depth setting (default `1`) at each delegation.
    */
   maxDepth?: number | 'provider-managed'
+  /**
+   * Offer the effort-policy delegation fields (`operation`, `verification`,
+   * `inherit_effort`) and stamp `effortOperation`/`effortInherited` on the
+   * child. Off by default so the model-facing schema is unchanged; turning it on
+   * requires the `effort-policy` row enabled in the same composition, and the
+   * first delegation fails loud when it is not.
+   */
+  effortPolicy?: boolean
+}
+
+/** The operations a delegation may declare, cheapest last. */
+const OPERATIONS: readonly DelegationOperation[] = [
+  'general',
+  'explore',
+  'implement',
+  'plan',
+  'review',
+  'mechanical',
+]
+
+/** Model-facing effort fields, present only when the `effortPolicy` flag is on. */
+interface DelegationEffortRequest {
+  readonly operation?: DelegationOperation
+  readonly verification?: string
+  readonly inherit_effort?: boolean
 }
 
 export const Config: z<Config> = z.object({
@@ -96,6 +126,7 @@ export const Config: z<Config> = z.object({
   agentPreset: z.string().min(1),
   allowedAgentPresets: (z.array(z.string().min(1)).min(1) as z<string[] | undefined>).default(undefined),
   maxDepth: z.union([z.natural().max(Number.MAX_SAFE_INTEGER), z.const('provider-managed' as const)]),
+  effortPolicy: z.boolean().default(false),
 })
 
 /**
@@ -133,6 +164,54 @@ function providerWording(inheritsConversation: boolean): { description: string; 
     promptDescription:
       'The complete, self-contained task for the subagent. It does not share this '
       + 'conversation\'s context, so include everything it needs.',
+  }
+}
+
+/**
+ * Read the composed effort policy or fail loud, naming both rows that must
+ * agree. A flag without its service would otherwise delegate at whatever effort
+ * the child defaults to, silently ignoring the deployment's routing.
+ * @param ctx - context that composes the tool and, when enabled, the policy.
+ * @param toolName - model-facing tool name reported in the failure.
+ * @returns the enabled policy service.
+ * @throws when the policy is absent or disabled.
+ */
+function requireEffortPolicy(ctx: Context, toolName: string): Context['effortPolicy'] {
+  const policy = ctx.get('effortPolicy')
+  if (policy !== undefined && policy.enabled) return policy
+  throw new Error(
+    `tool "${toolName}" is configured with effortPolicy: true but the effort-policy row is `
+    + `${policy === undefined ? 'not composed' : 'disabled'}; set \`effort-policy\` config \`enabled: true\` `
+    + 'or set this tool row\'s `effortPolicy: false`',
+  )
+}
+
+/**
+ * Validate one delegation's effort declaration against the policy's own
+ * operation table, so the tool rejects a value the policy would have to
+ * override.
+ * @param policy - the enabled policy service.
+ * @param operation - the delegation's declared operation.
+ * @param request - model-facing fields from the tool call.
+ * @throws when `mechanical` names no verification, or a level pick is below the
+ *   operation minimum.
+ */
+function assertDelegationEffort(
+  policy: Context['effortPolicy'],
+  operation: DelegationOperation,
+  request: { readonly reasoning_effort?: string | undefined; readonly verification?: string | undefined },
+): void {
+  if (operation === 'mechanical' && (request.verification ?? '').trim().length === 0) {
+    throw new Error(
+      'operation "mechanical" requires `verification`: the command or observable outcome that will prove the work',
+    )
+  }
+  const effort = request.reasoning_effort
+  if (effort !== undefined && !policy.meetsOperationMinimum(operation, effort)) {
+    throw new Error(
+      `child \`reasoning_effort\` "${effort}" is below the "${operation}" operation minimum `
+      + `"${policy.levelFor(operation)}"`,
+    )
   }
 }
 
@@ -259,6 +338,25 @@ export async function apply(ctx: Context, config: Config, session?: Session): Pr
                 : 'Adapter-owned reasoning effort for the effective child route. Omit to inherit a compatible configured/parent effort or use a newly selected model\'s default.',
             },
           } : {},
+          ...config.effortPolicy === true ? {
+            operation: {
+              type: 'string' as const,
+              enum: [...OPERATIONS],
+              description: 'What the child is being asked to do; it fixes the starting reasoning level. '
+                + 'general, explore, and implement start standard; plan and review start deep; mechanical starts low '
+                + 'and requires `verification`. Defaults to general.',
+            },
+            verification: {
+              type: 'string' as const,
+              description: 'The command or observable outcome that will prove mechanical work. '
+                + 'Required when operation is mechanical; otherwise ignored.',
+            },
+            inherit_effort: {
+              type: 'boolean' as const,
+              description: 'Start the child from the parent\'s current effort instead of its operation level. '
+                + 'Default false: an operation-routed child starts at its operation and escalates only from its own failing verification.',
+            },
+          } : {},
 
         },
         output: {
@@ -279,6 +377,10 @@ export async function apply(ctx: Context, config: Config, session?: Session): Pr
             // Non-agent callers provide no parent for delegation ownership.
             throw new Error('subagent tool requires a calling agent (exec.agent was undefined)')
           }
+          const policy = config.effortPolicy === true ? requireEffortPolicy(runtimeCtx, toolName) : undefined
+          const effortRequest = args as DelegationEffortRequest
+          const operation: DelegationOperation = effortRequest.operation ?? 'general'
+          if (policy !== undefined) assertDelegationEffort(policy, operation, effortRequest)
 
           const agentPreset = presets.resolve(args as PresetSelectionRequest)
           const modelRequest = args as DelegationModelRequest
@@ -318,12 +420,19 @@ export async function apply(ctx: Context, config: Config, session?: Session): Pr
           }
           exec.signal.throwIfAborted()
           const maxDepth = runtimeCtx.subagents.resolveMaxDepth(config.maxDepth)
+          const childAgentOptions: AgentOptions | undefined = policy === undefined
+            ? requestedChildAgentOptions
+            : {
+              ...requestedChildAgentOptions,
+              effortOperation: operation,
+              effortInherited: effortRequest.inherit_effort === true,
+            }
           const request = {
             ...args.cwd === undefined ? {} : { cwd: args.cwd },
             prompt: [{ type: 'text', text: args.prompt }] as ContentBlock[],
             parent,
             ...agentPreset === undefined ? {} : { agentPreset },
-            ...requestedChildAgentOptions !== undefined ? { agentOptions: requestedChildAgentOptions } : {},
+            ...childAgentOptions !== undefined ? { agentOptions: childAgentOptions } : {},
             ...maxDepth !== undefined ? { maxDepth } : {},
           }
 

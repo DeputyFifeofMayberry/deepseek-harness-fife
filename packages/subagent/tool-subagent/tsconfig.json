@@ -36,6 +36,9 @@
       "path": "../../llm/llm"
     },
     {
+      "path": "../../llm/effort-policy"
+    },
+    {
       "path": "../../core/tools"
     },
     {

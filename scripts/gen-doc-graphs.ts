@@ -108,6 +108,13 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'effortPolicy',
+    pkg: 'effort-policy',
+    title: 'Per-request reasoning effort',
+    mode: 'service',
+    note: 'Decides the reasoning effort for each Agent request from its operation and verification evidence; composed disabled, and writes nothing until a profile enables it.',
+  },
+  {
     key: 'cotTranslation',
     pkg: 'experimental-client-ui-cot-translation',
     title: 'Reasoning translation Remote',
