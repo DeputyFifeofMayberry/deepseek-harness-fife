@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-price-phase/README.md
+/:
+  en: ed1723d25ffd9b6f
+  zh: 339c7039d94a0f25
+/deepseek-ai-dsh-client-ui-price-phase:
+  en: 8b86503b3687f197
+  zh: c41c743fafde47fd
+/deepseek-ai-dsh-client-ui-price-phase/summary:
+  en: 683a6841300a0aef
+  zh: 3a921aeb40914f34
+/deepseek-ai-dsh-client-ui-price-phase/table-of-contents:
+  en: ca5dc537b0599b2a
+  zh: 2d06aa7b69a556c3
+/deepseek-ai-dsh-client-ui-price-phase/use-this-package:
+  en: 33dcb25488a1914a
+  zh: 70ceec011d8f32de
+/deepseek-ai-dsh-client-ui-price-phase/understand-the-implementation:
+  en: c9271879da07b6d6
+  zh: 4d0ad973b32701ed
+/deepseek-ai-dsh-client-ui-price-phase/known-limitations-and-deferred-work:
+  en: 44b44f8f0a813ebd
+  zh: 4e14f540d4a00c6d

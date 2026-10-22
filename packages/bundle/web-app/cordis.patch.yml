@@ -463,6 +463,11 @@
     - id: ui-trajectory
       name: '@deepseek-ai/dsh-client-ui-trajectory'
 
+    # DeepSeek peak-rate chip on the sidebar footer action seat; informational
+    # only, computed from the published UTC windows with no Host service.
+    - id: ui-price-phase
+      name: '@deepseek-ai/dsh-client-ui-price-phase'
+
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #
 # Every row below composes what ONE agent contributes to the host registries:
