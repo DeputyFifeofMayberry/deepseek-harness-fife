@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-bash-local` is the default Bash executor for POSIX: every command runs as a fresh, non-login `bash -c` process with no rc files, so no shell state survives between calls. It applies configured budgets — working directory, timeout, output caps — to each command, classifies timeouts and cancellations, and returns bounded output with spill-file recovery when a stream overflows. Commands run with the harness process's own authority: this executor confines nothing, so compose `dsh-bash-sandbox` when commands need the sandbox capability. The model-facing `bash` tool talks to it once it is mounted.
+`dsh-bash-local` is the default Bash executor for POSIX and for Windows hosts with Git for Windows: every command runs as a fresh, non-login `bash -c` process with no rc files, so no shell state survives between calls. On Windows the executor resolves Git Bash before the WSL launcher that a bare `bash` on PATH would reach. It applies configured budgets — working directory, timeout, output caps — to each command, classifies timeouts and cancellations, and returns bounded output with spill-file recovery when a stream overflows. Commands run with the harness process's own authority: this executor confines nothing, so compose `dsh-bash-sandbox` when commands need the sandbox capability. The model-facing `bash` tool talks to it once it is mounted.
 
 ## Table of Contents
 
@@ -47,6 +47,7 @@ Load the executor with the budgets you want; every field has a default, so the s
 | `maxOutputBytes` | `64,000` | Per-stream in-memory output cap; overflow spills to a temp file |
 | `maxSpillBytes` | `67,108,864` | Per-stream full-output spill cap |
 | `graceMs` | `3,000` | Grace period for kill escalation and post-exit pipe draining |
+| `bashPath` | resolved | Explicit bash executable; on Windows the default probes Git for Windows installs, then PATH, before falling back to a bare `bash` |
 
 The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-bash-local) is the exhaustive source for every accepted field and its JSDoc.
 

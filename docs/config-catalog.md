@@ -387,7 +387,7 @@ export interface Config {
 
 - `inject`: `subprocess`
 - `refs`: `Volatile` (`@deepseek-ai/cordis`)
-- `source`: [`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
+- `source`: [`packages/shell/bash-local/src/index.ts:46`](../packages/shell/bash-local/src/index.ts)
 
 ```ts config-catalog
 /** Validated plugin configuration with live command budgets. */
@@ -404,6 +404,12 @@ export interface Config {
   maxSpillBytes: Volatile<number>
   /** Grace period for kill escalation and inherited pipes; at most `MAX_TIMER_DELAY_MS`. */
   graceMs: Volatile<number>
+  /**
+   * Explicit bash executable. When omitted, Windows probes Git for Windows
+   * installs and PATH entries in that order, and every other platform resolves
+   * a bare `bash` through PATH.
+   */
+  bashPath: Volatile<string | undefined>
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-bash-local -->
