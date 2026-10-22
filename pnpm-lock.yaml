@@ -1182,6 +1182,9 @@ importers:
       '@deepseek-ai/dsh-attachment':
         specifier: workspace:*
         version: link:../../attachment/attachment
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
@@ -1545,6 +1548,9 @@ importers:
       '@deepseek-ai/dsh-credentials':
         specifier: workspace:*
         version: link:../../credentials/credentials
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-file-reference':
         specifier: workspace:*
         version: link:../../context/file-reference
@@ -2270,6 +2276,9 @@ importers:
       '@deepseek-ai/dsh-deepseek-llm-api-extensions':
         specifier: workspace:*
         version: link:../../llm/deepseek-llm-api-extensions
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-fs-local':
         specifier: workspace:*
         version: link:../../fs/fs-local
@@ -6711,6 +6720,9 @@ importers:
       '@deepseek-ai/dsh-compaction-tool-result-pruner':
         specifier: workspace:*
         version: link:../compaction-tool-result-pruner
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
@@ -10977,6 +10989,46 @@ importers:
         specifier: workspace:~
         version: link:../../../vendor/cordis
 
+  packages/llm/effort-policy:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+      '@mayberry/effort-policy-core':
+        specifier: git+https://github.com/DeputyFifeofMayberry/effort-policy-core.git#v0.1.0
+        version: https://codeload.github.com/DeputyFifeofMayberry/effort-policy-core/tar.gz/a740b355a1338a4e42a80cef135aeb286302b17f
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:*
+        version: link:../../core/agent
+      '@deepseek-ai/dsh-agent-loop':
+        specifier: workspace:*
+        version: link:../../core/agent-loop
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:*
+        version: link:../llm
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../core/session
+      '@deepseek-ai/dsh-session-persistence-jsonl':
+        specifier: workspace:*
+        version: link:../../session/session-persistence-jsonl
+      '@deepseek-ai/dsh-session-projection':
+        specifier: workspace:*
+        version: link:../../session/session-projection
+      '@deepseek-ai/dsh-system-prompt':
+        specifier: workspace:*
+        version: link:../../core/system-prompt
+      '@deepseek-ai/dsh-tools':
+        specifier: workspace:*
+        version: link:../../core/tools
+
   packages/llm/llm:
     dependencies:
       '@deepseek-ai/dsh-brand':
@@ -13886,6 +13938,9 @@ importers:
       '@deepseek-ai/dsh-attachment':
         specifier: workspace:*
         version: link:../../attachment/attachment
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-fs-sandbox':
         specifier: workspace:*
         version: link:../../fs/fs-sandbox
@@ -14325,9 +14380,18 @@ importers:
       '@deepseek-ai/dsh-agent':
         specifier: workspace:*
         version: link:../../core/agent
+      '@deepseek-ai/dsh-agent-loop':
+        specifier: workspace:*
+        version: link:../../core/agent-loop
+      '@deepseek-ai/dsh-agent-loop-testkit':
+        specifier: workspace:*
+        version: link:../../test-support/agent-loop-testkit
       '@deepseek-ai/dsh-agent-preset-registry':
         specifier: workspace:*
         version: link:../../preset/agent-preset-registry
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../llm/effort-policy
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../llm/llm
@@ -15625,6 +15689,9 @@ importers:
       '@deepseek-ai/dsh-deepseek-llm-api-extensions':
         specifier: workspace:*
         version: link:../../packages/llm/deepseek-llm-api-extensions
+      '@deepseek-ai/dsh-effort-policy':
+        specifier: workspace:*
+        version: link:../../packages/llm/effort-policy
       '@deepseek-ai/dsh-file-reference':
         specifier: workspace:*
         version: link:../../packages/context/file-reference
@@ -17770,6 +17837,11 @@ packages:
   '@malept/flatpak-bundler@0.4.0':
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
+
+  '@mayberry/effort-policy-core@https://codeload.github.com/DeputyFifeofMayberry/effort-policy-core/tar.gz/a740b355a1338a4e42a80cef135aeb286302b17f':
+    resolution: {gitHosted: true, integrity: sha512-7bIXnnp6sCJd02qQmGvgL9R0aX0yk0jOwdDJ79PL3LbsQudd12VggokojBSiL9QwWvG/byV7rONIuNXJ95y2+g==, tarball: https://codeload.github.com/DeputyFifeofMayberry/effort-policy-core/tar.gz/a740b355a1338a4e42a80cef135aeb286302b17f}
+    version: 0.1.0
+    engines: {node: '>=22'}
 
   '@mermaid-js/mermaid-mindmap@9.3.0':
     resolution: {integrity: sha512-IhtYSVBBRYviH1Ehu8gk69pMDF8DSRqXBRDMWrEfHoaMruHeaP2DXA3PBnuwsMaCdPQhlUUcy/7DBLAEIXvCAw==}
@@ -25253,6 +25325,8 @@ snapshots:
       tmp-promise: 3.0.3
     transitivePeerDependencies:
       - supports-color
+
+  '@mayberry/effort-policy-core@https://codeload.github.com/DeputyFifeofMayberry/effort-policy-core/tar.gz/a740b355a1338a4e42a80cef135aeb286302b17f': {}
 
   '@mermaid-js/mermaid-mindmap@9.3.0':
     dependencies:

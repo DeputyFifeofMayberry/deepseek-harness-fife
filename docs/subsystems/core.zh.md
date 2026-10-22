@@ -771,6 +771,51 @@ roots(): Agent[]
 
 Source: [`packages/core/agent/src/index.ts`](../../packages/core/agent/src/index.ts)
 
+<a id="ctxeffortpolicy--effortpolicy"></a>
+
+### `ctx.effortPolicy` — `EffortPolicy`
+
+Owns the deployment configuration and the observed state of each Agent.
+
+A disabled policy is inert: it registers the service so tools can detect that the deployment knows about the feature, and it writes nothing. Callers that need the configured behavior must check EffortPolicy.enabled.
+
+```ts cordis-catalog
+/**
+ * The observed state for one Agent. An Agent with no recorded pick runs at the
+ * configured base.
+ * @param agent - the Agent whose state is read.
+ * @returns the current state.
+ */
+stateOf(agent: Agent): EffortState
+
+/**
+ * Record a user pick. A level value replaces the base and clears any exact
+ * effort; any other value is an exact effort written verbatim and never
+ * escalated.
+ * @param agent - the Agent the pick applies to.
+ * @param rawEffort - the effort value the user selected.
+ * @throws when `rawEffort` is empty.
+ */
+setBase(agent: Agent, rawEffort: string): void
+
+/**
+ * Decide the effort for one request.
+ * @param capability - the exact route's advertised efforts.
+ * @param agent - the Agent making the request; omission decides from the configured base.
+ * @returns the decision and the rule that produced it.
+ */
+decideFor(capability: EffortCapability, agent?: Agent): Decision
+
+/**
+ * The starting level for a delegated operation.
+ * @param operation - the delegation's declared operation.
+ * @returns the operation's starting level.
+ */
+levelFor(operation: DelegationOperation): EffortLevel
+```
+
+Source: [`packages/llm/effort-policy/src/service.ts`](../../packages/llm/effort-policy/src/service.ts)
+
 <a id="agent-events"></a>
 
 ### `agent/*` events

@@ -226,7 +226,7 @@ Rules:
 
 #### Token effect
 
-This is a separate model call: the replayed conversation prefix plus the fixed instruction as input, with `maxTokens`-capped output. Convergence retries can pay this cost more than once.
+This is a separate model call: the replayed conversation prefix plus the fixed instruction as input, with `maxTokens`-capped output. Convergence retries can pay this cost more than once. When the deployment composes `@deepseek-ai/dsh-effort-policy` with `enabled: true`, this call pins the policy's least expensive automatic level (`low`) instead of inheriting the adapter's default effort: that is the largest auxiliary request in a long session, and summarization tolerates a cheaper level than conversation. A disabled or absent policy keeps the original dispatch exactly, including any `llm/stream` middleware that reroutes the provider.
 
 #### KV Cache effect
 

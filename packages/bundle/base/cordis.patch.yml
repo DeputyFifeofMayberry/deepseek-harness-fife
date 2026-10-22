@@ -93,6 +93,15 @@
         provider: deepseek-official
         model: deepseek-flash
 
+    # Verifiability-based effort policy. Mounted disabled: the service exists so
+    # tools and clients can detect the deployment, but no listener runs and no
+    # request changes until a profile patch enables it.
+    - id: effort-policy
+      name: '@deepseek-ai/dsh-effort-policy'
+      config:
+        enabled: false
+        baseLevel: standard
+
     - id: jobs
       name: '@deepseek-ai/dsh-jobs-local'
 

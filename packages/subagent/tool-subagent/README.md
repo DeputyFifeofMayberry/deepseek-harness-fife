@@ -77,6 +77,15 @@ Set `modelSelectionSettings: true` to sample the Host's `subagent-model-selectio
 
 A call supplies `provider` and `model` together, or supplies only an effort when configured, parent, or provider-owned defaults provide the route. Static `provider.agentRouteDefaults`, when present, form the provider/model baseline; tool configuration and model fields overlay it before route-aware effort merging and exact-route preflight. Providers without these defaults use compatible values from the parent's latest logged request, then the parent's creation options before its first request, while retaining the configured `maxTokens`. Changing the route without an explicit effort clears the inherited route-owned effort, so the selected model resolves its default. The live LLM adapter validates the effective route before child creation. Catalog membership remains advisory, so a model can use an unlisted id when its adapter accepts it.
 
+<a id="routing-child-effort"></a>
+### Routing child effort
+
+Set `effortPolicy: true` to let the model declare what a child is doing and let the [effort policy](../../llm/effort-policy/README.md) start the child there. The tool then exposes three fields: `operation` (`general`, `explore`, `implement`, `plan`, `review`, or `mechanical`; `general` when omitted), `verification`, and `inherit_effort`. Each child receives `effortOperation` and `effortInherited` in its `AgentOptions`; the policy maps the operation to a starting level (`plan`/`review` `deep`, `mechanical` `low`, everything else `standard`), and a child inherits the parent's current effort only when `inherit_effort` is true.
+
+The flag alone is not enough: the first delegation fails with an errored result naming both the tool row (`effortPolicy: true`) and the policy row (`effort-policy` `enabled: true`) when the service is absent or disabled, instead of silently delegating at whatever effort the child defaults to. `operation: mechanical` requires `verification`, so the cheapest operation cannot be requested without naming the check that proves it; the value is validation only and is not forwarded to the child. A `reasoning_effort` naming one of the three automatic levels below the operation start is rejected with the minimum named; any other advertised effort is passed through as the child's exact starting effort.
+
+The three fields appear only under this flag, so a deployment that never enables it keeps today's schema, inheritance, and child effort exactly. Out-of-process providers copy the four named route fields, so `effortOperation` and `effortInherited` do not cross a process boundary: such a child starts at the configured base level.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -138,11 +147,11 @@ Read these pages when the package-level contract is not enough; they move from t
 
 #### What the model sees
 
-The generated default [`subagent` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-subagent) appears under the configured tool name while its provider exists. An enabled Session policy adds `provider`, `model`, and `reasoning_effort` plus route guidance; the backend must support `agentOptions`. `allowedAgentPresets` adds the `agent_preset` enum and guidance from the presets' display descriptions. Context inheritance and continuation support determine the task and follow-up descriptions. A tool restriction removes both the schema and its `tool:<toolName>` guidance section.
+The generated default [`subagent` schema](../../../docs/tool-catalog.md#deepseek-aidsh-tool-subagent) appears under the configured tool name while its provider exists. An enabled Session policy adds `provider`, `model`, and `reasoning_effort` plus route guidance; the backend must support `agentOptions`. `allowedAgentPresets` adds the `agent_preset` enum and guidance from the presets' display descriptions. `effortPolicy: true` adds `operation`, `verification`, and `inherit_effort`. Context inheritance and continuation support determine the task and follow-up descriptions. A tool restriction removes both the schema and its `tool:<toolName>` guidance section.
 
 #### Token effect
 
-Fixed schema cost per parent request; LLM selection adds three parameters, while preset selection adds one enum parameter and preset descriptions. Each tool instance adds one schema and one short system-prompt section.
+Fixed schema cost per parent request; LLM selection adds three parameters, effort routing adds three, while preset selection adds one enum parameter and preset descriptions. Each tool instance adds one schema and one short system-prompt section.
 
 #### KV Cache effect
 

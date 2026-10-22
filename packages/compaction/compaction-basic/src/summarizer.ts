@@ -5,7 +5,9 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { contentHasImage, BlockAssembler, LlmError } from '@deepseek-ai/dsh-llm'
+import { contentHasImage, BlockAssembler, LlmError, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { resolveLevelEffort } from '@deepseek-ai/dsh-effort-policy/core'
+import type {} from '@deepseek-ai/dsh-effort-policy'
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
 import type {
   ContentBlock, FinishReason, GenerateOptions, Message, RequestMessage, TokenUsage, ToolSchema,
@@ -149,18 +151,41 @@ export async function summarizeWithLlm(
       content: [{ type: 'text', text: COMPACTION_INSTRUCTION }],
     }),
   ]
+  // A summarization replays the whole conversation, so it is the single largest
+  // auxiliary request in a long session. When the deployment composes the
+  // effort policy, this call pins its least expensive automatic level. A
+  // disabled or absent policy keeps the original `llm.stream()` dispatch: a
+  // prepared call binds its adapter registration before `llm/stream` runs, so
+  // taking that path unconditionally would stop a routing middleware from
+  // choosing the provider.
+  const policy = ctx.get('effortPolicy')
+  const routed = { provider: target.provider, model: target.model, maxTokens: config.maxTokens }
+  const prepared = policy === undefined || !policy.enabled
+    ? undefined
+    : await ctx.llm.prepareCall(routed, signal, (controls, model) => {
+      if (model.reasoning === undefined) return controls
+      const capability = {
+        efforts: model.reasoning.efforts.map(effort => String(effort.id)),
+        ...model.reasoning.defaultEffort === undefined
+          ? {}
+          : { defaultEffort: String(model.reasoning.defaultEffort) },
+      }
+      const effort = resolveLevelEffort(capability, 'low')
+      return effort === undefined || effort === capability.defaultEffort
+        ? controls
+        : { ...controls, reasoningEffort: ReasoningEffortId(effort) }
+    })
   const options: GenerateOptions = {
-    provider: target.provider,
-    model: target.model,
+    ...prepared?.config ?? routed,
     messages,
     toolHistory: agent.session.toolHistory(),
     ...input.tools === undefined ? {} : { tools: [...input.tools] },
-    maxTokens: config.maxTokens,
     sessionId: agent.session.id,
     purpose: 'compaction',
     ...signal === undefined ? {} : { signal },
   }
-  for await (const chunk of ctx.llm.stream(options)) assembler.push(chunk)
+  const stream = prepared === undefined ? ctx.llm.stream(options) : prepared.stream(options)
+  for await (const chunk of stream) assembler.push(chunk)
   const error = finishError(assembler.finish)
   if (error !== undefined) throw error
 

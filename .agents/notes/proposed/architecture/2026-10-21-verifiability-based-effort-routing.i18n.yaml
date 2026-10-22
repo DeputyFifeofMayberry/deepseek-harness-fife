@@ -1,0 +1,91 @@
+# Bilingual-pair consistency record for 2026-10-21-verifiability-based-effort-routing.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-10-21-verifiability-based-effort-routing.md
+/agent-note-verifiability-based-effort-routing:
+  en: f773da5dc5b8aa7f
+  zh: 4b0094530d7ef81c
+/agent-note-verifiability-based-effort-routing/problem:
+  en: 15ecad7e2af4454b
+  zh: 4f768de41f95a736
+/agent-note-verifiability-based-effort-routing/proposal:
+  en: 986dd8097aac4d3d
+  zh: 2c89af85628555c5
+/agent-note-verifiability-based-effort-routing/proposal/three-lanes:
+  en: 62e0b202c492ca13
+  zh: 0c66fa8be792f646
+/agent-note-verifiability-based-effort-routing/proposal/effort-levels:
+  en: 2d45a2b5658886ac
+  zh: 6e8b0426004c62dd
+/agent-note-verifiability-based-effort-routing/proposal/loop-policy:
+  en: 2949b360618cb3eb
+  zh: 420898fd224a308c
+/agent-note-verifiability-based-effort-routing/proposal/delegation:
+  en: 2d4d202419f22da6
+  zh: 2bf1de349f8e5b78
+/agent-note-verifiability-based-effort-routing/proposal/evidence-and-recovery:
+  en: 2fea91cc050c7c8e
+  zh: 1e6adfcc41d95b2c
+/agent-note-verifiability-based-effort-routing/proposal/logging-and-visibility:
+  en: fe28bc85357f7d91
+  zh: b95a645cce750b4f
+/agent-note-verifiability-based-effort-routing/proposal/portable-core:
+  en: 7d59637e9294a292
+  zh: ab8a920d007dee1b
+/agent-note-verifiability-based-effort-routing/plan:
+  en: a8d4c684a84b5691
+  zh: 19360285e09ee9ce
+/agent-note-verifiability-based-effort-routing/plan/sequencing:
+  en: c186fb2989d16c61
+  zh: 8dc78d3025f4aa25
+/agent-note-verifiability-based-effort-routing/plan/m0-portable-decision-core:
+  en: ef165ac9bd824ab3
+  zh: 868c7fb37e9a2ddf
+/agent-note-verifiability-based-effort-routing/plan/m1-adapter-plugin-composed-disabled:
+  en: 8e5f465fe144d221
+  zh: 6542697de77fbcb5
+/agent-note-verifiability-based-effort-routing/plan/m2-compaction-pin:
+  en: 4a849192bf5cd77b
+  zh: 71e35f3af7cffc13
+/agent-note-verifiability-based-effort-routing/plan/m3-loop-policy:
+  en: 6f6f0de0dfc339f2
+  zh: 660309ea33d53534
+/agent-note-verifiability-based-effort-routing/plan/m4-delegation:
+  en: 131e5183c8a44d67
+  zh: e9fb6b5ef7ed1007
+/agent-note-verifiability-based-effort-routing/plan/m5-manual-selection:
+  en: 3e194ed7404563d4
+  zh: affb068e3a51988f
+/agent-note-verifiability-based-effort-routing/plan/m6-fork-enablement:
+  en: 143e7333d978cdaa
+  zh: 1e5c36faa3cb3575
+/agent-note-verifiability-based-effort-routing/plan/m7-mayberry-takeover:
+  en: 364f3bd5d1e55469
+  zh: e4fcf89eb352e193
+/agent-note-verifiability-based-effort-routing/plan/evidence-correlation:
+  en: 65f6f44fde98bbe9
+  zh: f9d78a6a4ba805de
+/agent-note-verifiability-based-effort-routing/plan/compatibility-and-versioning:
+  en: 444ab4e83ec3d9f8
+  zh: 49b173c8480f60ea
+/agent-note-verifiability-based-effort-routing/plan/tests:
+  en: ee35033700be3e6c
+  zh: 40ad5c71584a842f
+/agent-note-verifiability-based-effort-routing/plan/gates:
+  en: 80a10e9b0cc42663
+  zh: ce9da906385ef4b6
+/agent-note-verifiability-based-effort-routing/plan/rollout-rollback-migration-risks:
+  en: 76583910c2e81b9f
+  zh: afdaf67f55b29c25
+/agent-note-verifiability-based-effort-routing/plan/what-this-plan-deliberately-does-not-add:
+  en: 0667603287277345
+  zh: da74fb0d73b5649d
+/agent-note-verifiability-based-effort-routing/alternatives-considered:
+  en: c9c2eba8faff14ab
+  zh: 73e766c9344238c5
+/agent-note-verifiability-based-effort-routing/acceptance-criteria:
+  en: e0e561bdc623abf0
+  zh: 25e0fd1dabdaf04f
+/agent-note-verifiability-based-effort-routing/risks:
+  en: 500af0d1a8794a73
+  zh: ac488faaadc95e00

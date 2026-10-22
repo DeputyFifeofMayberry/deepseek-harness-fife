@@ -214,7 +214,7 @@ export class SessionController extends TypertRemoteService {
           agent,
           event.data.header.config.provider,
           event.data.header.config.model,
-          event.data.header.config.reasoningEffort,
+          event.seq,
         )
       }
       if (event.type !== 'user/message' || event.data.source.kind !== 'user') return

@@ -1,0 +1,187 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {
+      "key": "event:effort/decision",
+      "kind": "event",
+      "event": "effort/decision",
+      "surface": false,
+      "digest": "69d81cfb2452d110c8f47a8d5a8b1a98e4bcae78443a92b009a20e32160300d4",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 15,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 16,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "base",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "effort",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "exact",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "level",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "openFailure",
+                "type": 7,
+                "optional": true
+              },
+              {
+                "name": "protocolVersion",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": true
+              },
+              {
+                "name": "rule",
+                "type": 9,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": true
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4,
+              5
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "deep"
+          },
+          {
+            "kind": "literal",
+            "value": "low"
+          },
+          {
+            "kind": "literal",
+            "value": "standard"
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "verifier",
+                "type": 6,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "union",
+            "types": [
+              10,
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "base"
+          },
+          {
+            "kind": "literal",
+            "value": "escalated"
+          },
+          {
+            "kind": "literal",
+            "value": "exact-base"
+          },
+          {
+            "kind": "literal",
+            "value": "mode-pin"
+          },
+          {
+            "kind": "literal",
+            "value": "untouched"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "effort/decision"
+          }
+        ]
+      }
+    }
+  ],
+  "types": []
+}

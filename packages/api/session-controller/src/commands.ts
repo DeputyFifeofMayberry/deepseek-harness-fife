@@ -11,6 +11,9 @@ import type {
 } from '@deepseek-ai/dsh-attachment'
 import type { FileUploadReceiptId } from '@deepseek-ai/dsh-client-file-upload/types'
 import type {} from '@deepseek-ai/dsh-client-file-upload'
+// Type-only: `ctx.get('effortPolicy')` resolves to the policy service when the
+// deployment composes it, which stays optional for this controller.
+import type {} from '@deepseek-ai/dsh-effort-policy'
 import {
   ReasoningEffortId, assistantStreamChunks, createUserMessage, freezeMessage,
 } from '@deepseek-ai/dsh-llm'
@@ -174,6 +177,16 @@ export class SessionCommandController {
             : { reasoningEffort: resolved.reasoningEffort }),
         }
         this.agents.selectForNextRequest(agent, selected)
+        // Hand the effort to the policy: it owns every later request, so a pick
+        // must change its base instead of competing with it. The provider default
+        // is the `standard` level, which resolves to the route's own default and
+        // still escalates on a failing verification. The request's own field
+        // decides this, because resolution materializes an adapter default that
+        // the caller did not choose.
+        const policy = this.ctx.get('effortPolicy')
+        if (policy !== undefined && policy.enabled) {
+          policy.setBase(agent.session, request.reasoningEffort ?? 'standard')
+        }
         void this.ctx.agentDefaultModel.saveSelection(selected).catch((error: unknown) => {
           this.ctx.logger.warn(
             `session-controller: model selection changed for the Session but the default was not saved: ${String(error)}`,

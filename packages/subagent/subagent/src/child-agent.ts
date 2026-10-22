@@ -8,6 +8,9 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent, AgentOptions, CreateAgentOptions } from '@deepseek-ai/dsh-agent'
+// Type-only: declares the delegation effort fields read below and documents the
+// options this module forwards without depending on the policy at runtime.
+import type {} from '@deepseek-ai/dsh-effort-policy'
 import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import type { Session, SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-system-prompt'
@@ -115,6 +118,9 @@ export function resolveChildAgentOptions(
   }
   const routeChanged = resolved.provider !== parentProvider || resolved.model !== parentModel
   if (routeChanged && requested?.reasoningEffort === undefined) delete resolved.reasoningEffort
+  // An operation-routed child starts from its operation, not from the parent's
+  // effort. An explicit effort still wins: it is spread over the inherited one.
+  if (requested?.effortInherited === false && requested.reasoningEffort === undefined) delete resolved.reasoningEffort
   return resolved
 }
 

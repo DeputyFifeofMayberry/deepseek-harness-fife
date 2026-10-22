@@ -245,6 +245,9 @@ const packageFileExtras: Readonly<Record<string, readonly string[]>> = {
   // The headless entry and its startup row share the JSON projection code
   // through a hashed tsdown chunk; both import it by relative path.
   '@deepseek-ai/dsh-headless': ['lib/json-stream-*.js'],
+  // The portable decision core ships as its own `./core` entry so a non-Cordis
+  // host can import it without the adapter.
+  '@deepseek-ai/dsh-effort-policy': ['lib/core.js'],
 }
 
 function sameStringList(actual: readonly string[] | undefined, expected: readonly string[]): boolean {

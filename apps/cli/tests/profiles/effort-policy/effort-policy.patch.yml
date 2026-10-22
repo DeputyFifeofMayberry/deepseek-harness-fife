@@ -1,0 +1,70 @@
+# Enables the fork's verifiability-based effort routing over the shipped
+# headless profile, then replaces the provider with a keyless script. The
+# `effort-policy` and two `tool-subagent` rows are the composition the fork
+# carries in $DSH_HOME/profiles/<name>/cordis.patch.yml; the remaining rows
+# isolate this fixture and are not part of that enablement.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: session-log-deepseek
+  config:
+    enabled: false
+
+# A title request would be a second model call the script does not describe.
+- id: session-title-llm
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: effort-mock
+    model: effort-mock
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+- id: effort-policy
+  config:
+    enabled: true
+    baseLevel: low
+    verifiers:
+      - tool: pwsh
+        commandPattern: 'pnpm( run)? typecheck'
+        passPattern: 'run-gates: \d+ passed, 0 failed'
+        failPattern: 'error TS\d+|[1-9]\d* failed'
+        outcome: text
+      - tool: bash
+        commandPattern: 'pnpm( run)? typecheck'
+        passPattern: 'run-gates: \d+ passed, 0 failed'
+        failPattern: 'error TS\d+|[1-9]\d* failed'
+        outcome: text
+    readOnlyCommands:
+      - 'git (status|diff|log|show|branch|rev-parse)\b'
+      - '(Get-Content|Get-ChildItem|Select-String|Test-Path|Get-Item)\b'
+
+- id: tool-subagent
+  config:
+    provider: spawn
+    toolName: subagent
+    effortPolicy: true
+
+- id: tool-subagent-fork
+  config:
+    provider: fork
+    toolName: subagent_fork
+    effortPolicy: true
+
+- insert:
+    - id: effort-mock-llm
+      name: './fixtures/effort-policy-mock-llm.ts'
+
+    # Publish the root Agent the driver drives; the shipped startup row is off.
+    - id: effort-policy-agent
+      name: './fixtures/effort-policy-agent.ts'

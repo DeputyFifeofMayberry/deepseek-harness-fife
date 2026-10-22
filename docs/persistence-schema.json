@@ -9454,6 +9454,187 @@
       }
     },
     {
+      "key": "event:effort/decision",
+      "kind": "event",
+      "event": "effort/decision",
+      "surface": false,
+      "digest": "69d81cfb2452d110c8f47a8d5a8b1a98e4bcae78443a92b009a20e32160300d4",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 15,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 16,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "base",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "effort",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "exact",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "level",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "openFailure",
+                "type": 7,
+                "optional": true
+              },
+              {
+                "name": "protocolVersion",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": true
+              },
+              {
+                "name": "rule",
+                "type": 9,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": true
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4,
+              5
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "deep"
+          },
+          {
+            "kind": "literal",
+            "value": "low"
+          },
+          {
+            "kind": "literal",
+            "value": "standard"
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "verifier",
+                "type": 6,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "union",
+            "types": [
+              10,
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "base"
+          },
+          {
+            "kind": "literal",
+            "value": "escalated"
+          },
+          {
+            "kind": "literal",
+            "value": "exact-base"
+          },
+          {
+            "kind": "literal",
+            "value": "mode-pin"
+          },
+          {
+            "kind": "literal",
+            "value": "untouched"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "effort/decision"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:feedback/message-delete",
       "kind": "event",
       "event": "feedback/message-delete",
@@ -22479,6 +22660,11 @@
       ]
     },
     {
+      "digest": "074f5f5fdcb38e5f3d288b2fb94ceb6695da33585e4ee664fd28398bb590be1b",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "0755b7d1128319ba2e389619cbbf2c961ad648882b4e91da7f3e9582cc8a2034",
       "names": [],
       "sources": []
@@ -22839,6 +23025,11 @@
       "sources": []
     },
     {
+      "digest": "1c9aed64df6a5f6a75df1875ecd332a92fcac0a7ce0aa201d0c81d7284d57ba1",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "1ccb56061942f5ccb0d30c9e4f2883b9d115ff906560029de637b61d3cde896d",
       "names": [],
       "sources": [
@@ -23075,6 +23266,13 @@
       "digest": "2aed07493b1c65b6d00de5586da1e743cf501684b9ad43a1765fb4007d4ea456",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "2b893eded73cc9000e069a39d5ea1295e62ccffee9cf4920c376ab7f2f71a8e3",
+      "names": [],
+      "sources": [
+        "packages/llm/effort-policy/src/events.ts:24"
+      ]
     },
     {
       "digest": "2c4c21f19f426a58f2dac914e34313aa43f8408972de857a486d1f086d5adb6c",
@@ -23399,6 +23597,11 @@
     },
     {
       "digest": "4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "42d10eb6abdb2b771b3be4ab203eb564fe0ffc03b5f5d69ae3a746ed70cb0fad",
       "names": [],
       "sources": []
     },
@@ -23974,6 +24177,11 @@
       ]
     },
     {
+      "digest": "65f6a6e8bdce83766d022927b3a9ba4d05876b4aaa7e0c5f13648801e9286634",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "66ba70f6f068da443f969a0b947a013c3addd776b9b60a0a393759c19825e9a2",
       "names": [
         "packages/llm/llm/src/types.ts#ToolSchema"
@@ -24033,12 +24241,22 @@
       "sources": []
     },
     {
+      "digest": "69d81cfb2452d110c8f47a8d5a8b1a98e4bcae78443a92b009a20e32160300d4",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "6ab45ac76839722df912f3ba50f1c6b41f2d614bde11f1aabfae04117ccdc80d",
       "names": [],
       "sources": []
     },
     {
       "digest": "6b23ed9ce1b397e602788dbe033693bf97642a69e23fcab1cc45bf6f13b6d619",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "6bb7920e95ffc9e7abc623ec2b2e894b79cee63375b5b8f3cf1fc947a344cd29",
       "names": [],
       "sources": []
     },
@@ -24076,6 +24294,11 @@
       "sources": [
         "packages/core/session/src/types.ts:193"
       ]
+    },
+    {
+      "digest": "6c789ebc07330133c899b397fe52f7ad5696b6c1558c91f30507dceca6f37581",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "6ccb6bc423fb3952458abf9c1b1c3284208b7e660344b612cc55da773d61afe4",
@@ -24156,6 +24379,11 @@
     },
     {
       "digest": "70b082fe78991edf13cf66e1b4d06cd2dcff9cacfd76f8cfb996bfb61939e7b2",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "71592eac6c7cac71cd2b4b05f36d3e3927bb79ccb2414bdbace6188519eef903",
       "names": [],
       "sources": []
     },
@@ -24572,6 +24800,11 @@
       ]
     },
     {
+      "digest": "8e701c4a07c0e775aa8878b69235d14da86c6dc240623d27bf66a29bf2fb4abd",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "8e8155594e07812356b67d732196dda894b0f9c91a5969d51612cf490b0a016d",
       "names": [],
       "sources": []
@@ -24867,6 +25100,11 @@
     },
     {
       "digest": "a3c6f1ea38e9a61d7a9706057ba65aabe02dfe6d9dd90d4736aa62325d874531",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "a3d21eaedffb5907fdb6c98fa7ef51b1a508543878c1c06d2b76e05ea44e974e",
       "names": [],
       "sources": []
     },
@@ -25507,6 +25745,11 @@
       ]
     },
     {
+      "digest": "ce29bbda71d10fc5c63e4ffa9807314f242a0a87ad7f44c584be1b81d0a92d5b",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "cef171adf021a1867d244618a3dbbaafc22beb17c7f3df3ee203393271c8c6f6",
       "names": [
         "packages/core/tools/src/types.ts#PtcDispatchEventData"
@@ -25623,6 +25866,11 @@
       "sources": []
     },
     {
+      "digest": "db973d3748efe232f21100e13ea6903ac550cd6626e5f0f9b31a705665fc7d90",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "dba54c09c6e7aafc9acbed7792ecc920d99f92d0784aeeed10af55f7fe0bc8cd",
       "names": [],
       "sources": [
@@ -25638,6 +25886,15 @@
       "digest": "dd2780e7e07684332f7a9ab047237798d260e7eaffb1321cb38eca695d184c3d",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "dd4af9f8a1d5086e3f9cab20dfd63cbd6afb6dce5744f77da0a645abd2b99c26",
+      "names": [
+        "packages/llm/effort-policy/src/events.ts#EffortDecisionRecord"
+      ],
+      "sources": [
+        "packages/llm/effort-policy/src/events.ts:35"
+      ]
     },
     {
       "digest": "dd5ee8762bd8a14b6c6bffedd1753e4e78505bb0f9ea1621018d03a54eef59d5",

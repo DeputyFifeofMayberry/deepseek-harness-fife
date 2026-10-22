@@ -49,7 +49,15 @@ function applyModelSelectionProjection(
       ? {}
       : { reasoningEffort: String(event.data.header.config.reasoningEffort) }),
   }
-  const pending = sameSelection(state.pending, lastUsed) ? null : state.pending
+  // The route acknowledges a pick; the effort on the request belongs to whatever
+  // decided it (the effort policy, or the adapter's default), so comparing it
+  // would keep a pick pending forever. Fold order already guarantees this header
+  // follows the `model/selection` record that installed the pick.
+  const pending = state.pending !== null
+    && state.pending.provider === lastUsed.provider
+    && state.pending.model === lastUsed.model
+    ? null
+    : state.pending
   return sameSelection(state.lastUsed, lastUsed) && pending === state.pending
     ? state
     : { lastUsed, pending }
@@ -64,7 +72,7 @@ const modelSelectionProjection = {
     viewSchema: modelSelectionProjectionSchema,
     view: state => ({ lastUsed: state.lastUsed, next: state.pending ?? state.lastUsed }),
   },
-  stateVersion: 2,
+  stateVersion: 3,
 } satisfies ProjectionDefinition<'modelSelection', ModelSelectionProjectionState>
 
 function sameSelection(left: ModelSelection | null, right: ModelSelection | null): boolean {

@@ -27,8 +27,11 @@
   en: 1950ef92bab0f46e
   zh: 593f5f64ed9b5631
 /deepseek-ai-dsh-tool-subagent/use-this-package/selecting-a-child-llm:
-  en: 0d37e3b3957515e4
-  zh: ea1a94b2f29e7d9a
+  en: 071d32ecffc07243
+  zh: d62477baaccc615f
+/deepseek-ai-dsh-tool-subagent/use-this-package/routing-child-effort:
+  en: 3e6cb29cf2429372
+  zh: 4353963991c0afd1
 /deepseek-ai-dsh-tool-subagent/understand-the-implementation:
   en: 6ce5f749256a7e6c
   zh: a4f2adb04a70d9cf
@@ -57,11 +60,11 @@
   en: e4c7376d4f29dbd5
   zh: 6b7a9eaf69c9ea53
 /deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/what-the-model-sees:
-  en: cdaa88b47ba03e23
-  zh: 2b7429db53e0aea7
+  en: d3f76cc2058b7ee5
+  zh: 7c7a6befd6bbb0ba
 /deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/token-effect:
-  en: 0c6cf11d65ba83dc
-  zh: 6e2b2e64bf1f18f2
+  en: 861b4924b9d985df
+  zh: 5a04e08f78debfbc
 /deepseek-ai-dsh-tool-subagent/model-experience/tool-schema/kv-cache-effect:
   en: 46f736c6c389052a
   zh: a7765541030e9104

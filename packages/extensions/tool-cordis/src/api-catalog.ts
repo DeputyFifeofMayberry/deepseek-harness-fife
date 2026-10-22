@@ -1053,6 +1053,37 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'effortPolicy',
+    summary: 'Owns the deployment configuration and the observed state of each Agent.',
+    description: 'Owns the deployment configuration and the observed state of each Agent.\n\nA disabled policy is inert: it registers the service so tools can detect that the deployment knows about the feature, and it writes nothing. Callers that need the configured behavior must check EffortPolicy.enabled.',
+    methods: [
+      {
+        signature: 'stateOf(agent: Agent): EffortState',
+        description: 'The observed state for one Agent. An Agent with no recorded pick runs at the configured base.',
+        parameters: [{ name: 'agent', description: 'the Agent whose state is read.' }],
+        returns: 'the current state.',
+      },
+      {
+        signature: 'setBase(agent: Agent, rawEffort: string): void',
+        description: 'Record a user pick. A level value replaces the base and clears any exact effort; any other value is an exact effort written verbatim and never escalated.',
+        parameters: [{ name: 'agent', description: 'the Agent the pick applies to.' }, { name: 'rawEffort', description: 'the effort value the user selected.' }],
+        throws: ['when `rawEffort` is empty.'],
+      },
+      {
+        signature: 'decideFor(capability: EffortCapability, agent?: Agent): Decision',
+        description: 'Decide the effort for one request.',
+        parameters: [{ name: 'capability', description: 'the exact route\'s advertised efforts.' }, { name: 'agent', description: 'the Agent making the request; omission decides from the configured base.' }],
+        returns: 'the decision and the rule that produced it.',
+      },
+      {
+        signature: 'levelFor(operation: DelegationOperation): EffortLevel',
+        description: 'The starting level for a delegated operation.',
+        parameters: [{ name: 'operation', description: 'the delegation\'s declared operation.' }],
+        returns: 'the operation\'s starting level.',
+      },
+    ],
+  },
+  {
     key: 'fileReferences',
     summary: 'Host capability for cancellable file-reference discovery.',
     description: 'Host capability for cancellable file-reference discovery.',
@@ -5314,6 +5345,14 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface DailyScheduleRecord {\n    readonly id: ScheduleId;\n    readonly kind: \'daily\';\n    readonly title: string;\n    readonly prompt: string;\n    readonly time: string;\n    readonly timeZone: string;\n    readonly scheduledAt: string;\n}',
   },
   {
+    name: 'Decision',
+    declaration: 'export interface Decision {\n    readonly rule: DecisionRule;\n    readonly level?: EffortLevel;\n    readonly effort?: string;\n}',
+  },
+  {
+    name: 'DecisionRule',
+    declaration: 'export type DecisionRule = \'exact-base\' | \'mode-pin\' | \'base\' | \'escalated\' | \'untouched\';',
+  },
+  {
     name: 'DeepSeekLlmApiExtensionMap',
     declaration: 'export interface DeepSeekLlmApiExtensionMap {\n}',
   },
@@ -5328,6 +5367,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DeepSeekLlmApiJson',
     declaration: 'export type DeepSeekLlmApiJson = null | boolean | number | string | DeepSeekLlmApiJson[] | {\n    [key: string]: DeepSeekLlmApiJson;\n};',
+  },
+  {
+    name: 'DelegationOperation',
+    declaration: 'export type DelegationOperation = \'general\' | \'explore\' | \'implement\' | \'plan\' | \'review\' | \'mechanical\';',
   },
   {
     name: 'DeliveryRetentionBounds',
@@ -5444,6 +5487,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'EditGoalRequest',
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
+  },
+  {
+    name: 'EffortCapability',
+    declaration: 'export interface EffortCapability {\n    readonly efforts: readonly string[];\n    readonly defaultEffort?: string;\n}',
+  },
+  {
+    name: 'EffortLevel',
+    declaration: 'export type EffortLevel = \'low\' | \'standard\' | \'deep\';',
+  },
+  {
+    name: 'EffortState',
+    declaration: 'export interface EffortState {\n    readonly base: EffortLevel;\n    readonly exact?: string;\n    readonly pin?: EffortLevel;\n    readonly openFailure?: {\n        readonly verifier: string;\n        readonly sequence: number;\n        readonly revision: number;\n    };\n}',
   },
   {
     name: 'EncodedFileAttachment',

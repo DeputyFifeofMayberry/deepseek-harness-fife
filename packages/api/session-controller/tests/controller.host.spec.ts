@@ -111,12 +111,12 @@ describe('SessionController facade', () => {
     expect(status).toHaveBeenCalledWith(sessionId, true)
     expect(failure).toHaveBeenCalledWith(sessionId, expect.stringContaining('fixture failure'))
     expect(activity).toHaveBeenCalledWith(sessionId, expect.any(Number))
-    session.append('request/header', {
+    const headerSeq = session.append('request/header', {
       header: { config: { provider: 'fixture', model: 'fixture-model' } },
       reason: 'initial',
-    })
+    }).seq
     expect(consumeSelection).toHaveBeenCalledWith(
-      agent, 'fixture', 'fixture-model', undefined,
+      agent, 'fixture', 'fixture-model', headerSeq,
     )
     const unowned = ctx.sessions.create(SessionId('controller-unowned'), {
       meta: { cwd: '/workspace' },
