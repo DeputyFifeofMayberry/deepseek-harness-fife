@@ -68,6 +68,14 @@ function desktopRelease(): DesktopRelease {
   })
 }
 
+/**
+ * `@mayberry/effort-policy-core` is a git-tagged dependency of a packaged workspace, so pnpm's
+ * default exotic-subdependency rejection aborts runtime installation. The lockfile pins the exact
+ * commit, and `--frozen-lockfile` installs only those pins, so the check is waived for this build
+ * that ships packages owned by the fork.
+ */
+const PNPM_CONFIG = ['--config.block-exotic-subdeps=false']
+
 function runPnpm(args: readonly string[]): Promise<void> {
   return new Promise((resolvePromise, reject) => {
     const [command, ...commandArgs] = args
@@ -84,6 +92,7 @@ function runPnpm(args: readonly string[]): Promise<void> {
       `--config.store-dir=${STORE_ROOT}`,
       '--config.enable-global-virtual-store=false',
       `--config.userconfig=${userConfig}`,
+      ...PNPM_CONFIG,
       command,
       ...commandArgs,
     ], {
