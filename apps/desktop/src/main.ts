@@ -53,6 +53,7 @@ import { desktopClientMetadata, desktopClientVersion } from './client-metadata.t
 import { DesktopMandatoryUpdateWindow } from './mandatory-update-window.ts'
 import { DesktopPolicyTestAuth } from './policy-test-auth.ts'
 import { readDesktopSettings } from './settings.ts'
+import { desktopNotes, NOTES_MAX_LENGTH } from './notes.ts'
 import { DesktopUpdateDialog, type UpdateDialogOptions } from './update-dialog.ts'
 import { readDesktopRuntime } from './runtime-tree.ts'
 import { DesktopBrowserGuests } from './browser-guests.ts'
@@ -1090,6 +1091,21 @@ async function main(): Promise<void> {
       const validColor = (value: unknown): value is string => typeof value === 'string'
         && /^(?:#[\da-f]{3,8}|rgba?\([\d.,%\s]+\))$/iu.test(value)
       if (validColor(color) && validColor(symbolColor)) mainWindow.setTitleBarOverlay({ color, symbolColor })
+    })
+    const notes = desktopNotes(app.getPath('userData'))
+    const assertNotesSender = (event: IpcMainInvokeEvent): void => {
+      assertDesktopSender(event, ['app'])
+      if (mainWindow === undefined || event.sender !== mainWindow.webContents
+        || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('desktop notes: rejected sender')
+    }
+    ipcMain.handle(DESKTOP_IPC.notesRead, async (event) => {
+      assertNotesSender(event)
+      return notes.read()
+    })
+    ipcMain.handle(DESKTOP_IPC.notesWrite, async (event, text: unknown) => {
+      assertNotesSender(event)
+      if (typeof text !== 'string' || text.length > NOTES_MAX_LENGTH) throw new Error('desktop notes: invalid text')
+      await notes.write(text)
     })
   }
 

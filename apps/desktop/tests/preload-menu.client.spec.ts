@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { installWindowsMenu } from '../src/preload-menu.ts'
 import { DESKTOP_IPC } from '../src/ipc.ts'
 
-const invoke = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<void>>())
+const invoke = vi.hoisted(() => vi.fn<(...args: unknown[]) => Promise<unknown>>())
 vi.mock('electron', () => ({ ipcRenderer: { invoke } }))
 let menu: ReturnType<typeof installWindowsMenu> | undefined
 
@@ -12,7 +12,7 @@ beforeEach(() => {
   appSeat.dataset.shellOverlay = ''
   document.body.append(appSeat)
   document.documentElement.lang = 'en'
-  invoke.mockResolvedValue(undefined)
+  invoke.mockImplementation(async channel => channel === DESKTOP_IPC.notesRead ? '' : undefined)
 })
 
 it('keeps caption menus absent until the application frame replaces loading', async () => {
@@ -54,9 +54,11 @@ it('localizes caption entries and removes the menu on disposal', () => {
   const host = document.querySelector('[data-windows-menu]')!
   const bar = host.shadowRoot!.querySelector('[role=menubar]')!
   expect(bar.outerHTML).toMatchSnapshot('english')
+  expect(host.shadowRoot!.querySelector('h2')!.textContent).toBe('Notes')
   document.documentElement.lang = 'zh-CN'
   menu.update()
   expect(bar.outerHTML).toMatchSnapshot('chinese')
+  expect(host.shadowRoot!.querySelector('h2')!.textContent).toBe('笔记')
   menu.dispose()
   menu = undefined
   expect(document.querySelector('[data-windows-menu]')).toBeNull()
@@ -140,4 +142,86 @@ it('restores a contenteditable selection before opening Edit with the keyboard',
   expect(document.activeElement).toBe(editor)
   expect(document.getSelection()!.toString()).toBe('itable')
   await vi.waitFor(() => { expect(buttons[1]!.getAttribute('aria-expanded')).toBe('false') })
+})
+
+it('opens the notes panel, loads saved text, and autosaves edits', async () => {
+  invoke.mockImplementation(async channel => channel === DESKTOP_IPC.notesRead ? 'first note' : undefined)
+  menu = installWindowsMenu()
+  const root = document.querySelector('[data-windows-menu]')!.shadowRoot!
+  const toggle = root.querySelector<HTMLButtonElement>('[data-notes-toggle]')!
+  const panel = root.querySelector<HTMLElement>('[data-notes-panel]')!
+  const textarea = root.querySelector('textarea')!
+  toggle.click()
+  expect(panel.hidden).toBe(false)
+  expect(toggle.getAttribute('aria-expanded')).toBe('true')
+  await vi.waitFor(() => { expect(textarea.value).toBe('first note') })
+  expect(root.activeElement).toBe(textarea)
+
+  textarea.value = 'edited note'
+  textarea.dispatchEvent(new Event('input'))
+  await vi.waitFor(() => {
+    expect(invoke).toHaveBeenCalledWith(DESKTOP_IPC.notesWrite, 'edited note')
+  })
+  await vi.waitFor(() => { expect(root.querySelector('[data-notes-status]')!.textContent).toBe('Saved') })
+
+  toggle.click()
+  expect(panel.hidden).toBe(true)
+  expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  expect(root.activeElement).toBe(toggle)
+})
+
+it('closes notes with Escape, saves immediately, and restores the caption button', async () => {
+  menu = installWindowsMenu()
+  const root = document.querySelector('[data-windows-menu]')!.shadowRoot!
+  const toggle = root.querySelector<HTMLButtonElement>('[data-notes-toggle]')!
+  const panel = root.querySelector<HTMLElement>('[data-notes-panel]')!
+  const textarea = root.querySelector('textarea')!
+  toggle.click()
+  await vi.waitFor(() => { expect(textarea.disabled).toBe(false) })
+
+  textarea.value = 'unsaved thought'
+  textarea.dispatchEvent(new Event('input'))
+  textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+  expect(panel.hidden).toBe(true)
+  expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  expect(root.activeElement).toBe(toggle)
+  await vi.waitFor(() => {
+    expect(invoke).toHaveBeenCalledWith(DESKTOP_IPC.notesWrite, 'unsaved thought')
+  })
+})
+
+it('closes notes on an outside pointer press', async () => {
+  menu = installWindowsMenu()
+  const root = document.querySelector('[data-windows-menu]')!.shadowRoot!
+  const toggle = root.querySelector<HTMLButtonElement>('[data-notes-toggle]')!
+  const panel = root.querySelector<HTMLElement>('[data-notes-panel]')!
+  toggle.click()
+  expect(panel.hidden).toBe(false)
+  document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }))
+  expect(panel.hidden).toBe(true)
+})
+
+it('reports a failed notes save and keeps the editor usable', async () => {
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+  invoke.mockImplementation(async (channel) => {
+    if (channel === DESKTOP_IPC.notesWrite) throw new Error('disk full')
+    if (channel === DESKTOP_IPC.notesRead) return ''
+    return undefined
+  })
+  menu = installWindowsMenu()
+  const root = document.querySelector('[data-windows-menu]')!.shadowRoot!
+  const toggle = root.querySelector<HTMLButtonElement>('[data-notes-toggle]')!
+  const textarea = root.querySelector('textarea')!
+  toggle.click()
+  await vi.waitFor(() => { expect(textarea.disabled).toBe(false) })
+
+  textarea.value = 'cannot save'
+  textarea.dispatchEvent(new Event('input'))
+  await vi.waitFor(() => {
+    expect(root.querySelector('[data-notes-status]')!.textContent).toBe('Couldn’t save')
+  })
+  expect(textarea.disabled).toBe(false)
+  expect(log).toHaveBeenCalledWith('Desktop notes save failed', expect.any(Error))
+  // Clearing the field leaves nothing for disposal to retry against the same failing write.
+  textarea.value = ''
 })
