@@ -125,8 +125,9 @@ describe('SidebarRoot shell', () => {
   })
   it('routes New Session (capsule + wordmark) and the column toggle', () => {
     const b = mountShell()
-    expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
     expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
+    // The expanded row hosts the name slot alone; the mark belongs to the rail.
+    expect(screen.queryByTestId('custom-brand-mark')).toBeNull()
     // Expanded, both the wordmark and the capsule start a session.
     const starters = screen.getAllByRole('button', { name: 'New session' })
     expect(starters).toHaveLength(2)
@@ -151,7 +152,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(container.querySelector('svg[viewBox="0 0 100 24"]')).not.toBeNull()
+    expect(container.querySelector('svg[viewBox="-3 -3.5 106 26.5"]')).not.toBeNull()
     expect(screen.getByText('1.2.3-rc.4-0123456-dirty')).toBeTruthy()
     expect(container.querySelector('svg')).not.toBeNull()
   })
@@ -172,7 +173,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(container.querySelector('svg[viewBox="0 0 100 24"]')).not.toBeNull()
+    expect(container.querySelector('svg[viewBox="-3 -3.5 106 26.5"]')).not.toBeNull()
     expect(screen.getByText(expected)).toBeTruthy()
   })
 
@@ -188,7 +189,7 @@ describe('SidebarRoot shell', () => {
         options?.fallback ?? null) as SidebarRootComponentProps['renderSlot']}
     />)
 
-    expect(container.querySelector('svg[viewBox="0 0 100 24"]')).not.toBeNull()
+    expect(container.querySelector('svg[viewBox="-3 -3.5 106 26.5"]')).not.toBeNull()
   })
 
   it('hands the region its wide flag and clamps expandSidebar to the collapsed state', () => {
@@ -261,7 +262,7 @@ it('keeps the macOS sidebar toggle in its top strip', () => {
   // role (the global no-drag rule would subtract it); only the dedicated
   // New Session capsule starts a session.
   expect(screen.getAllByRole('button', { name: 'New session' })).toHaveLength(1)
-  expect(screen.getByTestId('custom-brand-mark')).toBeTruthy()
+  expect(screen.getByTestId('custom-brand-name')).toBeTruthy()
 })
 
 it('wires the shell.leading controls to the shared sidebar actions', () => {

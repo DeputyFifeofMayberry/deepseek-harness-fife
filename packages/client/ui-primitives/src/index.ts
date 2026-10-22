@@ -43,7 +43,10 @@ export { RiskConfirmation } from './RiskConfirmation.tsx'
 export type { RiskConfirmationProps } from './RiskConfirmation.tsx'
 export { ConnectionIndicator } from './ConnectionIndicator.tsx'
 export type { ConnectionIndicatorState } from './ConnectionIndicator.tsx'
-export { SheriffHatMark, SHERIFF_HAT_PATH, SHERIFF_HAT_STAR_PATH, SHERIFF_HAT_VIEWBOX } from './SheriffHatMark.tsx'
+export {
+  SheriffHatMark, SHERIFF_HAT_BRIM_PATH, SHERIFF_HAT_PATH, SHERIFF_HAT_VIEWBOX,
+} from './SheriffHatMark.tsx'
+export { BrandBadgeMark } from './BrandBadgeMark.tsx'
 export { BrandWordmark } from './BrandWordmark.tsx'
 export type { BrandWordmarkProps } from './BrandWordmark.tsx'
 export {

@@ -128,8 +128,8 @@ describe('SheriffHatMark', () => {
     const { container } = render(<primitives.SheriffHatMark />)
     const svg = container.querySelector('svg')!
     expect(svg.getAttribute('width')).toBe('24')
-    expect(Number(svg.getAttribute('height'))).toBeCloseTo(17.5, 1)
-    expect(svg.getAttribute('viewBox')).toBe('0 0 24 17.5')
+    expect(Number(svg.getAttribute('height'))).toBeCloseTo(15, 1)
+    expect(svg.getAttribute('viewBox')).toBe('0 0 48 30')
     expect(container.querySelectorAll('path')).toHaveLength(2)
     expect(container.querySelector('path')!.getAttribute('fill-rule')).toBe('evenodd')
     expect(container.innerHTML).toContain('currentColor')
@@ -137,15 +137,35 @@ describe('SheriffHatMark', () => {
   })
 })
 
-describe('BrandWordmark', () => {
-  it('can render the name artwork with or without its leading mark', () => {
-    const view = render(<primitives.BrandWordmark />)
-    const svg = view.container.querySelector('svg')!
-    expect(svg.getAttribute('width')).toBe('126')
-    expect(svg.getAttribute('viewBox')).toBe('0 0 126 24')
+describe('BrandBadgeMark', () => {
+  it('renders the hat, lasso ring, and star on a square currentColor artboard', () => {
+    const { container } = render(<primitives.BrandBadgeMark size={32} />)
+    const svg = container.querySelector('svg')!
+    expect(svg.getAttribute('width')).toBe('32')
+    expect(svg.getAttribute('height')).toBe('32')
+    expect(svg.getAttribute('viewBox')).toBe('0 0 48 48')
+    expect(container.querySelector('circle')!.getAttribute('stroke')).toBe('currentColor')
+    expect(container.querySelectorAll('path')).toHaveLength(3)
+    expect(container.innerHTML).toContain('currentColor')
+  })
+})
 
-    view.rerender(<primitives.BrandWordmark includeMark={false} />)
-    expect(svg.getAttribute('width')).toBe('100')
-    expect(svg.getAttribute('viewBox')).toBe('0 0 100 24')
+describe('BrandWordmark', () => {
+  it('renders the complete lockup on the shareable artboard', () => {
+    const { container } = render(<primitives.BrandWordmark />)
+    const svg = container.querySelector('svg')!
+    expect(Number(svg.getAttribute('width'))).toBeCloseTo(96, 1)
+    expect(svg.getAttribute('height')).toBe('24')
+    expect(svg.getAttribute('viewBox')).toBe('-3 -3.5 106 26.5')
+  })
+
+  it('keeps each instance hole mask scoped to its own artwork', () => {
+    const { container } = render(<><primitives.BrandWordmark /><primitives.BrandWordmark /></>)
+    const maskIds = [...container.querySelectorAll('mask')].map(mask => mask.id)
+    expect(new Set(maskIds).size).toBe(2)
+    for (const path of container.querySelectorAll('path[mask]')) {
+      const referenced = path.getAttribute('mask')!.replace(/^url\(#/, '').replace(/\)$/, '')
+      expect(maskIds).toContain(referenced)
+    }
   })
 })
