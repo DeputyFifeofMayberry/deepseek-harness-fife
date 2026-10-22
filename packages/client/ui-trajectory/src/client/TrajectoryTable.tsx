@@ -20,6 +20,7 @@ import {
   MarkdownText,
   StateDot,
   Tooltip,
+  clock12Parts,
   writeClipboard,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { JsonTreeLabels, JsonTreeProps, MarkdownLabels } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -304,8 +305,11 @@ function formatStartedAt(timestamp: number | null, t: TrajectoryTranslate): stri
   if (timestamp === null || !Number.isFinite(timestamp)) return t('timing.notAvailable')
   const date = new Date(timestamp)
   const two = (value: number) => String(value).padStart(2, '0')
-  const three = (value: number) => String(value).padStart(3, '0')
-  const time = `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}.${three(date.getMilliseconds())}`
+  const { h, mm, ss, mmm, ampm } = clock12Parts(timestamp)
+  const time = t('time.clock', {
+    h, mm, ss, mmm,
+    ampm: t(ampm === 'am' ? 'time.am' : 'time.pm'),
+  })
   const day = `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`
   return `${day} ${time}`
 }

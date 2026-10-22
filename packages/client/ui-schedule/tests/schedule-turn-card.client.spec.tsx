@@ -363,7 +363,7 @@ describe('ScheduleTurnCard', () => {
     const openTaskDetail = vi.fn()
     render(<ScheduleTurnCard {...cardProps([settledBlock(dailyTask)], openTaskDetail)} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.getByRole('button', { name: 'Open' })).toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: 'Open task details: Check the deployment' }))
     expect(openTaskDetail).toHaveBeenCalledExactlyOnceWith('task-daily' as ScheduleId)
@@ -391,7 +391,7 @@ describe('ScheduleTurnCard', () => {
     view.rerender(<ScheduleTurnCard {...snapshot()} />)
     expect(screen.queryByText('Check the deployment')).toBeNull()
     expect(screen.getByText('Updated deployment check')).toBeDefined()
-    expect(screen.getByText(`Weekly on Mon, Wed at 09:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Weekly on Mon, Wed at 9:00 AM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
   })
 
   it('marks a removed task as deleted and removes its open action', async () => {
@@ -411,7 +411,7 @@ describe('ScheduleTurnCard', () => {
     )
     await act(async () => {})
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.queryByText('Deleted')).toBeNull()
     expect(screen.getByRole('button', { name: 'Open task details: Check the deployment' })).toBeDefined()
 
@@ -434,7 +434,7 @@ describe('ScheduleTurnCard', () => {
     await act(async () => {})
     view.rerender(<ScheduleTurnCard {...snapshot({ readRequest: 6, readSettled: 6 })} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.queryByText('Deleted')).toBeNull()
     expect(screen.getByRole('button', { name: 'Open task details: Check the deployment' })).toBeDefined()
 
@@ -453,7 +453,7 @@ describe('ScheduleTurnCard', () => {
     await act(async () => {})
     view.rerender(<ScheduleTurnCard {...snapshot({ status: 'error', settled: false, readRequest: 0, readSettled: 0 })} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.queryByText('Deleted')).toBeNull()
     expect(screen.getByRole('button', { name: 'Open task details: Check the deployment' })).toBeDefined()
 
@@ -493,7 +493,7 @@ describe('ScheduleTurnCard', () => {
     await act(async () => {})
     view.rerender(<ScheduleTurnCard {...snapshot({ status: 'error', settled: false, readRequest: 0, readSettled: 0 })} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.queryByText('Deleted')).toBeNull()
     expect(screen.getByRole('button', { name: 'Open task details: Check the deployment' })).toBeDefined()
 
@@ -508,7 +508,7 @@ describe('ScheduleTurnCard', () => {
     // the call wrote it instead of claiming a deletion it cannot establish.
     render(<ScheduleTurnCard {...cardProps([settledBlock(dailyTask)], vi.fn(), makeTranslate(en), [], 'loading')} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.queryByText('Deleted')).toBeNull()
     expect(screen.getByRole('button', { name: 'Open task details: Check the deployment' })).toBeDefined()
   })
@@ -541,8 +541,8 @@ describe('ScheduleTurnCard', () => {
   })
 
   it.each([
-    [dailyTask, `Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
-    [weeklyTask, `Weekly on Mon, Wed at 09:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
+    [dailyTask, `Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
+    [weeklyTask, `Weekly on Mon, Wed at 9:00 AM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
   ])('formats the frequency line of one created task', (task, frequency) => {
     render(<ScheduleTurnCard {...cardProps([settledBlock(task)])} />)
     expect(screen.getByText(frequency)).toBeDefined()
@@ -553,7 +553,7 @@ describe('ScheduleTurnCard', () => {
     render(<ScheduleTurnCard {...cardProps(
       [settledBlock(weeklyTask)], openTaskDetail, makeTranslate(zh),
     )} />)
-    expect(screen.getByText(`每周一、三 09:00（${zoneLabel('Asia/Shanghai', makeTranslate(zh))}）`)).toBeDefined()
+    expect(screen.getByText(`每周一、三 上午9:00（${zoneLabel('Asia/Shanghai', makeTranslate(zh))}）`)).toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: '打开任务详情：Check the deployment' }))
     expect(openTaskDetail).toHaveBeenCalledExactlyOnceWith('task-weekly' as ScheduleId)
   })

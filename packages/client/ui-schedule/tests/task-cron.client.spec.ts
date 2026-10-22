@@ -57,11 +57,11 @@ describe('Vixie star flags mirrored from the Host', () => {
   it('reads a day field that covers every value as no restriction without a star', () => {
     // Without a star either side matches independently, so a day field holding
     // every value makes the union every day, whichever side holds it.
-    expect(cronPreview(parsed('0 9 1-31 * 1'), tEn, 'en')).toBe('Every day at 09:00')
-    expect(cronPreview(parsed('0 9 1 * 0-6'), tEn, 'en')).toBe('Every day at 09:00')
+    expect(cronPreview(parsed('0 9 1-31 * 1'), tEn, 'en')).toBe('Every day at 9:00 AM')
+    expect(cronPreview(parsed('0 9 1 * 0-6'), tEn, 'en')).toBe('Every day at 9:00 AM')
     // Neither side covers every value: both are named as alternatives.
-    expect(cronPreview(parsed('0 9 1,2 * 1,3'), tEn, 'en')).toBe('Day 1, 2 of every month or Mon, Wed at 09:00')
-    expect(cronPreview(parsed('0 9 1,2 * 1,3'), tZh, 'zh-CN')).toBe('每月 1、2 日或周一、周三 09:00')
+    expect(cronPreview(parsed('0 9 1,2 * 1,3'), tEn, 'en')).toBe('Day 1, 2 of every month or Mon, Wed at 9:00 AM')
+    expect(cronPreview(parsed('0 9 1,2 * 1,3'), tZh, 'zh-CN')).toBe('每月 1、2 日或周一、周三 上午9:00')
   })
 })
 
@@ -139,22 +139,22 @@ describe('cronPreview', () => {
   const everyMinuteEn = Array.from({ length: 60 }, (_value, index) => index).join(', ')
   const everyMinuteZh = Array.from({ length: 60 }, (_value, index) => index).join('、')
   it.each([
-    ['0 9 * * 1-5', 'Mon–Fri at 09:00', '周一至周五 09:00'],
-    ['0 9 * * *', 'Every day at 09:00', '每天 09:00'],
+    ['0 9 * * 1-5', 'Mon–Fri at 9:00 AM', '周一至周五 上午9:00'],
+    ['0 9 * * *', 'Every day at 9:00 AM', '每天 上午9:00'],
     ['*/15 * * * *', 'Every 15 minutes', '每 15 分钟'],
     ['* * * * *', 'Every minute', '每分钟'],
-    ['0 9 * * 1,3', 'Mon, Wed at 09:00', '周一、周三 09:00'],
-    ['0 9 * * 1-3,6', 'Mon–Wed, Sat at 09:00', '周一至周三、周六 09:00'],
-    ['0 9 * * 0', 'Sun at 09:00', '周日 09:00'],
-    ['0 9 * * 6,7', 'Sat, Sun at 09:00', '周六、周日 09:00'],
-    ['30 8 1 * *', 'Day 1 of every month at 08:30', '每月 1 日 08:30'],
-    ['0 9 1,15 * *', 'Day 1, 15 of every month at 09:00', '每月 1、15 日 09:00'],
-    ['0 9 1 3 *', 'Day 1 of every month in March at 09:00', '每月 1 日（三月） 09:00'],
-    ['0 9 1 * 1', 'Day 1 of every month or Mon at 09:00', '每月 1 日或周一 09:00'],
-    ['0 9 * 1,12 *', 'Every day in January, December at 09:00', '每天（一月、十二月） 09:00'],
-    ['* 9-17 * * *', 'Every day every minute during hours 09–17', '每天 09 至 17 点的每分钟'],
-    ['*/15 9-17 * * *', 'Every day every 15 minutes during hours 09–17', '每天 09 至 17 点内每 15 分钟'],
-    ['0 9,15 * * *', 'Every day at 09:00, 15:00', '每天 09:00、15:00'],
+    ['0 9 * * 1,3', 'Mon, Wed at 9:00 AM', '周一、周三 上午9:00'],
+    ['0 9 * * 1-3,6', 'Mon–Wed, Sat at 9:00 AM', '周一至周三、周六 上午9:00'],
+    ['0 9 * * 0', 'Sun at 9:00 AM', '周日 上午9:00'],
+    ['0 9 * * 6,7', 'Sat, Sun at 9:00 AM', '周六、周日 上午9:00'],
+    ['30 8 1 * *', 'Day 1 of every month at 8:30 AM', '每月 1 日 上午8:30'],
+    ['0 9 1,15 * *', 'Day 1, 15 of every month at 9:00 AM', '每月 1、15 日 上午9:00'],
+    ['0 9 1 3 *', 'Day 1 of every month in March at 9:00 AM', '每月 1 日（三月） 上午9:00'],
+    ['0 9 1 * 1', 'Day 1 of every month or Mon at 9:00 AM', '每月 1 日或周一 上午9:00'],
+    ['0 9 * 1,12 *', 'Every day in January, December at 9:00 AM', '每天（一月、十二月） 上午9:00'],
+    ['* 9-17 * * *', 'Every day every minute of 9 AM–5 PM', '每天 上午9点 至 下午5点的每分钟'],
+    ['*/15 9-17 * * *', 'Every day every 15 minutes of 9 AM–5 PM', '每天 上午9点 至 下午5点内每 15 分钟'],
+    ['0 9,15 * * *', 'Every day at 9:00 AM, 3:00 PM', '每天 上午9:00、下午3:00'],
     ['0,30 * * * *', 'Every 30 minutes', '每 30 分钟'],
     ['0 * * * *', 'Every hour', '每小时'],
     ['0 */2 * * *', 'Every 2 hours', '每 2 小时'],
@@ -167,10 +167,10 @@ describe('cronPreview', () => {
     ['0-30/15 * * * *', 'Every day every hour at minute 0, 15, 30', '每天 每小时的第 0、15、30 分钟'],
     ['5,20,35,50 * * * *', 'Every day every hour at minute 5, 20, 35, 50', '每天 每小时的第 5、20、35、50 分钟'],
     ['0,15,40 * * * *', 'Every day every hour at minute 0, 15, 40', '每天 每小时的第 0、15、40 分钟'],
-    ['* 9 * * *', 'Every day every minute during hours 09', '每天 09 点的每分钟'],
-    ['0-59/1 9 * * *', `Every day at minute ${everyMinuteEn} of hours 09`, `每天 09 点的第 ${everyMinuteZh} 分钟`],
-    ['5,10,25,40,50 1,7,13 * * *', 'Every day at minute 5, 10, 25, 40, 50 of hours 01, 07, 13',
-      '每天 01、07、13 点的第 5、10、25、40、50 分钟'],
+    ['* 9 * * *', 'Every day every minute of 9 AM', '每天 上午9点的每分钟'],
+    ['0-59/1 9 * * *', `Every day at minute ${everyMinuteEn} past 9 AM`, `每天 上午9点的第 ${everyMinuteZh} 分钟`],
+    ['5,10,25,40,50 1,7,13 * * *', 'Every day at minute 5, 10, 25, 40, 50 past 1 AM, 7 AM, 1 PM',
+      '每天 上午1点、上午7点、下午1点的第 5、10、25、40、50 分钟'],
     ['*/15 * * 3 *', 'Every day in March every 15 minutes', '每天（三月） 每 15 分钟'],
   ])('describes %s', (expression, english, chinese) => {
     expect(cronPreview(parsed(expression), tEn, 'en')).toBe(english)

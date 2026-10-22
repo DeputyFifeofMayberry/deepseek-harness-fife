@@ -7,6 +7,7 @@ import {
   Button, IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconChevronUpOutlineRegular,
   IconClockOutlineRegular, IconCloseOutlineRegular,
   IconEllipsisOutlineRegular, IconTrashOutlineRegular, Modal, Pill, ReferenceIconRegular, Tooltip,
+  clock12Hour,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { RemoteResult } from '@deepseek-ai/dsh-api-remotes/client'
@@ -120,6 +121,26 @@ type Weekday = (typeof WEEKDAYS)[number]
 
 /** ISO weekday set the `weekdays` choice stores: Monday through Friday. */
 const WEEKDAY_RULE = [1, 2, 3, 4, 5] as const satisfies readonly Weekday[]
+
+/**
+ * Trigger text for one staged clock row, stated on the 12-hour clock through
+ * the shared frequency copy. Textual only: the staged clock names the rule's
+ * own zone, so the meridiem derives from the stored digits.
+ * @param time - staged clock text, with or without seconds.
+ * @param t - task-manager locale seat, which carries the shared frequency keys.
+ * @returns 12-hour trigger text, for example `9:00:00 PM`; the input when unparsable.
+ */
+function triggerClock(time: string, t: RuleTranslate): string {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(time)
+  if (match === null || match[2] === undefined) return time
+  const hours = Number(match[1])
+  return t('frequency.clock', {
+    h: clock12Hour(hours),
+    mm: match[2],
+    ss: match[3] === undefined || match[3] === '00' ? '' : `:${match[3]}`,
+    ampm: t(hours < 12 ? 'frequency.time.am' : 'frequency.time.pm'),
+  })
+}
 
 /**
  * Recurrence choices that state their rule with the clock and zone rows.
@@ -1748,8 +1769,8 @@ function RuleCard({
         </div>}
         {shown.kind !== 'cron' && <div className={css.ruleRow}>
           <label className={css.ruleLabel} htmlFor={rowId('time')}>{t('timing.time')}</label>
-          {/* Both locales read the same 24-hour clock, so the row states one
-              value instead of borrowing the browser's AM/PM formatting. */}
+          {/* The row states the staged clock on the 12-hour scale; the staged
+              value and the picker's storage stay whole-second 24-hour. */}
           <span className={css.menuGuard} onKeyDown={(event) => {
             guardMenuEscape(event, timeOpen, () => {
               setTimeOpen(false)
@@ -1768,7 +1789,7 @@ function RuleCard({
               aria-describedby={clockHint === undefined ? undefined : rowId('time-hint')}
               onClick={() => { setTimeOpen(open => !open) }}
             >
-              <span>{secondPrecision(shown.draft.time)}</span>
+              <span>{triggerClock(secondPrecision(shown.draft.time), t)}</span>
               <IconClockOutlineRegular className={css.pickerIcon} />
             </button>
             <ClockPicker
@@ -2124,7 +2145,7 @@ function CronRows({ task, disabled, expression, timeZone, hintId, onEditExpressi
           aria-expanded={timeOpen}
           onClick={() => { setTimeOpen(open => !open) }}
         >
-          <span>{clock}</span>
+          <span>{triggerClock(clock, t)}</span>
           <IconClockOutlineRegular className={css.pickerIcon} />
         </button>
         <ClockPicker
