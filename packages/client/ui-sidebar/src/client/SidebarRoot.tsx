@@ -19,7 +19,7 @@
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
-  BrandWordmark, SheriffHatMark, IconNewChatOutlineMedium, IconNewChatOutlineRegular,
+  BrandBadgeMark, BrandWordmark, IconNewChatOutlineMedium, IconNewChatOutlineRegular,
   IconPanelLeftOutlineRegular, isDarwinDesktop, ShortcutKeys, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -187,7 +187,7 @@ export function SidebarRoot({
       >
         {!wide && !windowsTitlebar && (
           <span className={css.railMark} aria-hidden="true">
-            {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <SheriffHatMark size={24} /> })}
+            {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <BrandBadgeMark size={24} /> })}
           </span>
         )}
         {/* Rail icons render at 18 (figma rail spec); expanded keeps the glyph-native sizes. */}
@@ -222,14 +222,11 @@ export function SidebarRoot({
         {wide && (() => {
           const identity = (
             <span className={css.brandIdentity} aria-hidden="true">
-              <span className={css.brandMark}>
-                {renderSlot('sidebar.brand.mark', { size: 24 }, { fallback: <SheriffHatMark size={24} /> })}
-              </span>
               <span className={css.brandName}>
                 {renderSlot('sidebar.brand.name', {}, {
                   fallback: (
                     <span className={css.localBuildBrand}>
-                      <BrandWordmark size={24} includeMark={false} />
+                      <BrandWordmark size={24} />
                       {buildVersion === undefined
                         ? null
                         : <span className={css.buildVersion}>{buildVersion}</span>}

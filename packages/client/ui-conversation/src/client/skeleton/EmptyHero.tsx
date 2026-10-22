@@ -3,8 +3,7 @@
 
 import type { ReactNode, RefObject } from 'react'
 import {
-  IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
-  SHERIFF_HAT_PATH, SHERIFF_HAT_STAR_PATH, SHERIFF_HAT_VIEWBOX,
+  IconChevronDownOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular, SheriffHatMark,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
 import type { ConversationContentProps } from '../contract/slots.ts'
@@ -78,19 +77,7 @@ export interface HeroShellProps {
  * @returns the hat svg element.
  */
 function HeroMark() {
-  return (
-    <svg
-      className={css.fish}
-      width={34}
-      height={(34 * SHERIFF_HAT_VIEWBOX.height) / SHERIFF_HAT_VIEWBOX.width}
-      viewBox={`0 0 ${SHERIFF_HAT_VIEWBOX.width} ${SHERIFF_HAT_VIEWBOX.height}`}
-      fill="none"
-      aria-hidden="true"
-    >
-      <path d={SHERIFF_HAT_PATH} fill="currentColor" fillRule="evenodd" />
-      <path d={SHERIFF_HAT_STAR_PATH} fill="currentColor" />
-    </svg>
-  )
+  return <SheriffHatMark size={34} className={css.fish} />
 }
 
 /**
@@ -103,7 +90,7 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
     <div className={css.root}>
       <div className={css.stack}>
         <div className={css.headline}>
-          {/* figma 34:10412: mark 34×25 leading the headline, gap 10. */}
+          {/* figma 34:10412: mark 34 wide (21 high at the 48:30 hat ratio) leading the headline, gap 10. */}
           <span className={css.fishHitbox}>
             {renderSlot('conversation.hero.brand.mark', { size: 34, className: css.fish }, {
               fallback: <HeroMark />,

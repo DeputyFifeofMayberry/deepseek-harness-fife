@@ -114,23 +114,6 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="9fca38a5"
-                fill="none"
-                height="17.5"
-                viewBox="0 0 24 17.5"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -142,11 +125,11 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
               >
                 <svg
                   aria-hidden="true"
-                  data-content="9492d37d"
+                  data-content="2bee6585"
                   fill="none"
                   height="24"
-                  viewBox="0 0 100 24"
-                  width="100"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
                 />
                 <span
                   class="buildVersion"
@@ -265,10 +248,10 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
           >
             <svg
               aria-hidden="true"
-              data-content="9fca38a5"
+              data-content="69b16041"
               fill="none"
-              height="17.5"
-              viewBox="0 0 24 17.5"
+              height="24"
+              viewBox="0 0 48 48"
               width="24"
             />
           </div>
@@ -369,23 +352,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="9fca38a5"
-                fill="none"
-                height="17.5"
-                viewBox="0 0 24 17.5"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -397,11 +363,11 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
               >
                 <svg
                   aria-hidden="true"
-                  data-content="9492d37d"
+                  data-content="c76a8e65"
                   fill="none"
                   height="24"
-                  viewBox="0 0 100 24"
-                  width="100"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
                 />
                 <span
                   class="buildVersion"
@@ -515,23 +481,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="9fca38a5"
-                fill="none"
-                height="17.5"
-                viewBox="0 0 24 17.5"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -543,11 +492,11 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
               >
                 <svg
                   aria-hidden="true"
-                  data-content="9492d37d"
+                  data-content="ebbda1b5"
                   fill="none"
                   height="24"
-                  viewBox="0 0 100 24"
-                  width="100"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
                 />
                 <span
                   class="buildVersion"

@@ -62,10 +62,6 @@
   transform: translateY(1px);
 }
 
-:global([data-windows-titlebar]) .brandMark {
-  transform: translateX(1px);
-}
-
 :global([data-windows-titlebar]) .brandName {
   font-weight: 400;
 }
@@ -262,21 +258,14 @@
   cursor: default;
 }
 
-/* Mark and name are independent slots; the shell owns their shared baseline,
-   spacing, and height so either occupant can vary in width. */
+/* The expanded row hosts the name slot alone: the current lockup carries its
+   own mark. The shell owns the baseline and height so an occupant can vary in
+   width. */
 .brandIdentity {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   height: 24px;
   min-width: 0;
-}
-
-.brandMark {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .brandName {
