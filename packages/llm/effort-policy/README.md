@@ -19,6 +19,7 @@ The service applies that decision to every request of every Agent it can see, re
 - [Understand the implementation](#understand-the-implementation)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
+- [Dev Note](#dev-note)
 
 -----
 
@@ -82,3 +83,15 @@ None. The policy changes one request control and leaves the message prefix untou
 - **An unreadable record retains the last level only within one policy instance** — after a restart with an undecodable record there is no last state to retain, so the request fails loud instead of falling back to base.
 - **A cold-resumed child loses its operation** — the delegation descriptor stores provider, model, and effort only, so a resumed child starts at the configured base level rather than its original operation; an inherited effort is an exact start and is never escalated.
 - **Out-of-process children get no operation** — an SDK provider copies the four named route fields, so `effortOperation` and `effortInherited` do not cross the process boundary and such a child starts at the configured base level.
+
+-----
+
+<a id="dev-note"></a>
+### Dev Note
+
+<details>
+<summary>Working context for maintainers — click to expand</summary>
+
+The decision rules live in `@mayberry/effort-policy-core`, pinned by tag in `package.json`; `src/core.ts` re-exports them. Bump the tag and the adapter's supported protocol together, because load refuses a core at a different protocol.
+
+</details>

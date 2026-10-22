@@ -7,7 +7,7 @@ kind: "package-reference"
 
 [English](README.md) | 中文
 
-## 摘要
+## 概述
 
 内核会在路由声明的强度词表中解析三档等级，只在配置的验证失败时提升等级，并保持提升状态直到同一验证通过。输入输出都是普通数据，不引用 Cordis、会话或 LLM 类型，因此其他运行时可以复用。
 
@@ -19,6 +19,7 @@ kind: "package-reference"
 - [理解实现](#understand-the-implementation)
 - [模型体验](#model-experience)
 - [已知限制与待办](#known-limitations-and-deferred-work)
+- [开发备注](#dev-note)
 
 -----
 
@@ -83,3 +84,15 @@ kind: "package-reference"
 - **不可读记录只在同一个策略实例内保留上次等级** —— 重启后遇到无法解码的记录时没有可保留的上一状态，请求会显式失败，而不是退回基准。
 - **冷恢复的子 agent 会丢失其操作** —— 委派描述符只保存提供方、模型与强度，因此恢复后的子 agent 从配置的基准等级启动，而不是其原始操作；被继承的强度属于确切起始强度，永不升级。
 - **进程外子 agent 没有操作** —— SDK 提供方只复制四个具名路由字段，因此 `effortOperation` 与 `effortInherited` 不会跨越进程边界，这类子 agent 从配置的基准等级启动。
+
+-----
+
+<a id="dev-note"></a>
+### 开发备注
+
+<details>
+<summary>维护者的工作上下文——点击展开</summary>
+
+决策规则位于 `@mayberry/effort-policy-core`，在 `package.json` 中按标签锁定；`src/core.ts` 重新导出它们。升级标签与适配器支持的协议版本必须同时进行，因为加载时会拒绝协议不同的核心。
+
+</details>

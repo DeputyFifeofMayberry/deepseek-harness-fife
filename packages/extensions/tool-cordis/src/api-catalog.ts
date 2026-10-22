@@ -1054,25 +1054,42 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
   },
   {
     key: 'effortPolicy',
-    summary: 'Owns the deployment configuration and the observed state of each Agent.',
-    description: 'Owns the deployment configuration and the observed state of each Agent.\n\nA disabled policy is inert: it registers the service so tools can detect that the deployment knows about the feature, and it writes nothing. Callers that need the configured behavior must check EffortPolicy.enabled.',
+    summary: 'Owns the deployment configuration, the durable record, and the request write.',
+    description: 'Owns the deployment configuration, the durable record, and the request write.\n\nA disabled policy is inert: it registers the service so a tool can detect that the deployment knows about the feature, and it writes nothing. All wiring is installed only when the services it needs are composed.',
     methods: [
       {
-        signature: 'stateOf(agent: Agent): EffortState',
-        description: 'The observed state for one Agent. An Agent with no recorded pick runs at the configured base.',
-        parameters: [{ name: 'agent', description: 'the Agent whose state is read.' }],
-        returns: 'the current state.',
+        signature: 'async applyTo(session: Session, proposed: LlmCallConfig, start?: StartChoice): Promise<LlmCallConfig>',
+        description: 'Apply the policy to one proposed request. Provider and model are always preserved; only the effort may change, and only when the policy is enabled and the route advertises a vocabulary.',
+        parameters: [{ name: 'session', description: 'the Session making the request.' }, { name: 'proposed', description: 'the configuration the loop would dispatch.' }, { name: 'start', description: 'the Agent\'s own starting choice, used only while the Session has recorded none of its own.' }],
+        returns: 'the configuration to dispatch.',
       },
       {
-        signature: 'setBase(agent: Agent, rawEffort: string): void',
+        signature: 'meetsOperationMinimum(operation: DelegationOperation, rawEffort: string): boolean',
+        description: 'Whether a delegation\'s declared effort respects its operation minimum. The minimum constrains the three automatic level names; any other advertised effort is written verbatim, because only the adapter knows whether it is a capability above or below that level.',
+        parameters: [{ name: 'operation', description: 'the delegation\'s declared operation.' }, { name: 'rawEffort', description: 'the effort the caller selected.' }],
+        returns: 'whether the delegating tool may accept the value.',
+      },
+      {
+        signature: 'stateOf(session: Session): EffortState',
+        description: 'The observed state for one Session, read from its durable record.',
+        parameters: [{ name: 'session', description: 'the Session whose state is read.' }],
+        returns: 'the current state as the core consumes it.',
+      },
+      {
+        signature: 'setBase(session: Session, rawEffort: string): void',
         description: 'Record a user pick. A level value replaces the base and clears any exact effort; any other value is an exact effort written verbatim and never escalated.',
-        parameters: [{ name: 'agent', description: 'the Agent the pick applies to.' }, { name: 'rawEffort', description: 'the effort value the user selected.' }],
+        parameters: [{ name: 'session', description: 'the Session the pick applies to.' }, { name: 'rawEffort', description: 'the effort value the user selected.' }],
         throws: ['when `rawEffort` is empty.'],
       },
       {
-        signature: 'decideFor(capability: EffortCapability, agent?: Agent): Decision',
+        signature: 'observe(session: Session, tool: string, args: unknown, result: ToolExecutionResult): void',
+        description: 'Fold one settled tool result into the workspace revision or the open escalation, appending a decision record only when the state changes.',
+        parameters: [{ name: 'session', description: 'the Session whose tool call settled.' }, { name: 'tool', description: 'registered tool name.' }, { name: 'args', description: 'the call\'s parsed arguments.' }, { name: 'result', description: 'the settled result.' }],
+      },
+      {
+        signature: 'decideFor(capability: EffortCapability, session?: Session): Decision',
         description: 'Decide the effort for one request.',
-        parameters: [{ name: 'capability', description: 'the exact route\'s advertised efforts.' }, { name: 'agent', description: 'the Agent making the request; omission decides from the configured base.' }],
+        parameters: [{ name: 'capability', description: 'the exact route\'s advertised efforts.' }, { name: 'session', description: 'the Session making the request; omission decides from the configured base.' }],
         returns: 'the decision and the rule that produced it.',
       },
       {
@@ -5345,14 +5362,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface DailyScheduleRecord {\n    readonly id: ScheduleId;\n    readonly kind: \'daily\';\n    readonly title: string;\n    readonly prompt: string;\n    readonly time: string;\n    readonly timeZone: string;\n    readonly scheduledAt: string;\n}',
   },
   {
-    name: 'Decision',
-    declaration: 'export interface Decision {\n    readonly rule: DecisionRule;\n    readonly level?: EffortLevel;\n    readonly effort?: string;\n}',
-  },
-  {
-    name: 'DecisionRule',
-    declaration: 'export type DecisionRule = \'exact-base\' | \'mode-pin\' | \'base\' | \'escalated\' | \'untouched\';',
-  },
-  {
     name: 'DeepSeekLlmApiExtensionMap',
     declaration: 'export interface DeepSeekLlmApiExtensionMap {\n}',
   },
@@ -5367,10 +5376,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'DeepSeekLlmApiJson',
     declaration: 'export type DeepSeekLlmApiJson = null | boolean | number | string | DeepSeekLlmApiJson[] | {\n    [key: string]: DeepSeekLlmApiJson;\n};',
-  },
-  {
-    name: 'DelegationOperation',
-    declaration: 'export type DelegationOperation = \'general\' | \'explore\' | \'implement\' | \'plan\' | \'review\' | \'mechanical\';',
   },
   {
     name: 'DeliveryRetentionBounds',
@@ -5487,18 +5492,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'EditGoalRequest',
     declaration: 'export interface EditGoalRequest {\n    readonly objective?: string;\n    readonly maxGoalRounds?: number;\n}',
-  },
-  {
-    name: 'EffortCapability',
-    declaration: 'export interface EffortCapability {\n    readonly efforts: readonly string[];\n    readonly defaultEffort?: string;\n}',
-  },
-  {
-    name: 'EffortLevel',
-    declaration: 'export type EffortLevel = \'low\' | \'standard\' | \'deep\';',
-  },
-  {
-    name: 'EffortState',
-    declaration: 'export interface EffortState {\n    readonly base: EffortLevel;\n    readonly exact?: string;\n    readonly pin?: EffortLevel;\n    readonly openFailure?: {\n        readonly verifier: string;\n        readonly sequence: number;\n        readonly revision: number;\n    };\n}',
   },
   {
     name: 'EncodedFileAttachment',
@@ -7855,6 +7848,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SshStreamEndpoint',
     declaration: 'export type SshStreamEndpoint = z.infer<typeof streamEndpointSchema>;',
+  },
+  {
+    name: 'StartChoice',
+    declaration: 'export interface StartChoice {\n    readonly level?: EffortLevel;\n    readonly exact?: string;\n}',
   },
   {
     name: 'StorageBackend',

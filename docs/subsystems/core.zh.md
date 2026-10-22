@@ -775,36 +775,68 @@ Source: [`packages/core/agent/src/index.ts`](../../packages/core/agent/src/index
 
 ### `ctx.effortPolicy` — `EffortPolicy`
 
-Owns the deployment configuration and the observed state of each Agent.
+Owns the deployment configuration, the durable record, and the request write.
 
-A disabled policy is inert: it registers the service so tools can detect that the deployment knows about the feature, and it writes nothing. Callers that need the configured behavior must check EffortPolicy.enabled.
+A disabled policy is inert: it registers the service so a tool can detect that the deployment knows about the feature, and it writes nothing. All wiring is installed only when the services it needs are composed.
 
 ```ts cordis-catalog
 /**
- * The observed state for one Agent. An Agent with no recorded pick runs at the
- * configured base.
- * @param agent - the Agent whose state is read.
- * @returns the current state.
+ * Apply the policy to one proposed request. Provider and model are always
+ * preserved; only the effort may change, and only when the policy is enabled
+ * and the route advertises a vocabulary.
+ * @param session - the Session making the request.
+ * @param proposed - the configuration the loop would dispatch.
+ * @param start - the Agent's own starting choice, used only while the Session
+ *   has recorded none of its own.
+ * @returns the configuration to dispatch.
  */
-stateOf(agent: Agent): EffortState
+async applyTo(session: Session, proposed: LlmCallConfig, start?: StartChoice): Promise<LlmCallConfig>
+
+/**
+ * Whether a delegation's declared effort respects its operation minimum. The
+ * minimum constrains the three automatic level names; any other advertised
+ * effort is written verbatim, because only the adapter knows whether it is a
+ * capability above or below that level.
+ * @param operation - the delegation's declared operation.
+ * @param rawEffort - the effort the caller selected.
+ * @returns whether the delegating tool may accept the value.
+ */
+meetsOperationMinimum(operation: DelegationOperation, rawEffort: string): boolean
+
+/**
+ * The observed state for one Session, read from its durable record.
+ * @param session - the Session whose state is read.
+ * @returns the current state as the core consumes it.
+ */
+stateOf(session: Session): EffortState
 
 /**
  * Record a user pick. A level value replaces the base and clears any exact
  * effort; any other value is an exact effort written verbatim and never
  * escalated.
- * @param agent - the Agent the pick applies to.
+ * @param session - the Session the pick applies to.
  * @param rawEffort - the effort value the user selected.
  * @throws when `rawEffort` is empty.
  */
-setBase(agent: Agent, rawEffort: string): void
+setBase(session: Session, rawEffort: string): void
+
+/**
+ * Fold one settled tool result into the workspace revision or the open
+ * escalation, appending a decision record only when the state changes.
+ * @param session - the Session whose tool call settled.
+ * @param tool - registered tool name.
+ * @param args - the call's parsed arguments.
+ * @param result - the settled result.
+ */
+observe(session: Session, tool: string, args: unknown, result: ToolExecutionResult): void
 
 /**
  * Decide the effort for one request.
  * @param capability - the exact route's advertised efforts.
- * @param agent - the Agent making the request; omission decides from the configured base.
+ * @param session - the Session making the request; omission decides from the configured base.
  * @returns the decision and the rule that produced it.
  */
-decideFor(capability: EffortCapability, agent?: Agent): Decision
+decideFor(capability: EffortCapability, session?: Session): Decision
 
 /**
  * The starting level for a delegated operation.
@@ -813,6 +845,8 @@ decideFor(capability: EffortCapability, agent?: Agent): Decision
  */
 levelFor(operation: DelegationOperation): EffortLevel
 ```
+
+Types: [LlmCallConfig](llm-streaming.zh.md) · [Session](session.zh.md) · [ToolExecutionResult](tools.zh.md)
 
 Source: [`packages/llm/effort-policy/src/service.ts`](../../packages/llm/effort-policy/src/service.ts)
 

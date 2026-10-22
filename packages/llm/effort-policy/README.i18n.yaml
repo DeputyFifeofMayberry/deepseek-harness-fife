@@ -10,10 +10,10 @@
   zh: f23e64d6fdfe569c
 /deepseek-ai-dsh-effort-policy/summary:
   en: 24f1e2e45205620f
-  zh: c426f74e4a35479f
+  zh: c55fc6ed5a46d83a
 /deepseek-ai-dsh-effort-policy/table-of-contents:
-  en: 3460b3e585e0c020
-  zh: 4207b6415ea95b64
+  en: 76368b6b1da79c80
+  zh: 371f4bd9aecbe371
 /deepseek-ai-dsh-effort-policy/use-this-package:
   en: 856bf200a0af4808
   zh: d91298ee5f9ab34f
@@ -42,5 +42,8 @@
   en: bc4c0c18367b6b98
   zh: e2955abae9889cb3
 /deepseek-ai-dsh-effort-policy/known-limitations-and-deferred-work:
-  en: fc6e03597d0d5d5b
-  zh: d9b8bc84d202ae1e
+  en: d8a692d78b65d6e8
+  zh: 991ff03379e4abc7
+/deepseek-ai-dsh-effort-policy/known-limitations-and-deferred-work/dev-note:
+  en: af7daeb3148520e9
+  zh: 5866e46546fd613c
