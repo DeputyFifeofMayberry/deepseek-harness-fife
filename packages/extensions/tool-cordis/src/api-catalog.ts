@@ -5995,7 +5995,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmModelInfo',
-    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n}',
+    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    pricing?: LlmModelPricing;\n}',
+  },
+  {
+    name: 'LlmModelPricing',
+    declaration: 'export interface LlmModelPricing {\n    currency: string;\n    inputPerMillion: number;\n    outputPerMillion: number;\n    cacheReadPerMillion?: number;\n    cacheWritePerMillion?: number;\n    offPeakMultiplier?: number;\n}',
   },
   {
     name: 'LlmModelReasoningInfo',
@@ -6275,7 +6279,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelCatalogModel',
-    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
+    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly pricing?: LlmModelPricing;\n}',
   },
   {
     name: 'ModelMessageSource',

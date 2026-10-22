@@ -21,6 +21,7 @@ import { AccountPlatformHost } from '../src/client/AccountPlatformHost.tsx'
 import type { AccountPlatformHostInjected } from '../src/client/AccountPlatformHost.tsx'
 import { AccountQuotaNotice } from '../src/client/AccountQuotaNotice.tsx'
 import type { AccountQuotaNoticeInjected } from '../src/client/AccountQuotaNotice.tsx'
+import type {} from '../src/client/index.ts'
 
 const it = createClientTest({ roster: webApp })
 const SELF = '@deepseek-ai/dsh-client-ui-settings-account'
@@ -75,6 +76,37 @@ it('registers account sign-in in a plain browser without the Desktop-only surfac
     expect(c.ctx.slots.entries('shell.overlay').some(entry => entry.options.id === 'desktop-onboarding')).toBe(false)
     expect(operations(c).hooks.account.getSnapshot().desktopOnboardingVisible).toBe(false)
   }
+}, 60_000)
+
+it('publishes one narrow account reading and re-reads only the recharge wallets', async ({ start }) => {
+  vi.stubGlobal('dshDesktop', {})
+  const c = await start()
+  const read = c.ctx.accountRead
+  expect(read.snapshot.getSnapshot()).toEqual({ status: 'signed-out', links: view.links })
+  const wallets = [{ currency: 'USD' as const, balance: '4.20' }]
+  c.mock.remote.account.getProfile.mockResolvedValue(ok(profile))
+  c.mock.remote.account.getBalance.mockResolvedValue(ok({ status: 'ready', value: wallets, bonusWallets: [] }))
+  c.mock.streams.push('account/watch', stored)
+  await vi.waitFor(() => {
+    expect(read.snapshot.getSnapshot()).toEqual({ status: 'signed-in', links: view.links, wallets })
+  })
+  await c.flush()
+
+  // The narrow re-read never touches the profile or the bonus channel.
+  c.mock.remote.account.getProfile.mockClear()
+  c.mock.remote.account.getBalance.mockClear()
+  const bonuses = c.mock.remote.account.getUnnotifiedBonuses.mock.calls.length
+  await read.refreshBalance()
+  expect(c.mock.remote.account.getProfile).not.toHaveBeenCalled()
+  expect(c.mock.remote.account.getUnnotifiedBonuses.mock.calls.length).toBe(bonuses)
+  expect(c.mock.remote.account.getBalance).toHaveBeenCalledOnce()
+
+  // Signing out clears the wallet reading and makes the re-read a no-op.
+  c.mock.streams.push('account/watch', view)
+  await vi.waitFor(() => { expect(read.snapshot.getSnapshot()).toEqual({ status: 'signed-out', links: view.links }) })
+  c.mock.remote.account.getBalance.mockClear()
+  await read.refreshBalance()
+  expect(c.mock.remote.account.getBalance).not.toHaveBeenCalled()
 }, 60_000)
 
 it('claims account balance notices from the frame-wide quota chain and declines generic quota', async ({ start }) => {

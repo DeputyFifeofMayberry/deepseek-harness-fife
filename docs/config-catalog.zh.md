@@ -691,6 +691,30 @@ export type ThemePreference = typeof THEME_PREFERENCES[number]
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-theme -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-usage-panel -->
+<a id="deepseek-aidsh-client-ui-usage-panel"></a>
+
+## `@deepseek-ai/dsh-client-ui-usage-panel`
+
+- `source`: [`packages/client/ui-usage-panel/src/config.ts:19`](../packages/client/ui-usage-panel/src/config.ts)
+
+```ts config-catalog
+/** Deployment configuration for the sidebar usage panel. */
+export interface Config {
+  /** Wallet-currency thresholds that mark a balance as low. */
+  lowBalance: LowBalanceThresholds
+}
+
+/** Low-balance threshold per supported Platform wallet currency. */
+export interface LowBalanceThresholds {
+  /** Threshold for a CNY wallet. */
+  CNY: number
+  /** Threshold for a USD wallet. */
+  USD: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-usage-panel -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-compaction-basic -->
 <a id="deepseek-aidsh-compaction-basic"></a>
 

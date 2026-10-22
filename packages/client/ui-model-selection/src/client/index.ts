@@ -32,7 +32,9 @@ import { orderModelProviders } from './provider-order.ts'
 
 export { ModelDirectory } from './directory.ts'
 export type { ModelDirectoryState } from './directory.ts'
+export type { ModelCatalogState } from './catalog.ts'
 export { ModelDirectoryResolver } from './service.ts'
+export type { ModelCatalogRead } from './service.ts'
 export type { ModelLabelOwner, ModelSelectInjected } from './slots.ts'
 export type { ModelKey } from './locales.ts'
 

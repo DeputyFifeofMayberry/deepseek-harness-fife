@@ -31,9 +31,11 @@ import { DesktopOnboardingEntry, type DesktopOnboardingInjected } from './Deskto
 import { readOnboardingApiKeyPresence } from './onboarding-credentials.ts'
 import { refreshAfterReturn } from './account-refresh.ts'
 import { AccountAvatarLoader } from './account-avatar.ts'
+import { AccountReadService, accountReadOf } from './account-read.ts'
 export type { AccountSectionInjected, AccountSectionProps } from './AccountSection.tsx'
 export type { AccountMenuProps } from './AccountMenu.tsx'
 export type { AccountSnapshot } from './AccountSection.tsx'
+export type { AccountReadSnapshot } from './account-read.ts'
 export type { AccountKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -56,7 +58,12 @@ export function apply(ctx: Context): void {
   const browser = new BrowserLogin(url => authorizeUrlWithTheme(url, ctx.theme.getTheme().active.colorScheme))
   ctx.effect(() => () => { browser.dispose() }, 'account: pending browser window')
   const listeners = new Set<() => void>()
-  const publish = (value: AccountSnapshot) => { snapshot = value; for (const listener of listeners) listener() }
+  let readSnapshot = accountReadOf({ view: undefined, details: undefined })
+  const publish = (value: AccountSnapshot) => {
+    snapshot = value
+    readSnapshot = accountReadOf(value)
+    for (const listener of listeners) listener()
+  }
   const avatar = new AccountAvatarLoader((value) => { publish({ ...snapshot, avatar: value }) })
   ctx.effect(() => () => { avatar.dispose() }, 'account: profile picture lifetime')
   /** @returns the client identity for one account call, read at call time so it carries the language and zone in effect then. */
@@ -86,35 +93,66 @@ export function apply(ctx: Context): void {
   ctx.effect(() => () => { notices.end() }, 'account: bonus notice lifetime')
   let revision = 0
   let refreshing: Promise<void> | undefined
+  let balanceRefreshing: Promise<void> | undefined
+  /**
+   * @param generation - account revision whose publishes are still current.
+   * @param field - detail row this read replaces.
+   * @param query - one account query.
+   * @returns after a current, non-null outcome publishes.
+   */
+  const readDetail = async <K extends keyof AccountDetails>(generation: number, field: K,
+    query: () => Promise<AccountDetails[K] | null>): Promise<void> => {
+    let value: AccountDetails[K] | null
+    try { value = await query() }
+    catch { value = { status: 'failed' } }
+    if (value?.status === 'failed') console.error('[deepseek-account] account read failed', { field })
+    if (generation === revision && value !== null) publish({ ...snapshot, details: { ...snapshot.details, [field]: value } })
+  }
+  /** @param generation - account revision whose publishes are still current. @returns after a completed balance read publishes. */
+  const readBalance = (generation: number): Promise<void> => readDetail(generation, 'balance', async () => {
+    const result = await ctx.remote.account.getBalance(client())
+    if (!result.ok) throw new Error('account balance failed')
+    return result.value
+  })
   const refresh = (): Promise<void> => {
     if (snapshot.view?.status !== 'credential-stored') return Promise.resolve()
     if (refreshing !== undefined) return refreshing
     const generation = revision
-    const read = async <K extends keyof AccountDetails>(field: K,
-      query: () => Promise<AccountDetails[K] | null>) => {
-      let value: AccountDetails[K] | null
-      try { value = await query() }
-      catch { value = { status: 'failed' } }
-      if (value?.status === 'failed') console.error('[deepseek-account] account read failed', { field })
-      if (generation === revision && value !== null) publish({ ...snapshot, details: { ...snapshot.details, [field]: value } })
-    }
     const request = Promise.all([
-      read('profile', async () => {
+      readDetail(generation, 'profile', async () => {
         const result = await ctx.remote.account.getProfile(client())
         if (!result.ok) throw new Error('account profile failed')
         if (generation === revision && result.value?.status === 'ready') avatar.setUrl(result.value.value.avatarUrl)
         return result.value
       }),
-      read('balance', async () => {
-        const result = await ctx.remote.account.getBalance(client())
-        if (!result.ok) throw new Error('account balance failed')
-        return result.value
-      }),
+      readBalance(generation),
     ]).then(() => undefined)
     refreshing = request
     void request.finally(() => { if (refreshing === request) refreshing = undefined })
     return request
   }
+  /**
+   * Re-read only the recharge wallets. A full refresh already reads them, so a
+   * pending one answers this request; otherwise one narrow read is shared by
+   * every surface that asks while it runs.
+   * @returns after the read settles, or immediately when signed out.
+   */
+  const refreshBalance = (): Promise<void> => {
+    if (snapshot.view?.status !== 'credential-stored') return Promise.resolve()
+    if (refreshing !== undefined) return refreshing
+    if (balanceRefreshing !== undefined) return balanceRefreshing
+    const request = readBalance(revision)
+    balanceRefreshing = request
+    void request.finally(() => { if (balanceRefreshing === request) balanceRefreshing = undefined })
+    return request
+  }
+  new AccountReadService(ctx, {
+    snapshot: {
+      getSnapshot: () => readSnapshot,
+      subscribe: (listener) => { listeners.add(listener); return () => { listeners.delete(listener) } },
+    },
+    refreshBalance,
+  })
   ctx.effect(() => () => { revision++ }, 'account: details request lifetime')
   const stream = ctx.remote.$stream<AccountView>({
     name: 'account', open: signal => ctx.remote.account.watch(signal), ended: () => new Error('account stream ended'),

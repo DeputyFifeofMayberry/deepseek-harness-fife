@@ -17,6 +17,36 @@ export interface TokenUsageProjection {
   cacheWriteTokens: number
 }
 
+/** Provider usage one route accumulated during one UTC hour-of-week slot. */
+export interface UsageByRouteBucket {
+  /** Slot 0 is Monday 00:00 UTC; slot 167 is Sunday 23:00 UTC. */
+  hourOfWeek: number
+  /** Disjoint provider buckets reported during that hour. */
+  usage: TokenUsageProjection
+}
+
+/** Cumulative provider usage for one provider/model/effort route. */
+export interface UsageByRouteEntry {
+  provider: string
+  model: string
+  /** Adapter-owned effort id in force for the requests; empty means the provider default. */
+  reasoningEffort: string
+  /** Nonempty buckets sorted by {@link UsageByRouteBucket.hourOfWeek}. */
+  buckets: UsageByRouteBucket[]
+}
+
+/**
+ * Route-bucketed provider usage across the complete durable log.
+ *
+ * Buckets are UTC hours of the week, not provider billing phases: the
+ * consumer that knows a provider's peak/off-peak calendar maps each slot to
+ * the rate in force when the request settled.
+ */
+export interface UsageByRouteProjection {
+  /** Routes with nonzero usage, sorted by provider, model, then effort. */
+  routes: UsageByRouteEntry[]
+}
+
 /**
  * Approximate context occupancy for a status display.
  *
@@ -69,6 +99,8 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
   interface SessionProjectionMap {
     /** Provider-reported usage accumulated across the complete durable log. */
     tokenUsage: TokenUsageProjection
+    /** Provider-reported usage split by route and UTC hour-of-week. */
+    usageByRoute: UsageByRouteProjection
     /** Newest request pressure paired with the newest known route capacity. */
     contextPressure: ContextPressureProjection
     /** Heuristic system/tools/message composition of the next request. */

@@ -183,6 +183,8 @@ export const SERVICE_WALK_EXEMPTIONS: Record<string, string> = {
   pluginPackages: 'profile-boot-owned package resolver service used by optional consumers — packages/boot/app-boot/README.md owns this internal API',
   fileUpload: 'client-side browser upload service — packages/client/file-upload/README.md owns the API',
   uiRenderer: 'client-side interface-typed browser service — packages/client/ui-renderer/README.md owns the API',
+  pricePhase: 'client-side billing-phase reading service — packages/client/ui-price-phase/README.md owns the API',
+  accountRead: 'client-side account read service — packages/client/ui-settings-account/README.md owns the API',
   uiSession: 'client-side Session source adapter — packages/client/ui-session/README.md owns the API',
   uiConversation: 'client-side Conversation registries and assembler — packages/client/ui-conversation/README.md owns the API',
   uiWorkspace: 'client-side Workspace navigation adapter — packages/client/ui-workspace/README.md owns the API',

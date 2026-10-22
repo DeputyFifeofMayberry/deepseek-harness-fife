@@ -7,9 +7,10 @@
  * controls enter the 56px rail from the same horizontal offset (one icon each,
  * same top-down order) on one fade that ends with the slide. The bottom-pinned
  * settings control only fades. The workspace/session browsing region between
- * global panel rows and the foot is the `sidebar.workspaces` registrant's,
- * and the foot holds `sidebar.settings` plus `sidebar.footer.action`; the shell
- * hands them the wide flag (plus an expand request callback for the browser).
+ * global panel rows and the foot is the `sidebar.workspaces` registrant's.
+ * The foot holds the optional `sidebar.footer.panel` summary above
+ * `sidebar.settings` plus `sidebar.footer.action`; the shell hands them the
+ * wide flag (plus an expand request callback for the browser).
  *
  * The column also owns whether the scroll regions nested in it draw a
  * scrollbar at all: the shell tracks the pointer and rebinds ui-theme's
@@ -299,8 +300,12 @@ export function SidebarRoot({
         })}
       </div>
 
-      {/* Footer actions stack above Settings in both sidebar widths. */}
+      {/* The summary panel, footer actions, and Settings stack in that order
+          in both sidebar widths. */}
       <div className={css.footArea}>
+        <div className={css.panelArea}>
+          {renderSlot('sidebar.footer.panel', { wide })}
+        </div>
         <div className={css.footerActions}>
           {renderSlot('sidebar.footer.action', { wide })}
         </div>

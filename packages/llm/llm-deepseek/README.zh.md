@@ -52,6 +52,8 @@ kind: "package-reference"
 
 请求用 `provider: deepseek-official` 选择路由；模型 id 原样传到协议，因此新增 DeepSeek 模型无需重新注册。省略 `models` 时公布支持文本和图像的 `deepseek-flash`，以及仅支持文本的 `deepseek-v4-pro`，各自的上下文窗口均为 1,000,000 token。显式列表会替换这些默认值，核心调用中未列出的模型 id 仍作为纯文本路由原样通过。GUI 选择要求模型具有目录条目；条目消失后，已保存的选择仍可提交请求。包括模型发现工具在内的客户端可通过 `ctx.llm.listModels('deepseek-official')` 读取这些建议性条目。支持图片的条目可把 `imagePixelBudget` 设置为正整数或 `low`，也可以设置 `imageMaxBytes`。当端点把 `messages` 中任意位置最新的 `system` 消息读作完整的有效系统提示词时，条目可以声明 `systemPromptUpdate: in-history`；适配器会在已解析模型与已准备调用上报告该模式，agent loop（智能体循环）随后把变化后的提示词追加到已缓存历史之后，而不是改写开头的 system 消息（[决策规则](../../core/agent-loop/README.zh.md#understand-the-implementation)）。默认的 `deepseek-flash` 条目声明该模式；其他模型需通过 `models` 显式声明，`in-history` 以外的任何值都会在加载时以 `llm-deepseek: catalog model "<id>" systemPromptUpdate must be "in-history" when present` 失败。
 
+条目可以声明 `pricing`：ISO 4217 `currency`、每百万 `inputPerMillion`（缓存未命中）、`outputPerMillion`、可选的 `cacheReadPerMillion` 与 `cacheWritePerMillion`，以及可选的 `offPeakMultiplier`。内置条目公布 DeepSeek 的高峰价格，并将低谷乘数设为 0.5；公布的价格表没有单独的缓存写入价格，因此写入按缓存未命中价计费。发现消费方通过 `LlmModelInfo.pricing` 获得该表；没有该字段的条目无法计算花费。
+
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `baseURL` | `https://api.deepseek.com/anthropic` | 显式值优先，其次为 `$DEEPSEEK_BASE_URL`，最后为官方根地址 |
