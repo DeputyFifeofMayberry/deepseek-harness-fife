@@ -163,7 +163,7 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 - **Labels:** one PR `kind/*`, all material `area/*`, and native Issue Type ([taxonomy](.agents/notes/implemented/process/2026-08-08-unified-github-label-taxonomy.md)).
 - TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
 - Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
-- **Mayberry pack:** generated worksheets, X-Ray, and handoff go under `.mayberry/instances/`; repository `docs/` remains canonical and additions there need bilingual pairs ([integration](.mayberry/INTEGRATION.md)). Where a Mayberry skill or `STEPS.md` shows `docs/`, follow repository instructions and write generated records under `.mayberry/instances/` instead.
+- **Mayberry pack:** generated worksheets, X-Ray, and handoff go under `.mayberry/instances/`; repository `docs/` remains canonical and additions there are English only ([integration](.mayberry/INTEGRATION.md)). Where a Mayberry skill or `STEPS.md` shows `docs/`, follow repository instructions and write generated records under `.mayberry/instances/` instead.
 
 ## Defensive patterns
 
@@ -175,7 +175,7 @@ Everything compiles under `strict: true` with `noImplicitAny`; every remaining `
 
 Comments and docs state complete contracts and context, not reasoning transcripts. Use direct, concrete terms. Do not use metaphors. Before writing `contract`, `boundary`, or `shape`, ask whether a more exact term names the subject: write `response fields`, `JSON validation`, or `ESM exports` instead of `response shape`, `validation boundary`, or `module shape`. Keep `contract` for preconditions, postconditions, invariants, compatibility promises, and other obligations that callers, callees, implementers, providers, producers, or consumers rely on. Keep a literal process, wire, security, transaction, or lifecycle boundary. Do not narrate control flow or tests, preserve review history, or restate code. Keep behavior, failure, timing, ownership, and safe-use facts; link the rationale. Use [dsh-prose-standard](.agents/skills/dsh-prose-standard/SKILL.md) for decisions. Wire mechanically checkable invariants into an executed top-level gate and prove each changed acceptance path rejects an invalid case. Use narrow, justified exceptions instead of disabling a rule globally.
 
-Docs accompany every code change: update affected README and JSDoc contracts together. Routine bilingual work follows [docs/AGENTS.md](docs/AGENTS.md); only explicit user invocation may run `dsh-translate-docs`. Current-state prose, one physical line per paragraph, one home per fact, and word budgets live there.
+Docs accompany every code change: update affected README and JSDoc contracts together. All written content is English only; do not create new `.zh.md` companions or translations, and run `dsh-translate-docs` only on explicit user invocation (existing translations stay but are not updated). Current-state prose, one physical line per paragraph, one home per fact, and word budgets live in [docs/AGENTS.md](docs/AGENTS.md).
 
 ## Editing these instructions
 
