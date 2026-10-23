@@ -184,3 +184,7 @@ Docs accompany every code change: update affected README and JSDoc contracts tog
 ## Vendoring policy
 
 `vendor/` packages are pinned source copies (manifest with upstream SHAs in [vendor/README.md](vendor/README.md)). Update via the sync procedure there; re-apply or retire the logged local modifications; rerun `pnpm run test && pnpm run build`.
+
+## Agent skills
+
+Issues and specs live in GitHub Issues; the five triage roles map to same-named labels separate from PR `kind/*` and `area/*` labels; domain docs reuse `docs/glossary.md` and `.agents/notes/`. Details: [issue-tracker](docs/agents/issue-tracker.md), [triage-labels](docs/agents/triage-labels.md), [domain](docs/agents/domain.md).
