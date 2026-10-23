@@ -181,6 +181,33 @@ describe('ToolResultPruner content transform', () => {
   })
 })
 
+describe('ToolResultPruner sequence bounds', () => {
+  it('prunes only surface nodes at or above sinceSeq', () => {
+    const session = Session.create(SessionId('since-seq'))
+    const firstSeq = SessionSeq(appendToolStep(session, 1, 'old', [{ type: 'text', text: 'x'.repeat(100) }]))
+    const secondSeq = SessionSeq(appendToolStep(session, 2, 'new', [{ type: 'text', text: 'y'.repeat(100) }]))
+
+    const bounded = service().pruneSession(session, { sinceSeq: secondSeq })
+    expect(bounded.pruned.map(entry => entry.originalSeq)).toEqual([secondSeq])
+    expect(bounded.charsRemoved).toBeGreaterThan(0)
+    const surfaceText = JSON.stringify(session.deriveMessages())
+    expect(surfaceText).toContain('x'.repeat(100))
+    expect(surfaceText).not.toContain('y'.repeat(100))
+
+    // A later unbounded pass still reaches the below-bound original.
+    const full = service().pruneSession(session, { sinceSeq: firstSeq })
+    expect(full.pruned.map(entry => entry.originalSeq)).toContain(firstSeq)
+  })
+
+  it('ignores a bound above every surface node', () => {
+    const session = Session.create(SessionId('above-range'))
+    appendToolStep(session, 1, 'one', [{ type: 'text', text: 'x'.repeat(100) }])
+    const result = service().pruneSession(session, { sinceSeq: SessionSeq(1_000_000) })
+    expect(result.pruned).toEqual([])
+    expect(result.charsRemoved).toBe(0)
+  })
+})
+
 describe('ToolResultPruner session transaction', () => {
   it('prunes a stable snapshot, preserves all data, and cites the replaced result', () => {
     const session = Session.create(SessionId('preserve'))

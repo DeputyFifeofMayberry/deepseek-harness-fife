@@ -172,7 +172,6 @@ export class EffortPolicy extends Service {
         if (!this.resolved.enabled || exec.agent === undefined) return
         this.observe(exec.agent.session, exec.name, exec.arguments, result)
       })
-      child.on('agent/request-error', (_payload, next) => next())
       // A re-entered generation must serve Agents that already exist, and an
       // Agent created later must be attached exactly once.
       for (const agent of child.agents.list()) attach(agent)

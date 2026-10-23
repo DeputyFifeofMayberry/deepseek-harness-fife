@@ -322,6 +322,7 @@ describe('compact configuration and defaults', () => {
       maxOverflowRetries: 1,
       modelPolicies: [],
       auto: true,
+      pruneNewResultsAtStep: false,
     })
     expect(Object.isFrozen(resolved)).toBe(true)
   })

@@ -15,6 +15,7 @@ import type {} from '@deepseek-ai/dsh-compaction'
 import type {} from '@deepseek-ai/dsh-token-meter'
 import { codePointLength, DEFAULTS, PRUNE_MARKER, resolveConfig } from './config.ts'
 import type {
+  PruneSessionOptions,
   PrunedEntry,
   PruneResult,
   ResolvedConfig,
@@ -23,6 +24,7 @@ import type {
 
 export { codePointLength, DEFAULTS, PRUNE_MARKER, resolveConfig } from './config.ts'
 export type {
+  PruneSessionOptions,
   PrunedEntry,
   PruneResult,
   ResolvedConfig,
@@ -122,20 +124,26 @@ export class ToolResultPruner extends Service {
   }
 
   /**
-   * Prune every over-budget tool result from one stable current-surface snapshot.
-   * Each replacement preserves the complete event data except for `content`,
-   * cites the shadowed node so replay can recover the replacement input, and is
-   * immediately preceded by a `compaction/prune` shadow-price event pricing the
-   * shadowed node through the injected token meter, so pure consumers can
-   * subtract it without per-node state.
+   * Prune over-budget tool results from one stable current-surface snapshot,
+   * optionally bounded to nodes appended after a caller-supplied sequence so
+   * already provider-cached history keeps its prefix intact. Each replacement
+   * preserves the complete event data except for `content`, cites the shadowed
+   * node so replay can recover the replacement input, and is immediately
+   * preceded by a `compaction/prune` shadow-price event pricing the shadowed
+   * node through the injected token meter, so pure consumers can subtract it
+   * without per-node state.
    * @param session - session whose current surface is rewritten.
+   * @param options - `sinceSeq` bounds the pass to surface nodes at or above
+   *   that sequence; omitted means the whole current surface.
    * @returns landed replacements and aggregate Unicode-code-point savings.
    * @throws when the session rejects a replacement; replacements committed
    * earlier in the pass remain durable.
    */
-  pruneSession(session: Session): PruneResult {
+  pruneSession(session: Session, options: PruneSessionOptions = {}): PruneResult {
+    const sinceSeq = options.sinceSeq
     const candidates: SnapshotCandidate[] = []
     for (const seq of [...session.surface.nodes]) {
+      if (sinceSeq !== undefined && seq < sinceSeq) continue
       // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
       const event = session.eventAt(seq)
       /* v8 ignore next -- surface seqs are validated contiguous log references. */

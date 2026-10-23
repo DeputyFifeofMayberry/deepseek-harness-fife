@@ -3451,9 +3451,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'pruned content, or `null` when the text is within budget.',
       },
       {
-        signature: 'pruneSession(session: Session): PruneResult',
-        description: 'Prune every over-budget tool result from one stable current-surface snapshot. Each replacement preserves the complete event data except for `content`, cites the shadowed node so replay can recover the replacement input, and is immediately preceded by a `compaction/prune` shadow-price event pricing the shadowed node through the injected token meter, so pure consumers can subtract it without per-node state.',
-        parameters: [{ name: 'session', description: 'session whose current surface is rewritten.' }],
+        signature: 'pruneSession(session: Session, options: PruneSessionOptions = {}): PruneResult',
+        description: 'Prune over-budget tool results from one stable current-surface snapshot, optionally bounded to nodes appended after a caller-supplied sequence so already provider-cached history keeps its prefix intact. Each replacement preserves the complete event data except for `content`, cites the shadowed node so replay can recover the replacement input, and is immediately preceded by a `compaction/prune` shadow-price event pricing the shadowed node through the injected token meter, so pure consumers can subtract it without per-node state.',
+        parameters: [{ name: 'session', description: 'session whose current surface is rewritten.' }, { name: 'options', description: '`sinceSeq` bounds the pass to surface nodes at or above that sequence; omitted means the whole current surface.' }],
         returns: 'landed replacements and aggregate Unicode-code-point savings.',
         throws: ['when the session rejects a replacement; replacements committed earlier in the pass remain durable.'],
       },
@@ -6644,6 +6644,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PruneResult',
     declaration: 'export interface PruneResult {\n    readonly pruned: readonly PrunedEntry[];\n    readonly charsRemoved: number;\n}',
+  },
+  {
+    name: 'PruneSessionOptions',
+    declaration: 'export interface PruneSessionOptions {\n    readonly sinceSeq?: SessionSeq;\n}',
   },
   {
     name: 'PtcBindingErrorClass',

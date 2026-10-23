@@ -12,7 +12,64 @@ flags:
   degraded_discovery: false
   flaky_quarantines: []
 
-revision: 3
+revision: 11
 handoff:
   path: .mayberry/instances/mayberry-handoff.md
   updated: 2026-10-22
+
+changes:
+  - id: C-001
+    kind: chore
+    title: Effort-policy hardening and token-budget tightening
+    status: active
+    created: 2026-10-23
+    updated: 2026-10-23
+
+
+active: C-001
+walk:
+  stage: FEATURE
+  step: 14
+  updated: 2026-10-23
+  change: C-001
+
+walk_history:
+  - stage: FEATURE
+    step: 7
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 8
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 9
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 10
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 11
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 12
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 13
+    updated: 2026-10-23
+    change: C-001
+
+  - stage: FEATURE
+    step: 14
+    updated: 2026-10-23
+    change: C-001

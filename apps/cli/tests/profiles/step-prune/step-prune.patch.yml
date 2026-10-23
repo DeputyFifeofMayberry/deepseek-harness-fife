@@ -1,0 +1,50 @@
+# Gates the step-boundary incremental pruner through the shipped headless
+# profile: the first pre-step after the emit tool result lands prunes it before
+# its first request, while pre-existing surface nodes stay untouched. The
+# small character budgets and the scripted keyless model keep the run fast;
+# these rows are fixture-only and are not part of the fork's enablement.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: session-log-deepseek
+  config:
+    enabled: false
+
+# A title request would be a second model call the script does not describe.
+- id: session-title-llm
+  disabled: true
+
+- id: agent-default-model
+  config:
+    provider: prune-mock
+    model: prune-mock
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+- id: tool-result-pruner
+  config:
+    thresholdChars: 200
+    headChars: 50
+    tailChars: 25
+
+- id: compaction-basic
+  config:
+    auto: true
+    pruneNewResultsAtStep: true
+
+- insert:
+    - id: prune-mock-llm
+      name: './fixtures/step-prune-mock-llm.ts'
+
+    # Publish the root Agent the driver drives; the shipped startup row is off.
+    - id: step-prune-agent
+      name: './fixtures/step-prune-agent.ts'
