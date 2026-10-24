@@ -112,6 +112,22 @@ DeepSeek 将省略的 `inputModalities` 视为纯文本，并拒绝空列表。�
 
 这两个字段都是对你端点的断言，而不是对它的检查。声明了端点并不提供的图片能力的模型不会在这里被拦下，改由提供商拒绝该请求。
 
+### 修正目录容量
+
+已安装目录可能落后于厂商的最新预算。Z.ai 的 GLM-5.3 与 GLM-5.3-Flash 官方文档标称最大输出 128K token（[GLM-5.3](https://docs.z.ai/guides/llm/glm-5.3)、[GLM-5.3-Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash)），而已安装目录仍标注 131072。用 `modelOverrides` 条目为这两个模型设置上限；未设置的字段沿用目录值：
+
+```yaml
+- id: llm-pi-ai
+  config:
+    providers:
+      zai:
+        modelOverrides:
+          glm-5.3:
+            maxTokens: 128000
+          glm-5.3-flash:
+            maxTokens: 128000
+```
+
 ### DeepSeek 账号的模型
 
 已登录 DeepSeek 账号的模型列表来自账号服务，因此模型页不为它提供模型编辑器。要调整单个模型，在 `$DSH_HOME/profiles/<profile>/cordis.patch.yml` 中使用 `modelOverrides`；字段与 DeepSeek 的 `models` 条目相同，未设置的字段沿用列表中的值：
