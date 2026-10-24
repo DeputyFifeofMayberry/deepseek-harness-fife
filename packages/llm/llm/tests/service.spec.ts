@@ -153,6 +153,7 @@ describe('LlmRuntime', () => {
       ['{"code":20097,"message":"token plan exhausted"}', 'QUOTA'],
       ['{"code":3010,"message":"concurrency cap reached"}', 'QUOTA'],
       ['upstream error [1316][67e6f1] while streaming', 'QUOTA'],
+      ['{"code":"1113","message":"[1113][Insufficient balance or no resource package. Please recharge.][id]"}', 'QUOTA'],
       ['provider answered rate_limit_error', 'RATE_LIMIT'],
       ['{"code":1312,"message":"provider overloaded"}', 'SERVER'],
       ['{"code":"1234","message":"internal network error"}', 'TRANSPORT'],

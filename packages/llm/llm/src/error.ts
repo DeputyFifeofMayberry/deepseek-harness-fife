@@ -127,6 +127,9 @@ const ZAI_BUSINESS_CODE_ROUTES: ReadonlyArray<readonly [RegExp, string]> = [
     'exceeded_current_quota_error',
     '2056',
     '20097',
+    // Observed live on api.z.ai (2026-10-24): "[1113][Insufficient balance or
+    // no resource package. Please recharge.]" — balance exhaustion, terminal.
+    '1113',
     '1304',
     '1308',
     '1310',
