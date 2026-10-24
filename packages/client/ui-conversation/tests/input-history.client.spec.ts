@@ -7,7 +7,7 @@
 import { randomUUID } from 'node:crypto'
 import { Context } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session/types'
-import { $getRoot, $isElementNode, $nodesOfType } from 'lexical'
+import { $createParagraphNode, $createTextNode, $getRoot, $isElementNode, $nodesOfType } from 'lexical'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import type { DraftSnapshot } from '../src/client/contract/draft-editor.ts'
 import type {
@@ -27,6 +27,16 @@ const commandAttachments = {
 
 function textEntry(text: string): DraftSnapshot {
   return { text, references: [] }
+}
+
+/** Collapsed caret on the first paragraph's start (a fresh editor has no selection, which recall refuses). */
+function placeCaretAtStart(shell: SessionInputShell): void {
+  shell.editor.update(() => {
+    const root = $getRoot()
+    if (root.getFirstChild() === null) root.append($createParagraphNode())
+    const first = root.getFirstChild()
+    if ($isElementNode(first)) first.select(0, 0)
+  }, { discrete: true })
 }
 
 function triggers(serializeReference: (source: string, ref: string) => Promise<string>): InputTriggerController {
@@ -347,4 +357,203 @@ it('refuses recall after disposal', () => {
   })
   shell.dispose()
   expect(shell.recall('previous')).toBe(false)
+})
+
+it('walks back one entry per Up press and holds at the oldest entry', () => {
+  const { id } = freshHistory('walk')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('oldest'))
+  history.record(textEntry('middle'))
+  history.record(textEntry('newest'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  placeCaretAtStart(shell)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('newest')
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('middle')
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('oldest')
+  // The oldest entry holds the draft; the gesture is consumed without motion.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('oldest')
+})
+
+it('Down walks forward and restores the saved in-progress draft past the newest entry', () => {
+  const { id } = freshHistory('walk-forward')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('oldest'))
+  history.record(textEntry('middle'))
+  history.record(textEntry('newest'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  shell.setDraft('work in progress')
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('newest')
+  // Past the newest entry the walk hands the in-progress draft back and ends.
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('work in progress')
+  expect(shell.recall('next')).toBe(false)
+  // A new walk saves the restored draft and starts at the newest entry again.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('newest')
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('work in progress')
+})
+
+it('Escape restores the saved draft from anywhere in the walk', () => {
+  const { id } = freshHistory('walk-escape')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('sent earlier'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  shell.setDraft('work in progress')
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('sent earlier')
+  expect(shell.recallEscape()).toBe(true)
+  expect(shell.snapshot.draft).toBe('work in progress')
+  expect(shell.recallEscape()).toBe(false)
+  expect(shell.recall('next')).toBe(false)
+})
+
+it('keeps walking from any caret line while navigation is active', () => {
+  const { id } = freshHistory('walk-caret')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('above'))
+  history.record(textEntry('line one\nline two'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  placeCaretAtStart(shell)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('line one\nline two')
+  // The recalled caret sits on the last line; the walk steps anyway.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('above')
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('line one\nline two')
+})
+
+it('an editor edit ends the walk and abandons the saved draft', () => {
+  const { id } = freshHistory('walk-edit')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('sent earlier'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  shell.setDraft('work in progress')
+  expect(shell.recall('previous')).toBe(true)
+  shell.editor.update(() => {
+    const first = $getRoot().getFirstChild()
+    if (!$isElementNode(first)) throw new Error('expected a paragraph')
+    first.append($createTextNode(' typed'))
+  }, { discrete: true })
+  expect(shell.snapshot.draft).toBe('sent earlier typed')
+  expect(shell.recall('next')).toBe(false)
+  // A fresh walk saves the edited draft; the abandoned one never comes back.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('sent earlier')
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('sent earlier typed')
+})
+
+it('a successful send ends the walk and its capture starts the next one fresh', async () => {
+  const { id } = freshHistory('walk-send')
+  const sink = vi.fn(() => Promise.resolve<SubmitOutcome>({ kind: 'success' }))
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('sent earlier'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: sink,
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  shell.setDraft('work in progress')
+  expect(shell.recall('previous')).toBe(true)
+  shell.submit('queue')
+  await vi.waitFor(() => { expect(sink).toHaveBeenCalledTimes(1) })
+  expect(shell.snapshot.draft).toBe('')
+  expect(readInputHistory(id).map(entry => entry.text)).toEqual(['sent earlier'])
+  expect(shell.recall('next')).toBe(false)
+  // The fresh walk saves the empty post-send draft.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('sent earlier')
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe('')
+  expect(shell.recall('next')).toBe(false)
+})
+
+it('a failed-send restoration leaves no walk behind', async () => {
+  const { id } = freshHistory('walk-failure')
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('sent earlier'))
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: () => Promise.resolve<SubmitOutcome>({ kind: 'error', text: 'rejected' }),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  shell.setDraft('work in progress')
+  expect(shell.recall('previous')).toBe(true)
+  shell.submit('queue')
+  await vi.waitFor(() => { expect(shell.snapshot.draft).toBe('sent earlier') })
+  expect(shell.recall('next')).toBe(false)
+  expect(shell.recallEscape()).toBe(false)
+})
+
+it('the walk survives the recalled reference chips re-attaching', () => {
+  const { id } = freshHistory('walk-chips')
+  const mention = '@[Research](dsh-session:InNvdXJjZSI)'
+  const history = createSessionInputHistory(id)
+  history.record(textEntry('plain earlier'))
+  history.record({
+    text: `${mention} `,
+    references: [{ source: 'reference', ref: mention, offset: 0, length: mention.length, label: 'Research', clipboardText: mention }],
+  })
+  const shell = new SessionInputShell({
+    actx: {} as Context,
+    defaultSink: vi.fn(),
+    commandAttachments,
+    history,
+  })
+  onTestFinished(() => { shell.dispose() })
+  placeCaretAtStart(shell)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe(`${mention} `)
+  expect(shell.editor.getEditorState().read(() => $nodesOfType(ReferenceChipNode).length)).toBe(1)
+  // The chip restore is the restore's own commit, not an edit: the walk continues.
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.snapshot.draft).toBe('plain earlier')
+  expect(shell.recall('next')).toBe(true)
+  expect(shell.snapshot.draft).toBe(`${mention} `)
+  expect(shell.editor.getEditorState().read(() => $nodesOfType(ReferenceChipNode).length)).toBe(1)
 })

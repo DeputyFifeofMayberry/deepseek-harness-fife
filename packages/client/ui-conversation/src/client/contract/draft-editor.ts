@@ -86,11 +86,23 @@ export interface ComposerKeyboard {
   arbitrate(key: ArbitrateKey, composing: boolean): ArbitrateOutcome
   /**
    * Refill the draft from the captured input history through the normal draft
-   * path (chips re-claim, caret lands at the end).
-   * @param direction - which neighbor to recall; 'previous' walks toward older inputs.
+   * path (chips re-claim, caret lands at the end). The first 'previous' from a
+   * normal editing state enters the walk, which saves the in-progress draft
+   * and requires a collapsed caret on the first line; while the walk is
+   * active, both directions step one entry per press from any caret position
+   * — 'previous' toward older inputs, 'next' toward newer ones and finally
+   * back to the saved draft. A claimed command chip keeps the walk alive, so
+   * a recalled command entry never dead-ends it.
+   * @param direction - which neighbor to recall.
    * @returns whether the draft was replaced — the caller consumes the keystroke.
    */
   recall(direction: 'previous' | 'next'): boolean
+  /**
+   * Escape during an active history walk: restore the draft saved when the
+   * walk started and end the walk.
+   * @returns whether the restore applied — the caller consumes the keystroke.
+   */
+  recallEscape(): boolean
   /** Space adjudication; true = the input applied a claim — caller preventDefaults. */
   space(): boolean
   /** Dismiss the popupSelect shell (any interaction outside the box). */

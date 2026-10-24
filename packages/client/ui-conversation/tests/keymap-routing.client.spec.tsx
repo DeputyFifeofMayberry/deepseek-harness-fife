@@ -26,6 +26,7 @@ describe('keymap keydown routing', () => {
       arbitrate: () => 'pass', space: () => false, dismissPopup: () => {},
       canSubmit: () => false, submit: () => {}, intakeFiles: () => {}, pasteText: () => {},
       recall: () => false,
+      recallEscape: () => false,
     })
     onTestFinished(unregister)
     fireEvent.compositionStart(first)
@@ -62,6 +63,7 @@ describe('keymap keydown routing', () => {
       intakeFiles: () => {},
       pasteText: () => {},
       recall: () => false,
+      recallEscape: () => false,
     })
     fireEvent.keyDown(root, { key: 'Enter' })
     expect(submit).toHaveBeenCalledWith(false)
@@ -89,7 +91,8 @@ describe('keymap keydown routing', () => {
     const arbitrate = vi.fn(() => 'pass' as const)
     onTestFinished(registerComposerKeymap(editor, {
       arbitrate, space: () => false, dismissPopup: () => {}, canSubmit: () => true,
-      submit, intakeFiles: () => {}, pasteText: () => {}, recall: () => false,
+      submit, intakeFiles: () => {}, pasteText: () => {},
+      recall: () => false, recallEscape: () => false,
     }))
     editor.update(() => {
       const paragraph = $createParagraphNode().append($createTextNode('unsent draft'))
@@ -130,7 +133,7 @@ describe('keymap keydown routing', () => {
       submit: () => {},
       intakeFiles: () => {},
       pasteText: () => {},
-      recall: () => false,
+      recall: () => false, recallEscape: () => false,
     })
     const consumed = fireEvent.keyDown(root, { key: 'Tab', keyCode: 9 })
     expect(arbitrate).toHaveBeenCalledWith('tab', false)
@@ -158,6 +161,7 @@ describe('keymap keydown routing', () => {
     onTestFinished(registerComposerKeymap(editor, {
       arbitrate, space: () => false, dismissPopup: () => {}, canSubmit: () => true,
       submit: () => {}, intakeFiles: () => {}, pasteText: () => {}, recall,
+      recallEscape: () => false,
     }))
     // A claimed Up refill consumes the keystroke so the editor keeps its caret.
     expect(fireEvent.keyDown(root, { key: 'ArrowUp', keyCode: 38 })).toBe(false)
@@ -181,6 +185,7 @@ describe('keymap keydown routing', () => {
     onTestFinished(registerComposerKeymap(editor, {
       arbitrate: () => 'pass', space: () => false, dismissPopup: () => {}, canSubmit: () => true,
       submit: () => {}, intakeFiles: () => {}, pasteText: () => {}, recall,
+      recallEscape: () => false,
     }))
     // keyCode 229 is the legacy IME signal engines emit without isComposing.
     expect(fireEvent.keyDown(root, { key: 'ArrowUp', keyCode: 229 })).toBe(true)
@@ -200,9 +205,59 @@ describe('keymap keydown routing', () => {
     onTestFinished(registerComposerKeymap(editor, {
       arbitrate, space: () => false, dismissPopup: () => {}, canSubmit: () => true,
       submit: () => {}, intakeFiles: () => {}, pasteText: () => {}, recall,
+      recallEscape: () => false,
     }))
     expect(fireEvent.keyDown(root, { key: 'ArrowUp', keyCode: 38 })).toBe(false)
     expect(arbitrate).toHaveBeenCalledWith('up', false)
     expect(recall).not.toHaveBeenCalled()
+  })
+
+  it('consumes an Escape that restores the history walk and leaves composing Escapes to the IME', () => {
+    const editor = createEditor({ namespace: 'recall-escape', onError: (e) => { throw e } })
+    const root = document.createElement('div')
+    root.contentEditable = 'true'
+    document.body.appendChild(root)
+    onTestFinished(() => { editor.setRootElement(null); root.remove() })
+    editor.setRootElement(root)
+    onTestFinished(registerPlainText(editor))
+    const arbitrate = vi.fn(() => 'pass' as const)
+    const recallEscape = vi.fn(() => true)
+    const dismissPopup = vi.fn()
+    onTestFinished(registerComposerKeymap(editor, {
+      arbitrate, space: () => false, dismissPopup, canSubmit: () => true,
+      submit: () => {}, intakeFiles: () => {}, pasteText: () => {},
+      recall: () => false, recallEscape,
+    }))
+    // A claimed walk restore consumes the keystroke so the browser keeps its default out.
+    expect(fireEvent.keyDown(root, { key: 'Escape', keyCode: 27 })).toBe(false)
+    expect(recallEscape).toHaveBeenCalledOnce()
+    expect(dismissPopup).toHaveBeenCalledOnce()
+    // An unclaimed Escape still falls through (menu arbitration stays ahead).
+    recallEscape.mockReturnValue(false)
+    expect(fireEvent.keyDown(root, { key: 'Escape', keyCode: 27 })).toBe(true)
+    expect(recallEscape).toHaveBeenCalledTimes(2)
+    // keyCode 229 is the legacy IME signal engines emit without isComposing.
+    expect(fireEvent.keyDown(root, { key: 'Escape', keyCode: 229 })).toBe(true)
+    expect(recallEscape).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps menu arbitration ahead of the history-walk Escape', () => {
+    const editor = createEditor({ namespace: 'recall-escape-menu', onError: (e) => { throw e } })
+    const root = document.createElement('div')
+    root.contentEditable = 'true'
+    document.body.appendChild(root)
+    onTestFinished(() => { editor.setRootElement(null); root.remove() })
+    editor.setRootElement(root)
+    onTestFinished(registerPlainText(editor))
+    const arbitrate = vi.fn(() => 'consumed' as const)
+    const recallEscape = vi.fn(() => true)
+    onTestFinished(registerComposerKeymap(editor, {
+      arbitrate, space: () => false, dismissPopup: () => {}, canSubmit: () => true,
+      submit: () => {}, intakeFiles: () => {}, pasteText: () => {},
+      recall: () => false, recallEscape,
+    }))
+    expect(fireEvent.keyDown(root, { key: 'Escape', keyCode: 27 })).toBe(false)
+    expect(arbitrate).toHaveBeenCalledWith('escape', false)
+    expect(recallEscape).not.toHaveBeenCalled()
   })
 })

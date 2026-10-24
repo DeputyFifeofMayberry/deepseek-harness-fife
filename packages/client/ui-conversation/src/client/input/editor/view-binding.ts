@@ -118,6 +118,10 @@ export function installDraftKeymap(
       if (!editAllowed()) return false
       return keyboard.recall(direction)
     },
+    recallEscape: () => {
+      if (!editAllowed()) return false
+      return keyboard.recallEscape()
+    },
     space: () => {
       if (!editAllowed()) return false
       return keyboard.space()

@@ -1256,6 +1256,27 @@ describe('running and lock semantics', () => {
     expect(shell.snapshot.draft).toBe('recalled text')
   })
 
+  it('a blocked composer keeps Escape native until unlocked, then restores the walk draft', () => {
+    const history = {
+      record: () => {},
+      entries: () => [{ text: 'recalled text', references: [] }],
+    }
+    const { props, shell, textarea, view } = bench({
+      blocked: { reason: 'waiting' },
+      draft: 'in progress',
+      history,
+    })
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    fireEvent.keyDown(textarea, { key: 'Escape', keyCode: 27 })
+    expect(shell.snapshot.draft).toBe('in progress')
+    const { blocked: _unlock, ...unblocked } = props
+    view.rerender(<InputBar {...unblocked} />)
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    expect(shell.snapshot.draft).toBe('recalled text')
+    fireEvent.keyDown(textarea, { key: 'Escape', keyCode: 27 })
+    expect(shell.snapshot.draft).toBe('in progress')
+  })
+
   it('file action availability follows mount and live composer state', () => {
     const { props, view, shell } = bench({ addFiles: () => null })
     expect(shell.canPickFiles()).toBe(true)

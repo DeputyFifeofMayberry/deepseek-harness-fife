@@ -1,4 +1,4 @@
-/** The shipped composer recalls a chat's submitted inputs with Up (per-session input history). */
+/** The shipped composer recalls a chat's submitted inputs with Up/Down (per-session input history walk). */
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -84,4 +84,83 @@ describe('web e2e: composer input history recall', () => {
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   }, 120_000)
+
+  it('walks the history with Up and Down, restores the saved draft, and keeps multiline arrows native outside the walk', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-composer-input-history-walk'))
+    const composer = page.locator('[data-composer-input][contenteditable="true"]').first()
+    const send = async (text: string): Promise<void> => {
+      await writeComposerDraft(page, composer, text)
+      const settled = scaffold.whenTurnSettled(60_000)
+      await composer.press('Enter')
+      await page.getByText(text, { exact: false }).last().waitFor({ timeout: 15_000 })
+      await settled
+      await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe('')
+    }
+    const alpha = 'WALK_ALPHA tracer prompt'
+    const beta = 'WALK_BETA tracer prompt'
+    const gamma = 'WALK_GAMMA tracer prompt'
+    const workInProgress = 'WALK_WIP unfinished draft'
+    await send(alpha)
+    await send(beta)
+    await send(gamma)
+
+    // Entering the walk saves the in-progress draft; Up walks back one entry per press.
+    await writeComposerDraft(page, composer, workInProgress)
+    await composer.press('ArrowUp')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(gamma)
+    await composer.press('ArrowUp')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(beta)
+
+    // Escape hands the in-progress draft back from anywhere in the walk.
+    await composer.press('Escape')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(workInProgress)
+
+    // Down walks forward again and past the newest entry restores the saved draft.
+    await composer.press('ArrowUp')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(gamma)
+    await composer.press('ArrowUp')
+    await composer.press('ArrowDown')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(gamma)
+    await composer.press('ArrowDown')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(workInProgress)
+
+    // Outside the walk, Up and Down stay the multiline caret keys: the draft
+    // keeps its text (no recall) while the caret crosses the line break.
+    await composer.click()
+    await page.keyboard.press('ControlOrMeta+A')
+    await page.keyboard.type('WALK_MULTI line one')
+    await page.keyboard.press('Shift+Enter')
+    await page.keyboard.type('WALK_MULTI line two')
+    const lineTop = (): Promise<number | null> => page.evaluate(() => {
+      const selection = window.getSelection()
+      if (selection === null || selection.rangeCount === 0) return null
+      const rect = selection.getRangeAt(0).getBoundingClientRect()
+      return rect.height === 0 ? null : rect.top
+    })
+    const multilineBefore = await composer.innerText()
+    const beforeUp = await lineTop()
+    await composer.press('ArrowUp')
+    expect(await composer.innerText()).toBe(multilineBefore)
+    const afterUp = await lineTop()
+    expect(beforeUp).not.toBeNull()
+    expect(afterUp).not.toBeNull()
+    expect(afterUp).not.toBe(beforeUp)
+    await composer.press('ArrowDown')
+    expect(await composer.innerText()).toBe(multilineBefore)
+
+    // Sending the multiline draft recalls it with the caret on its last line;
+    // the next Up still walks because the caret guard applies only to entry.
+    await composer.press('Enter')
+    const multiSettled = scaffold.whenTurnSettled(60_000)
+    await page.getByText('WALK_MULTI line two', { exact: false }).last().waitFor({ timeout: 15_000 })
+    await multiSettled
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe('')
+    await composer.press('ArrowUp')
+    await expect.poll(() => composer.innerText(), { timeout: 10_000 }).toContain('WALK_MULTI line one')
+    await expect.poll(() => composer.innerText(), { timeout: 10_000 }).toContain('WALK_MULTI line two')
+    await composer.press('ArrowUp')
+    await expect.poll(() => composer.textContent(), { timeout: 10_000 }).toBe(gamma)
+    expect(tripwire.pageErrors).toEqual([])
+    expect(tripwire.warnings).toEqual([])
+  }, 180_000)
 })

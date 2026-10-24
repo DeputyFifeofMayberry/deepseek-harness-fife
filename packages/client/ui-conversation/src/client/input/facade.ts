@@ -97,6 +97,19 @@ function projectionContentChanged(prev: EditorProjection, next: EditorProjection
   })
 }
 
+/** Whether two semantic drafts describe the same document (runtime identities excluded). */
+function sameDraft(a: DraftSnapshot, b: DraftSnapshot): boolean {
+  if (a.text !== b.text) return false
+  if (a.command?.token !== b.command?.token) return false
+  if (a.references.length !== b.references.length) return false
+  return a.references.every((reference, i) => {
+    const other = b.references[i]
+    return other !== undefined && reference.source === other.source && reference.ref === other.ref
+      && reference.offset === other.offset && reference.length === other.length
+      && reference.clipboardText === other.clipboardText
+  })
+}
+
 const EMPTY_QUEUE: InboxState['next-turn'] = []
 
 /** Unavailable catalogs contain no named text references. */
@@ -157,6 +170,10 @@ export class SessionInputShell implements SessionInput {
   private pendingCommand: { readonly token: string; readonly rev: number } | undefined
   /** The in-flight claim resolution for a restored command chip. */
   private commandRestore: AbortController | undefined
+  /** Active input-history walk: the displayed entry's index and the draft saved when the walk started. */
+  private historyWalk: { index: number; saved: DraftSnapshot } | undefined
+  /** The history draft the shell is currently writing; its commit may land inside the write or with the enclosing Lexical batch. */
+  private historyRestore: DraftSnapshot | undefined
   /** The mounted composer's file-picker opener (scoped pick-files event target). */
   private filePicker: Parameters<ComposerKeyboard['bindFilePicker']>[0] | undefined
   /** Default sends retained until admission settles or scope disposal releases their attachments. */
@@ -202,6 +219,18 @@ export class SessionInputShell implements SessionInput {
       if (!this.restoringFailures && this.failedRestoreRev !== undefined) {
         this.failedDetached.clear()
         this.failedRestoreRev = undefined
+      }
+      // Every draft write the shell did not produce as part of a history
+      // restore ends the walk: user edits, the optimistic send-commit clear,
+      // and failed-send restorations all land here. A history restore's own
+      // commit is recognized by content (it can land after the write returns,
+      // with the enclosing Lexical batch), so the walk survives it.
+      if (this.historyRestore !== undefined) {
+        const restore = this.historyRestore
+        this.historyRestore = undefined
+        if (!sameDraft(this.draftSnapshot, restore)) this.historyWalk = undefined
+      } else {
+        this.historyWalk = undefined
       }
       this.dispatchRun(({ type: 'draft-changed', command: this.projection.command }))
     }
@@ -446,21 +475,83 @@ export class SessionInputShell implements SessionInput {
 
   /**
    * Refill the draft from the captured input history through the normal draft
-   * path (chips re-claim, caret lands at the end). Recall applies only from a
-   * plain phase with a collapsed caret on the first line; the forward
-   * direction waits for the history walk.
+   * path (chips re-claim, caret lands at the end). The first 'previous' from a
+   * normal editing state enters the walk, which saves the in-progress draft
+   * and requires a collapsed caret on the first line; while the walk is
+   * active, both directions step one entry per press from any caret position
+   * — 'previous' toward older inputs, 'next' toward newer ones and finally
+   * back to the saved draft. A claimed command chip keeps the walk alive, so
+   * a recalled command entry never dead-ends it.
    * @param direction - which neighbor to recall.
    * @returns whether the draft was replaced — the caller consumes the keystroke.
    */
   recall(direction: 'previous' | 'next'): boolean {
-    if (direction !== 'previous') return false
-    if (this.disposed || this.core.state.phase !== 'plain') return false
+    if (this.disposed) return false
+    const entries = this.deps.history?.entries()
+    if (entries === undefined || entries.length === 0) return false
+    if (this.historyWalk !== undefined) {
+      const phase = this.core.state.phase
+      if (phase !== 'plain' && phase !== 'claimed') return false
+      return this.walkHistory(direction, entries)
+    }
+    if (this.core.state.phase !== 'plain') return false
+    if (direction === 'next') return false
     const caret = this.projection.caret
     if (caret === null || this.projection.detectText.slice(0, caret).includes('\n')) return false
-    const entry = this.deps.history?.entries().at(-1)
-    if (entry === undefined) return false
-    this.setDraft(entry)
+    const saved = this.draftSnapshot
+    this.applyHistoryEntry(entries.length - 1, entries)
+    this.historyWalk = { index: entries.length - 1, saved }
     return true
+  }
+
+  /**
+   * Escape during an active history walk: restore the draft saved when the
+   * walk started and end the walk.
+   * @returns whether the restore applied — the caller consumes the keystroke.
+   */
+  recallEscape(): boolean {
+    if (this.disposed) return false
+    if (this.historyWalk === undefined) return false
+    const phase = this.core.state.phase
+    if (phase !== 'plain' && phase !== 'claimed') return false
+    this.restoreSavedWalkDraft()
+    return true
+  }
+
+  /** One walk step: the newest entry sits at the end of the captured list. */
+  private walkHistory(direction: 'previous' | 'next', entries: readonly DraftSnapshot[]): boolean {
+    const walk = this.historyWalk
+    if (walk === undefined) return false
+    if (direction === 'previous') {
+      if (walk.index === 0) return true // the oldest entry holds the draft; the gesture is consumed
+      this.applyHistoryEntry(walk.index - 1, entries)
+      this.historyWalk = { ...walk, index: walk.index - 1 }
+      return true
+    }
+    if (walk.index >= entries.length - 1) {
+      this.restoreSavedWalkDraft()
+      return true
+    }
+    this.applyHistoryEntry(walk.index + 1, entries)
+    this.historyWalk = { ...walk, index: walk.index + 1 }
+    return true
+  }
+
+  /** Write one captured entry through the normal draft path, marking the write so its commit cannot end the walk. */
+  private applyHistoryEntry(index: number, entries: readonly DraftSnapshot[]): void {
+    const entry = entries[index]
+    if (entry === undefined) return
+    this.historyRestore = entry
+    this.setDraft(entry)
+  }
+
+  /** Put the walk's saved in-progress draft back and end the walk. */
+  private restoreSavedWalkDraft(): void {
+    const saved = this.historyWalk?.saved
+    this.historyWalk = undefined
+    if (saved === undefined) return
+    this.historyRestore = saved
+    this.setDraft(saved)
   }
 
   /**
