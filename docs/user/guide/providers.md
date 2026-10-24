@@ -112,6 +112,22 @@ In pi-ai configuration, every list must name at least one modality except a mode
 
 Both fields state a claim about your endpoint rather than checking it. A model that declares images its endpoint does not serve is not caught here; the provider rejects the request instead.
 
+### Correct a catalog capacity
+
+The installed catalog can lag a vendor's current budget. Z.ai's GLM-5.3 and GLM-5.3-Flash serve a documented 128K-token maximum output ([GLM-5.3](https://docs.z.ai/guides/llm/glm-5.3), [GLM-5.3-Flash](https://docs.z.ai/guides/vlm/glm-5.3-flash)), while the installed catalog still advertises 131,072. Cap the models with a `modelOverrides` entry; unset fields keep their catalog values:
+
+```yaml
+- id: llm-pi-ai
+  config:
+    providers:
+      zai:
+        modelOverrides:
+          glm-5.3:
+            maxTokens: 128000
+          glm-5.3-flash:
+            maxTokens: 128000
+```
+
 ### DeepSeek account models
 
 A signed-in DeepSeek account lists its models from the account service, so the Models page offers no model editor for it. Adjust a single model with `modelOverrides` in `$DSH_HOME/profiles/<profile>/cordis.patch.yml`; the fields match a DeepSeek `models` entry, and unset fields keep the listed values:
