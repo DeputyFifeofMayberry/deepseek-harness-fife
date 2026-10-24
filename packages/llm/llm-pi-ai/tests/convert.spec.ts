@@ -938,6 +938,21 @@ describe('mapStopReason / mapUsage', () => {
     }))).toMatchObject({ kind: 'error', failure: { code: 'PI_AI_ERROR' } })
   })
 
+  it('routes Z.ai/BigModel business codes ahead of the generic status fallbacks', () => {
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: 'HTTP 429: {"error":{"code":"1316","message":"token plan exhausted"}}',
+    }))).toMatchObject({ kind: 'error', failure: { code: 'QUOTA' } })
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: '200: upstream failure [1302][67e6f1] while streaming',
+    }))).toMatchObject({ kind: 'error', failure: { code: 'RATE_LIMIT' } })
+    expect(mapStopReason(assistant({
+      stopReason: 'error',
+      errorMessage: 'HTTP 400: {"code":"3006","message":"model not found"}',
+    }))).toMatchObject({ kind: 'error', failure: { code: 'INVALID_REQUEST' } })
+  })
+
   it.each([
     'other side closed',
     'HTTP2 request did not get a response',
