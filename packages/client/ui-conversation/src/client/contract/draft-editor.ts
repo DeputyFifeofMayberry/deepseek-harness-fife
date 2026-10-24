@@ -84,6 +84,13 @@ export interface ComposerKeyboard {
   caretSpan(): EditSelection
   /** Keyboard arbitration while the menu is open ('pass' when no pipeline). */
   arbitrate(key: ArbitrateKey, composing: boolean): ArbitrateOutcome
+  /**
+   * Refill the draft from the captured input history through the normal draft
+   * path (chips re-claim, caret lands at the end).
+   * @param direction - which neighbor to recall; 'previous' walks toward older inputs.
+   * @returns whether the draft was replaced — the caller consumes the keystroke.
+   */
+  recall(direction: 'previous' | 'next'): boolean
   /** Space adjudication; true = the input applied a claim — caller preventDefaults. */
   space(): boolean
   /** Dismiss the popupSelect shell (any interaction outside the box). */

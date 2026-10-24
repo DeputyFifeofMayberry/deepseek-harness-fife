@@ -25,6 +25,7 @@ import type {
 import type { InputSubmitMode, MessageSubmission, MessageSubmissionState } from '../contract/composer-submission.ts'
 import { SubmitMachine } from './machine.ts'
 import { resolveDraftInput, snapshotDraft } from '../draft.ts'
+import type { InputHistoryStore } from '../input-history.ts'
 import { DraftEditorRuntime } from './editor/runtime.ts'
 import type { EditorProjection } from './editor/projection.ts'
 
@@ -51,6 +52,8 @@ export interface SessionInputDeps {
   popup?: (() => PopupDismissFace | undefined) | undefined
   /** Agent Inbox projection; its next-turn list is overlaid onto InputState.queue. */
   inbox?: ObservableSnapshot<InboxState | undefined> | undefined
+  /** Per-session input-history capture face (the hub binds the real store); absent = no capture and no recall. */
+  history?: InputHistoryStore | undefined
   /**
    * Steer every still-pending queued message into the running turn, in FIFO
    * order (the empty-draft accelerated-Enter gesture); absent = unsupported.
@@ -442,6 +445,25 @@ export class SessionInputShell implements SessionInput {
   }
 
   /**
+   * Refill the draft from the captured input history through the normal draft
+   * path (chips re-claim, caret lands at the end). Recall applies only from a
+   * plain phase with a collapsed caret on the first line; the forward
+   * direction waits for the history walk.
+   * @param direction - which neighbor to recall.
+   * @returns whether the draft was replaced — the caller consumes the keystroke.
+   */
+  recall(direction: 'previous' | 'next'): boolean {
+    if (direction !== 'previous') return false
+    if (this.disposed || this.core.state.phase !== 'plain') return false
+    const caret = this.projection.caret
+    if (caret === null || this.projection.detectText.slice(0, caret).includes('\n')) return false
+    const entry = this.deps.history?.entries().at(-1)
+    if (entry === undefined) return false
+    this.setDraft(entry)
+    return true
+  }
+
+  /**
    * Steer every still-pending queued message into the running turn (the
    * empty-draft accelerated-Enter gesture). Execution belongs to the hub's
    * queue choreography; absent dep = the gesture falls back to the machine's
@@ -783,6 +805,16 @@ export class SessionInputShell implements SessionInput {
     try { this.deps.messageSubmitted?.(submission) } catch (_error) { /* Notification consumers cannot interrupt submission. */ }
   }
 
+  /**
+   * Record a successful default send in the input history (no bound store =
+   * no capture). The entry keeps the draft's raw clipboard projection, so
+   * recall restores exactly what the editor held at submit time.
+   */
+  private captureHistory(record: DetachedDraft | undefined): void {
+    if (record === undefined || this.deps.history === undefined) return
+    this.deps.history.record(snapshotDraft(record.draft, record.occurrences))
+  }
+
   /** Settle one detached default send independently of other sends. */
   private settleSink(
     attempt: SubmitAttempt,
@@ -795,6 +827,7 @@ export class SessionInputShell implements SessionInput {
           this.settleDetachedFailure(attempt, outcome.text)
           return
         }
+        this.captureHistory(this.detachedDrafts.get(attempt.seq))
         this.detachedDrafts.delete(attempt.seq)
         this.dispatchRun(({ type: 'sink-settled', attempt, ok: true, outcome }))
       },

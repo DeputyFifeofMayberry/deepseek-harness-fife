@@ -25,6 +25,7 @@ import type { InputSubmitMode } from '../contract/composer-submission.ts'
 import type { PopupDismissFace } from './facade.ts'
 import { SessionInputShell } from './facade.ts'
 import { reportMessageSubmission } from './submission-analytics.ts'
+import { createSessionInputHistory } from '../input-history.ts'
 import { readConversationDraft } from '../stores.ts'
 
 /** Structural command face for per-session popup resolution. */
@@ -116,6 +117,7 @@ export class InputHub implements SessionInputResolver {
         })
       },
       messageSubmitted: (submission) => { reportMessageSubmission(this.rootCtx, submission) },
+      history: createSessionInputHistory(binding.sessionId),
       inputTriggers: () => this.controller(actx),
       popup: () => this.popup(actx),
       inbox: session.projections.faceOf('inbox') as ObservableSnapshot<InboxState | undefined>,

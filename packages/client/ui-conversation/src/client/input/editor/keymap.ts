@@ -1,10 +1,10 @@
 /**
  * Composer keymap over the Lexical command layer: menu arbitration
- * (arrows/escape/enter), space adjudication, the Enter submit gesture, and
- * paste routing. Registered at CRITICAL priority so it decides before
- * @lexical/plain-text's own Enter/paste defaults; a handler returning false
- * falls through to those defaults (Shift+Enter's line break, ordinary
- * spaces, text paste the bar routes itself).
+ * (arrows/escape/enter), input-history arrow recall, space adjudication, the
+ * Enter submit gesture, and paste routing. Registered at CRITICAL priority so
+ * it decides before @lexical/plain-text's own Enter/paste defaults; a handler
+ * returning false falls through to those defaults (Shift+Enter's line break,
+ * ordinary spaces, text paste the bar routes itself).
  *
  * IME guard: a composition-closing Enter/Space must not submit or adjudicate.
  * KeyboardEvent.isComposing covers most engines; Safari delivers the closing
@@ -26,6 +26,8 @@ import type { ArbitrateKey, ArbitrateOutcome } from '../../contract/draft-editor
 export interface ComposerKeymapHandlers {
   /** Keyboard arbitration while the menu is open ('pass' when no pipeline). */
   arbitrate(key: ArbitrateKey, composing: boolean): ArbitrateOutcome
+  /** Arrow-recall verdict: true = the draft was refilled from input history — the keystroke is consumed. */
+  recall(direction: 'previous' | 'next'): boolean
   /** Space adjudication; true = a claim was applied — the keystroke is consumed. */
   space(): boolean
   /** Dismiss the popupSelect shell (Escape layering: an open overlay closes first). */
@@ -83,6 +85,13 @@ export function registerComposerKeymap(editor: LexicalEditor, handlers: Composer
   const arrow = (key: ArbitrateKey) => (event: KeyboardEvent | null): boolean => {
     const inComposition = event !== null && isComposingEvent(event, recentlyComposing)
     if (handlers.arbitrate(key, inComposition) !== 'pass') {
+      event?.preventDefault()
+      return true
+    }
+    // Arrows the trigger menu does not claim may refill the draft from input
+    // history; composition, an absent capture, and non-first-line carets
+    // stay with the native keys.
+    if (!inComposition && (key === 'up' || key === 'down') && handlers.recall(key === 'up' ? 'previous' : 'next')) {
       event?.preventDefault()
       return true
     }

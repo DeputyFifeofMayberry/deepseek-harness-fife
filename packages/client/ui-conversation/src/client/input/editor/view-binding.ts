@@ -108,14 +108,22 @@ export function installDraftKeymap(
   keyboard: ComposerKeyboard,
   gate: MutableRefObject<DraftViewGate>,
 ): () => void {
+  // One live-state gate for every draft-mutating gesture (submit, space
+  // claims, paste, history recall): locked and machine-frozen composers
+  // refuse them all.
+  const editAllowed = (): boolean => !gate.current.locked && !gate.current.machineBusy
   return registerComposerKeymap(editor, {
     arbitrate: (key, composing) => keyboard.arbitrate(key, composing),
+    recall: (direction) => {
+      if (!editAllowed()) return false
+      return keyboard.recall(direction)
+    },
     space: () => {
-      if (gate.current.machineBusy || gate.current.locked) return false
+      if (!editAllowed()) return false
       return keyboard.space()
     },
     dismissPopup: () => { keyboard.dismissPopup() },
-    canSubmit: () => !gate.current.locked && !gate.current.machineBusy,
+    canSubmit: editAllowed,
     submit: (accelerated) => {
       const g = gate.current
       // Empty-draft accelerated Enter acts on the queue instead of the
@@ -138,7 +146,7 @@ export function installDraftKeymap(
     },
     intakeFiles: (files, directories) => { gate.current.intakeFiles(files, directories) },
     pasteText: (text) => {
-      if (gate.current.machineBusy || gate.current.locked) return
+      if (!editAllowed()) return
       keyboard.paste(text)
     },
   })
