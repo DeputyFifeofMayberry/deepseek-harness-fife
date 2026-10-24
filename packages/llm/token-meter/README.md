@@ -91,7 +91,7 @@ The service is built on one fold and one anchor. Each session gets an isolated r
 | [`src/surface-projection.ts`](src/surface-projection.ts) | Shadow-price protocol for the O(1) projection units |
 | [`src/usage-projection.ts`](src/usage-projection.ts) | `tokenUsage` and `contextPressure` projection definitions |
 | [`src/usage-by-route.ts`](src/usage-by-route.ts) | `usageByRoute` projection definition: route identity plus UTC hour-of-week buckets |
-| [`src/usage-fold.ts`](src/usage-fold.ts) | Shared provider-usage buckets, replacement arithmetic, and settlement extraction |
+| [`src/usage-fold.ts`](src/usage-fold.ts) | Shared provider-usage buckets, replacement arithmetic, settlement extraction, and delegated-child attribution |
 | [`src/breakdown-projection.ts`](src/breakdown-projection.ts) | `contextBreakdown` projection definition |
 | [`src/client.ts`](src/client.ts) | Browser-safe client surface for projection consumers |
 | [`src/turn-usage.ts`](src/turn-usage.ts) | Pure fold for exact per-attempt and per-Turn usage |
@@ -103,6 +103,8 @@ Each `measure()` call synchronizes the fold to the current durable tail, then re
 ### Projection semantics
 
 `contextBreakdown` retains only the surviving `system/message` nodes with their heuristic prices, one running surface total, and at most one armed shadow-price claim; a replacement subtracts the adjacent claim, whose `shadowedSeqs` also name the system prompts it removes, or the retained price of the one system prompt it rewrites ([decision](../../../.agents/notes/implemented/architecture/2026-10-13-context-breakdown-system-prompt-state.md)). Its state follows the number of surviving system prompts, not the message count; state version 6 invalidates positional checkpoints. `contextPressure` is the other scalar shadow-price consumer: replacements without adjacent claims contribute zero delta. The usage fold retains one last-sample slot because legal logs never report usage for an earlier step after a later step reports usage.
+
+`tokenUsage` and `usageByRoute` also fold the delegating parent's `subagent/usage` records, which `dsh-subagent` appends when a local child epoch settles. Those records carry route-bucketed provider counters, so they add to billed totals and per-route buckets without touching the last-sample slot or `contextPressure`: the parent pays for its children's requests, and its own context reading never grows because of them.
 
 `./estimate` exports the stateless text/content estimators used by tool-result retention. Model adapters supply request-image costs through `imageRequestPricing`.
 

@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { createMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { TokenUsage } from '@deepseek-ai/dsh-llm'
-import SessionStore, { SessionSeq } from '@deepseek-ai/dsh-session'
+import SessionStore, { SessionSeq, SessionId } from '@deepseek-ai/dsh-session'
 import type { EpochHeader, Session, SessionEvent, SessionEventMap, SessionEventType } from '@deepseek-ai/dsh-session'
+import type { DelegatedUsageRoute } from '@deepseek-ai/dsh-subagent'
 import { RetryId } from '@deepseek-ai/dsh-llm-retry'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
@@ -72,6 +73,14 @@ function retry(state: State, time: number, turn: number, step: number): State {
     step,
     retryId: RetryId('usage-by-route-retry'),
     retry: 1,
+  }))
+}
+
+function delegated(state: State, time: number, routes: readonly DelegatedUsageRoute[]): State {
+  return definition.apply(state, event('subagent/usage', time, {
+    version: 0,
+    childId: SessionId('delegated-child'),
+    routes,
   }))
 }
 
@@ -217,6 +226,43 @@ describe('usageByRoute projection', () => {
   it('ignores unrelated events', () => {
     const state = appendHeader(definition.init(), MONDAY, header())
     expect(definition.apply(state, event('step/start', MONDAY, { turn: 1, step: 0 }))).toBe(state)
+  })
+
+  it('buckets delegated usage under the child route it names', () => {
+    let state = delegated(definition.init(), TUESDAY_ONE, [{
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+      reasoningEffort: 'high',
+      uncachedInputTokens: 100,
+      outputTokens: 20,
+      cacheReadTokens: 5,
+      cacheWriteTokens: 1,
+    }])
+    state = delegated(state, TUESDAY_ONE, [{
+      provider: 'deepseek-official',
+      model: 'deepseek-v4-pro',
+      reasoningEffort: 'high',
+      uncachedInputTokens: 10,
+      outputTokens: 2,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    }])
+    expect(view(state)).toEqual({
+      routes: [{
+        provider: 'deepseek-official',
+        model: 'deepseek-v4-pro',
+        reasoningEffort: 'high',
+        buckets: [{
+          hourOfWeek: 25,
+          usage: { uncachedInputTokens: 110, outputTokens: 22, cacheReadTokens: 5, cacheWriteTokens: 1 },
+        }],
+      }],
+    })
+  })
+
+  it('keeps state for an attribution that names no route', () => {
+    const state = appendHeader(definition.init(), MONDAY, header())
+    expect(delegated(state, MONDAY, [])).toBe(state)
   })
 
   it('round-trips state and wire through their schemas', () => {

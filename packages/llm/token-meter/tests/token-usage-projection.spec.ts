@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { createMessage, createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { TokenUsage } from '@deepseek-ai/dsh-llm'
-import SessionStore from '@deepseek-ai/dsh-session'
+import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import type { Session, SessionSeq } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
@@ -546,5 +546,61 @@ describe('contextPressure session projection', () => {
       sourceEventSeqs: [question],
     })
     expect(pressure(ctx, session).projectedTokens).toBe(0)
+  })
+})
+
+describe('delegated usage attribution', () => {
+  it('adds a child epoch routes to the billed totals', async () => {
+    const { ctx, session } = await harness()
+    session.append('subagent/usage', {
+      version: 0,
+      childId: SessionId('delegated-child'),
+      routes: [
+        {
+          provider: 'deepseek-official',
+          model: 'deepseek-flash',
+          reasoningEffort: '',
+          uncachedInputTokens: 100,
+          outputTokens: 20,
+          cacheReadTokens: 5,
+          cacheWriteTokens: 1,
+        },
+        {
+          provider: 'deepseek-official',
+          model: 'deepseek-v4-pro',
+          reasoningEffort: 'high',
+          uncachedInputTokens: 7,
+          outputTokens: 3,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+        },
+      ],
+    })
+    expect(projected(ctx, session)).toEqual({
+      uncachedInputTokens: 107, outputTokens: 23, cacheReadTokens: 5, cacheWriteTokens: 1,
+    })
+  })
+
+  it('leaves a replacement of the parent own step subtracting only that sample', async () => {
+    const { ctx, session } = await harness()
+    session.append('subagent/usage', {
+      version: 0,
+      childId: SessionId('delegated-child'),
+      routes: [{
+        provider: 'deepseek-official',
+        model: 'deepseek-flash',
+        reasoningEffort: '',
+        uncachedInputTokens: 100,
+        outputTokens: 20,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+      }],
+    })
+    startStep(session, 1, 0)
+    usageChunk(session, { inputTokens: 10, outputTokens: 2 }, 1, 0)
+    finalUsage(session, { inputTokens: 10, outputTokens: 3 }, 1, 0)
+    expect(projected(ctx, session)).toEqual({
+      uncachedInputTokens: 110, outputTokens: 23, cacheReadTokens: 0, cacheWriteTokens: 0,
+    })
   })
 })
