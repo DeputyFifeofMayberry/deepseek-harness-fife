@@ -1,0 +1,57 @@
+name: fife Desktop release
+
+# Builds the unsigned Windows installer on a hosted runner and publishes it to this repository's
+# GitHub Releases feed, which the installed FIFECODE app reads at
+# https://github.com/DeputyFifeofMayberry/deepseek-harness-fife/releases/latest/download/nightly.yml.
+# Manual dispatch only: every run publishes a new version, and a failed run leaves the feed unchanged.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Release notes shown on GitHub (optional)'
+        type: string
+        required: false
+        default: ''
+      confirm:
+        description: 'Type publish to build and publish a release'
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fife-desktop-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: inputs.confirm == 'publish'
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Require master
+        run: node -e "if (process.env.GITHUB_REF !== 'refs/heads/master') throw new Error('fife Desktop release must be dispatched from master')"
+
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      # electron-builder writes deep node_modules paths; the long-path opt-in is per checkout on Windows.
+      - name: Allow long paths
+        run: git config --global core.longpaths true
+
+      - uses: pnpm/action-setup@v5.0.0
+
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node apps/desktop/scripts/fife-release.mjs --notes "${{ inputs.notes }}"

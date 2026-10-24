@@ -64,6 +64,7 @@ const harness = await vi.hoisted(async () => {
   const updateCheck = vi.fn(async (_manual?: boolean): Promise<DesktopUpdateState> => updateState)
   const updateDownload = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
   const updateInstall = vi.fn(async (_version: string): Promise<DesktopUpdateState> => updateState)
+  const describeUpdateSource = vi.fn(() => 'desktop update: source=packaged channel=nightly version=1.0.0')
   const popup = vi.fn<(options: { window: FakeWindow; x?: number; y?: number; callback?: () => void }) => void>()
   const menuBuilder = vi.fn<(template: MenuItemConstructorOptions[]) => { popup: typeof popup }>(() => ({ popup }))
   const menu = Object.assign(menuBuilder, { buildFromTemplate: menuBuilder, setApplicationMenu: vi.fn() })
@@ -190,11 +191,19 @@ const harness = await vi.hoisted(async () => {
   }
   const backgroundNotice = { close: vi.fn((hide: () => void) => { hide() }), dispose: vi.fn(), markerPath: undefined as string | undefined }
   const shellDialog = { isOpen: false, focus: vi.fn() }
+  const notices: FakeNotice[] = []
+  class FakeNotice extends EventEmitter {
+    static isSupported = vi.fn(() => true)
+    show = vi.fn()
+    close = vi.fn()
+    constructor(readonly options: unknown) { super(); notices.push(this) }
+  }
   return {
     failWindow(error: Error) { windowFailure = error },
     windows, hosts, handlers, app, FakeWindow, FakeHost, powerMonitor, nativeTheme, analytics,
-    trays, FakeTray, backgroundNotice, shellDialog,
+    trays, FakeTray, backgroundNotice, shellDialog, notices, FakeNotice,
     menu, popup, socketHeaders: vi.fn(), loginShell, readLoginShell, updateCheck, updateDownload, updateInstall,
+    describeUpdateSource,
     platformDispose,
     platformCloseAndWait,
 
@@ -255,6 +264,7 @@ const harness = await vi.hoisted(async () => {
       loginShell.mockReset().mockImplementation(base => readLoginShell(base))
       updateDownload.mockReset().mockImplementation(async () => updateState)
       updateInstall.mockReset().mockImplementation(async () => updateState)
+      describeUpdateSource.mockReset().mockImplementation(() => 'desktop update: source=packaged channel=nightly version=1.0.0')
       nativeTheme.themeSource = 'system'; nativeTheme.shouldUseDarkColors = false
       preparing = deferred(); prepared = deferred(); hostStarted = deferred()
       navigated = deferred(); dialogShown = deferred(); quitCompleted = deferred()
@@ -278,6 +288,7 @@ vi.mock('../src/policy-test-auth.ts', () => ({ DesktopPolicyTestAuth: class {
 vi.mock('electron', () => ({
   app: harness.app,
   BrowserWindow: harness.FakeWindow,
+  Notification: harness.FakeNotice,
   dialog: harness.dialog,
   shell: { openExternal: harness.openExternal },
   nativeTheme: harness.nativeTheme,
@@ -348,6 +359,7 @@ vi.mock('../src/update-coordinator.ts', () => ({ DesktopUpdateCoordinator: class
   readonly check = harness.updateCheck
   readonly download = harness.updateDownload
   readonly install = harness.updateInstall
+  readonly describeSource = harness.describeUpdateSource
   readonly dispose = vi.fn()
 } }))
 vi.mock('../src/platform-view.ts', async importOriginal => ({
@@ -1097,6 +1109,54 @@ describe('desktop main startup', () => {
     expect(window.setSize).not.toHaveBeenCalled()
   })
 
+  it('raises background activity attention only for the primary product window', async () => {
+    await import('../src/main.ts')
+    await harness.preparing.promise
+    const window = harness.windows[0]!
+    const listener = harness.ipcOn.mock.calls.find(([channel]) => channel === DESKTOP_IPC.activityAttention)![1]
+    const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
+    // A foreground window suppresses every report.
+    listener(event, { kind: 'task-complete', sessionId: 'session-1' })
+    listener(event, { kind: 'approval-request', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(0)
+    window.visible = false
+    listener(event, { kind: 'task-complete', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(1)
+    expect(harness.notices[0]!.options)
+      .toEqual({ title: en.activityTaskCompleteTitle, body: en.activityTaskCompleteNotification, silent: true })
+    // Foreign senders and malformed payloads are dropped without throwing.
+    listener({ ...event, sender: {} }, { kind: 'task-complete', sessionId: 'session-2' })
+    listener(event, { kind: 'vanish', sessionId: 'session-2' })
+    listener(event, { kind: 'task-complete', sessionId: '' })
+    listener(event, 'complete')
+    expect(harness.notices).toHaveLength(1)
+    // One replaceable approval notification; a newer request closes the previous one.
+    listener(event, { kind: 'approval-request', sessionId: 'session-1' })
+    expect(harness.notices).toHaveLength(2)
+    expect(harness.notices[1]!.options).toEqual({ title: en.activityApprovalTitle, body: en.activityApprovalNotification, silent: false })
+    listener(event, { kind: 'approval-request', sessionId: 'session-2' })
+    expect(harness.notices).toHaveLength(3)
+    expect(harness.notices[1]!.close).toHaveBeenCalled()
+    // Resolution closes the owned approval notification.
+    listener(event, { kind: 'approval-resolved', sessionId: 'session-2' })
+    expect(harness.notices[2]!.close).toHaveBeenCalled()
+    // A click on an owned notification restores and focuses the window.
+    listener(event, { kind: 'approval-request', sessionId: 'session-3' })
+    const clickable = harness.notices[3]!
+    clickable.emit('click')
+    expect(clickable.close).not.toHaveBeenCalled()
+    expect(window.restore).not.toHaveBeenCalled()
+    expect(window.show).toHaveBeenCalled()
+    expect(window.focus).toHaveBeenCalled()
+    // Window focus clears owned notifications.
+    window.show.mockClear()
+    window.focus.mockClear()
+    listener(event, { kind: 'task-complete', sessionId: 'session-4' })
+    const pending = harness.notices.at(-1)!
+    window.emit('focus')
+    expect(pending.close).toHaveBeenCalled()
+  })
+
   it('registers the window-owned directory picker during startup and rejects foreign callers', async () => {
     await import('../src/main.ts')
     await harness.preparing.promise
@@ -1620,6 +1680,29 @@ describe('desktop main startup', () => {
     expect(harness.dialog.showMessageBox).toHaveBeenCalledTimes(2)
     expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'error',
       message: 'Could not check for updates. Please try again later.', technicalDetails: 'Feed unavailable' }))
+    expect(harness.updateDownload).not.toHaveBeenCalled()
+  })
+
+  it('explains an unavailable update source without offering a download', async () => {
+    await readyForUpdate()
+    harness.updateCheck.mockResolvedValueOnce({ phase: 'unavailable', reason: 'development',
+      technicalDetails: 'desktop update: source=development channel=nightly version=1.0.0' })
+    harness.dialog.showMessageBox.mockResolvedValue({ response: 0 })
+    await invoke(DESKTOP_IPC.updatesOpen, 'app')
+    expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'info',
+      message: en.updateUnavailableDevelopment,
+      technicalDetails: 'desktop update: source=development channel=nightly version=1.0.0' }))
+    expect(harness.updateDownload).not.toHaveBeenCalled()
+  })
+
+  it('names the missing configuration for a packaged build without a feed', async () => {
+    await readyForUpdate()
+    harness.updateCheck.mockResolvedValueOnce({ phase: 'unavailable', reason: 'missing-configuration',
+      technicalDetails: 'desktop update: source=missing-configuration channel=nightly version=1.0.0 config=C:\\app\\resources\\app-update.yml' })
+    harness.dialog.showMessageBox.mockResolvedValue({ response: 0 })
+    await invoke(DESKTOP_IPC.updatesOpen, 'app')
+    expect(harness.dialog.showMessageBox).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'info',
+      message: en.updateUnavailableConfiguration }))
     expect(harness.updateDownload).not.toHaveBeenCalled()
   })
 
@@ -2192,7 +2275,8 @@ describe('desktop main startup', () => {
         profilePatchBackup: 'desktop-test-profile/cordis.patch.yml.bak-1789555200000', homePatch: 'unchanged',
       })
     } else {
-      expect(console.info).not.toHaveBeenCalled()
+      // Startup always reports its resolved update source; only recovery logging is absent here.
+      expect(console.info).not.toHaveBeenCalledWith('Desktop profile recovery completed:', expect.anything())
     }
     expect(harness.dialog.showMessageBox).toHaveBeenCalledOnce()
     expect(harness.windows[0]!.urls).toEqual(['dsh-app://app/'])

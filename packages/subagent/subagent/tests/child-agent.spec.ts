@@ -73,6 +73,51 @@ describe('child Agent options', () => {
       subagentDepth: 1,
     })
   })
+
+  it('drops the inherited effort when the delegation declines it', () => {
+    expect(resolveChildAgentOptions(parentAgent(), {
+      effortOperation: 'plan',
+      effortInherited: false,
+    }, 1)).toEqual({
+      provider: 'parent-provider',
+      model: 'parent-model',
+      effortOperation: 'plan',
+      effortInherited: false,
+      maxTokens: 512,
+      subagentDepth: 1,
+    })
+  })
+
+  it('keeps an explicitly requested effort even when inheritance is declined', () => {
+    expect(resolveChildAgentOptions(parentAgent(), {
+      reasoningEffort: ReasoningEffortId('low'),
+      effortOperation: 'mechanical',
+      effortInherited: false,
+    }, 1)).toEqual({
+      provider: 'parent-provider',
+      model: 'parent-model',
+      reasoningEffort: 'low',
+      effortOperation: 'mechanical',
+      effortInherited: false,
+      maxTokens: 512,
+      subagentDepth: 1,
+    })
+  })
+
+  it('keeps the inherited effort when the delegation asks for it', () => {
+    expect(resolveChildAgentOptions(parentAgent(), {
+      effortOperation: 'explore',
+      effortInherited: true,
+    }, 1)).toEqual({
+      provider: 'parent-provider',
+      model: 'parent-model',
+      reasoningEffort: 'high',
+      effortOperation: 'explore',
+      effortInherited: true,
+      maxTokens: 512,
+      subagentDepth: 1,
+    })
+  })
 })
 
 describe('delegation depth limits', () => {

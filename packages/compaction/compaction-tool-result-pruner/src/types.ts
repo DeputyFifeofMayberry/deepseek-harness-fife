@@ -39,3 +39,12 @@ export interface PruneResult {
   /** Total Unicode code points removed across replacements. */
   readonly charsRemoved: number
 }
+
+/** Bounds for one pruning pass over the current surface. */
+export interface PruneSessionOptions {
+  /**
+   * Lowest surface-node sequence the pass may consider; earlier nodes stay
+   * untouched, so already provider-cached history keeps its prefix intact.
+   */
+  readonly sinceSeq?: SessionSeq
+}

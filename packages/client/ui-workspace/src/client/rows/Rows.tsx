@@ -18,7 +18,7 @@ import {
   HoverCard, IconArchiveOutlineRegular, IconEditOutlineRegular,
   IconEllipsisOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
   IconNewChatOutlineRegular, IconPinFillRegular, IconTrashOutlineRegular,
-  IconTriangleRightFillRegular, IconUnarchiveOutlineRegular, Menu, relativeTime, StateDot, Tooltip,
+  IconTriangleRightFillRegular, IconUnarchiveOutlineRegular, Menu, clock12Parts, relativeTime, StateDot, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client'
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -146,15 +146,19 @@ function hoverTimeLabel(updatedAt: number, now: number, t: RowTranslate): string
 }
 
 /**
- * Absolute creation time through the dictionary's date template (the message
- * clock pattern): `toLocaleString` would follow the browser language, not the
- * app locale, and produce mixed-language text after a switch.
+ * Absolute creation time through the dictionary's date and clock templates
+ * (the message clock pattern): `toLocaleString` would follow the browser
+ * language, not the app locale, and produce mixed-language text after a switch.
  */
 function createdLabel(createdAt: number, t: RowTranslate): string {
   const d = new Date(createdAt)
-  const pad2 = (v: number): string => String(v).padStart(2, '0')
+  const parts = clock12Parts(createdAt)
   const date = t('date.ymd', { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() })
-  return t('hover.created', { time: `${date} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` })
+  const clock = t('clock.time', {
+    h: parts.h, mm: parts.mm,
+    ampm: t(parts.ampm === 'am' ? 'clock.am' : 'clock.pm'),
+  })
+  return t('hover.created', { time: `${date} ${clock}` })
 }
 
 /** Hover-card body: workspace title, display directory path, absolute creation time. */

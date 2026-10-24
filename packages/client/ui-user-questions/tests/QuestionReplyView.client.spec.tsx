@@ -49,7 +49,7 @@ describe('QuestionReplyView', () => {
     expect(bubble.getAttribute('aria-expanded')).toBe('false')
     expect(screen.getAllByText('A dashboard')).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'copy' })).toBeTruthy()
-    expect(screen.getByText(/\d{2}:\d{2}/)).toBeTruthy()
+    expect(screen.getByText(/\d{1,2}:\d{2} (AM|PM)/)).toBeTruthy()
     expect(screen.queryByText('What should we build?')).toBeNull()
 
     fireEvent.click(bubble)

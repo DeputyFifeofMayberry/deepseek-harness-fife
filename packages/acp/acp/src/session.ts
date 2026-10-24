@@ -11,6 +11,9 @@ import {
   type StopReason,
 } from '@agentclientprotocol/sdk'
 import type { Agent, AgentHandle, AgentOptions, AgentStatus, ModelSelection } from '@deepseek-ai/dsh-agent'
+// Type-only: `ctx.get('effortPolicy')` resolves to the policy service when the
+// deployment composes it, which stays optional for this bridge.
+import type {} from '@deepseek-ai/dsh-effort-policy'
 import { createUserMessage, errorChain, type UserMessage } from '@deepseek-ai/dsh-llm'
 import { type Session, type SessionEvent, type SessionId, type TurnEndReason } from '@deepseek-ai/dsh-session'
 import { AcpContentError, admitAcpPrompt } from './content.ts'
@@ -94,6 +97,32 @@ function selectionFor(
 }
 
 /**
+ * Build the callback that hands a picked effort to the effort policy's durable
+ * base. The policy owns every later request, so a pick changes its base instead
+ * of competing with it; the provider default is the `standard` level, which
+ * resolves to the route's own default and still escalates on a failing
+ * verification. An absent or disabled policy is a deployment without routing,
+ * and the pick keeps its existing effect.
+ * @param ctx - ACP plugin context that may compose the policy.
+ * @param agent - live Agent of this session, once composed.
+ * @returns the recorder to pass to {@link AcpModelControl}.
+ */
+function effortRecorder(
+  ctx: Context,
+  agent: () => Agent | undefined,
+): (selection: ModelSelection) => void {
+  return (selection) => {
+    const policy = ctx.get('effortPolicy')
+    const target = agent()
+    if (policy === undefined || !policy.enabled || target === undefined) return
+    policy.setBase(
+      target.session,
+      selection.reasoningEffort === undefined ? 'standard' : String(selection.reasoningEffort),
+    )
+  }
+}
+
+/**
  * Per-session ACP module. It owns the unpublished Agent composition, selected
  * route, one-prompt admission slot, ordered standard updates, and memoized
  * quiescent teardown.
@@ -127,13 +156,19 @@ export class AcpSession {
    * @returns the fully composed per-session module.
    */
   static async create(ctx: Context, options: CreateAcpSessionOptions): Promise<AcpSession> {
-    const modelControl = new AcpModelControl(ctx.llm, options.fallbackSelection)
+    let composed: Agent | undefined
+    const modelControl = new AcpModelControl(
+      ctx.llm,
+      options.fallbackSelection,
+      effortRecorder(ctx, () => composed),
+    )
     const handle = await ctx.agents.create({
       sessionId: options.sessionId,
       meta: { cwd: options.cwd },
       agentOptions: options.agentOptions,
       signal: options.signal,
-      setup: async (agentCtx) => {
+      setup: async (agentCtx, agent) => {
+        composed = agent
         modelControl.install(agentCtx)
         await mountAcpMcpServers(agentCtx, options.mcpServers, options.cwd)
       },
@@ -157,6 +192,7 @@ export class AcpSession {
         modelControl = new AcpModelControl(
           ctx.llm,
           selectionFor(agent.session.requestHeader(), options.fallbackSelection),
+          effortRecorder(ctx, () => agent),
         )
         modelControl.install(agentCtx)
         await mountAcpMcpServers(agentCtx, options.mcpServers, options.cwd)

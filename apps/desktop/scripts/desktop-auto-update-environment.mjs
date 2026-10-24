@@ -1,9 +1,12 @@
-/** Resolve the Desktop auto-update channel and its Tencent COS destination. */
+/** Resolve the Desktop auto-update channel and its deployment destination. */
 
 import { valid } from 'semver'
 
 /** Environment variable that selects the Desktop update deployment. */
 export const DESKTOP_AUTO_UPDATE_ENV = 'DSH_DESKTOP_AUTO_UPDATE_ENV'
+
+/** Environment variable that carries the fife deployment's public updater feed URL. */
+export const FIFE_DESKTOP_UPDATE_FEED_URL_ENV = 'FIFE_DESKTOP_UPDATE_FEED_URL'
 
 /**
  * Resolve the channel embedded in the installer; omitted local settings retain nightly.
@@ -38,12 +41,12 @@ const UPDATE_TARGETS = new Set(['mac-arm64', 'mac-x64', 'win-x64'])
 /**
  * Resolve the update deployment, defaulting local release work to test.
  * @param {NodeJS.ProcessEnv} env - Packaging or upload environment.
- * @returns {'test' | 'production'} Validated deployment name.
+ * @returns {'test' | 'production' | 'fife'} Validated deployment name.
  */
 export function resolveDesktopAutoUpdateEnvironment(env) {
   const value = env[DESKTOP_AUTO_UPDATE_ENV]?.trim() || 'test'
-  if (value !== 'test' && value !== 'production') {
-    throw new Error(`desktop auto-update: ${DESKTOP_AUTO_UPDATE_ENV} must be "test" or "production"`)
+  if (value !== 'test' && value !== 'production' && value !== 'fife') {
+    throw new Error(`desktop auto-update: ${DESKTOP_AUTO_UPDATE_ENV} must be "test", "production", or "fife"`)
   }
   return value
 }
@@ -133,17 +136,51 @@ function httpsOrigin(value, name) {
 }
 
 /**
+ * Resolve the fife deployment's public updater feed URL.
+ *
+ * Unlike the COS deployments, the fife feed lives behind a full URL path (a GitHub
+ * Releases `latest/download` address), so the value is a URL rather than a bare origin.
+ * The path must be nonempty because a bare origin would serve no channel file.
+ * @param {NodeJS.ProcessEnv} env - Packaging environment.
+ * @returns {string} HTTPS feed URL with exactly one trailing slash.
+ * @throws {Error} When the feed URL is missing, relative, non-HTTPS, or carries credentials, query, or fragment.
+ */
+export function resolveFifeFeedUrl(env) {
+  const value = requiredEnvironmentValue(env, FIFE_DESKTOP_UPDATE_FEED_URL_ENV)
+  let parsed
+  try {
+    parsed = new URL(value)
+  }
+  catch {
+    throw new Error(`desktop auto-update: ${FIFE_DESKTOP_UPDATE_FEED_URL_ENV} must be an absolute HTTPS URL`)
+  }
+  if (parsed.protocol !== 'https:'
+    || parsed.username !== ''
+    || parsed.password !== ''
+    || parsed.pathname === '/'
+    || parsed.search !== ''
+    || parsed.hash !== '') {
+    throw new Error(`desktop auto-update: ${FIFE_DESKTOP_UPDATE_FEED_URL_ENV} must be an absolute HTTPS URL with a path and without credentials, query, or fragment`)
+  }
+  return `${parsed.origin}${parsed.pathname.replace(/\/+$/u, '')}/`
+}
+
+/**
  * Resolve the public updater URL and object prefixes for one release target.
  * @param {NodeJS.ProcessEnv} env - Packaging or upload environment.
  * @param {NodeJS.Platform} platform - Target Node.js platform.
  * @param {string} arch - Target Node.js architecture.
- * @returns {{ environment: 'test' | 'production', channel: 'nightly' | 'latest', target: 'mac-arm64' | 'mac-x64' | 'win-x64', origin: string, publicUrl: string, keyPrefix: string, binaryKeyPrefix: string }} Resolved updater configuration.
- * @throws {Error} When the test deployment lacks a valid HTTPS origin or a 32-character lowercase hexadecimal release ID.
+ * @returns {{ environment: 'test' | 'production' | 'fife', channel: 'nightly' | 'latest', target: 'mac-arm64' | 'mac-x64' | 'win-x64', origin: string, publicUrl: string, keyPrefix: string, binaryKeyPrefix: string }} Resolved updater configuration; the fife deployment serves one flat feed and leaves the object prefixes empty.
+ * @throws {Error} When the test deployment lacks a valid HTTPS origin or a 32-character lowercase hexadecimal release ID, or the fife deployment lacks a valid feed URL.
  */
 export function resolveDesktopAutoUpdateConfig(env, platform, arch) {
   const channel = resolveDesktopUpdateChannel(env)
   const environment = resolveDesktopAutoUpdateEnvironment(env)
   const target = resolveDesktopAutoUpdateTarget(platform, arch)
+  if (environment === 'fife') {
+    const publicUrl = resolveFifeFeedUrl(env)
+    return { environment, channel, target, origin: new URL(publicUrl).origin, keyPrefix: '', binaryKeyPrefix: '', publicUrl }
+  }
   const deployment = UPDATE_ENVIRONMENTS[environment]
   let origin = deployment.fixedOrigin
   if (origin === undefined) {
@@ -177,10 +214,13 @@ export function resolveDesktopAutoUpdateConfig(env, platform, arch) {
  * @param {NodeJS.Platform} platform - Target Node.js platform.
  * @param {string} arch - Target Node.js architecture.
  * @returns {{ environment: 'test' | 'production', channel: 'nightly' | 'latest', target: 'mac-arm64' | 'mac-x64' | 'win-x64', origin: string, publicUrl: string, keyPrefix: string, binaryKeyPrefix: string, bucket: string, secretIdEnvName: string, secretKeyEnvName: string }} Resolved upload configuration.
- * @throws {Error} When the selected deployment lacks a bucket or valid updater configuration.
+ * @throws {Error} When the selected deployment lacks a bucket or valid updater configuration, or is the fife deployment.
  */
 export function resolveDesktopUploadConfig(env, platform, arch) {
   const update = resolveDesktopAutoUpdateConfig(env, platform, arch)
+  if (update.environment === 'fife') {
+    throw new Error('desktop auto-update: the fife deployment publishes through GitHub Releases; the COS upload path does not apply')
+  }
   const deployment = UPDATE_ENVIRONMENTS[update.environment]
   return {
     ...update,

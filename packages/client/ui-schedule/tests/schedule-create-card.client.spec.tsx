@@ -187,7 +187,7 @@ describe('ScheduleCreateCard', () => {
     const openTaskDetail = vi.fn()
     render(<ScheduleCreateCard {...props(settled(dailyTask), openTaskDetail)} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     const open = screen.getByRole('button', { name: 'Open task details: Check the deployment' })
     fireEvent.click(open)
     expect(openTaskDetail).toHaveBeenCalledExactlyOnceWith('task-daily' as ScheduleId)
@@ -200,7 +200,7 @@ describe('ScheduleCreateCard', () => {
     const openTaskDetail = vi.fn()
     render(<ScheduleCreateCard {...props(settled(cronTask), openTaskDetail)} />)
     expect(screen.getByText('Check the deployment')).toBeDefined()
-    expect(screen.getByText(`Mon–Fri every 15 minutes during hours 09–17 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
+    expect(screen.getByText(`Mon–Fri every 15 minutes of 9 AM–5 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`)).toBeDefined()
     expect(screen.getByRole('button', { name: 'Open' })).toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: 'Open task details: Check the deployment' }))
     expect(openTaskDetail).toHaveBeenCalledExactlyOnceWith('task-cron' as ScheduleId)
@@ -220,8 +220,8 @@ describe('ScheduleCreateCard', () => {
     [{ ...dailyTask, kind: 'after', afterSeconds: 60 }, 'Once'],
     [{ ...dailyTask, kind: 'at' }, 'Once'],
     [{ ...dailyTask, kind: 'every', everySeconds: 300, time: undefined, timeZone: undefined }, 'Every 5 minutes'],
-    [dailyTask, `Daily at 23:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
-    [weeklyTask, `Weekly on Mon, Wed at 09:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
+    [dailyTask, `Daily at 11:00 PM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
+    [weeklyTask, `Weekly on Mon, Wed at 9:00 AM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`],
   ])('formats the frequency line of one created task', (task, frequency) => {
     render(<ScheduleCreateCard {...props(settled(task))} />)
     expect(screen.getByText(frequency)).toBeDefined()
@@ -235,7 +235,7 @@ describe('ScheduleCreateCard', () => {
 
   it('shows the weekly frequency in the active locale', () => {
     render(<ScheduleCreateCard {...props(settled(weeklyTask), vi.fn(), makeTranslate(zh))} />)
-    expect(screen.getByText(`每周一、三 09:00（${zoneLabel('Asia/Shanghai', makeTranslate(zh))}）`)).toBeDefined()
+    expect(screen.getByText(`每周一、三 上午9:00（${zoneLabel('Asia/Shanghai', makeTranslate(zh))}）`)).toBeDefined()
   })
 
   it('keeps a pending call as a title row with no open action and no result body', () => {
@@ -262,7 +262,7 @@ describe('ScheduleCreateCard', () => {
   it('states a task the settled catalog no longer holds as deleted', () => {
     render(<ScheduleCreateCard {...props(settled(dailyTask))} currentTask={null} />)
     expect(screen.getByText(en['card.deleted'])).toBeDefined()
-    expect(screen.queryByText('Daily at 23:00 (Asia/Shanghai)')).toBeNull()
+    expect(screen.queryByText('Daily at 11:00 PM (Asia/Shanghai)')).toBeNull()
     expect(screen.queryByRole('button')).toBeNull()
   })
 
@@ -271,7 +271,7 @@ describe('ScheduleCreateCard', () => {
     const openTaskDetail = vi.fn()
     render(<ScheduleCreateCard {...props(settled(dailyTask), openTaskDetail)} currentTask={current} />)
     expect(screen.getByText('Updated deployment check')).toBeDefined()
-    expect(screen.getByText(`Weekly on Mon, Wed at 09:00 (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`))
+    expect(screen.getByText(`Weekly on Mon, Wed at 9:00 AM (${zoneLabel('Asia/Shanghai', makeTranslate(en))})`))
       .toBeDefined()
     fireEvent.click(screen.getByRole('button', { name: 'Open task details: Updated deployment check' }))
     expect(openTaskDetail).toHaveBeenCalledExactlyOnceWith('task-daily' as ScheduleId)

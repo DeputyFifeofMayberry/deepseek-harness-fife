@@ -4,7 +4,7 @@ import type { Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { isVolatile } from '@deepseek-ai/cosmokit'
 import { resolveRetryPolicy, RetryPolicySchema } from '@deepseek-ai/dsh-llm'
-import type { ModelModality, RetryPolicyConfig } from '@deepseek-ai/dsh-llm'
+import type { LlmModelPricing, ModelModality, RetryPolicyConfig } from '@deepseek-ai/dsh-llm'
 import type { LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { MAX_TIMER_DELAY_MS } from '@deepseek-ai/dsh-timeout'
 import type { DeepSeekCatalogModel, DeepSeekConnectionOptions } from './types.ts'
@@ -65,6 +65,16 @@ export function plainOptions(config: Config): Options {
   return Object.fromEntries(Object.entries(config).map(([key, value]) => [key, isVolatile(value) ? value.get() : value]))
 }
 
+/** Per-million prices one catalog entry republishes to discovery consumers. */
+const modelPricing: z<LlmModelPricing> = z.object({
+  currency: z.string().pattern(/^[A-Z]{3}$/u),
+  inputPerMillion: z.number().min(0),
+  outputPerMillion: z.number().min(0),
+  cacheReadPerMillion: z.number().min(0),
+  cacheWritePerMillion: z.number().min(0),
+  offPeakMultiplier: z.number().min(0).max(1),
+})
+
 /**
  * Schemas of the catalog-entry fields other than `id` and `inputModalities`,
  * whose requiredness and defaults differ between a `models` entry and a
@@ -79,6 +89,8 @@ export const catalogModelFields = {
   imageMaxBytes: z.number().step(1).min(1),
   systemPromptUpdate: z.const('in-history'),
   toolUpdate: z.union(['in-history', 'addition-only'] as const),
+  // An omitted price table must not become `{}` and fail the required amounts.
+  pricing: modelPricing.default(undefined as never),
 }
 
 const catalogModel: z<DeepSeekCatalogModel> = z.object({
@@ -119,6 +131,39 @@ const BASE_URL_ENV = 'DEEPSEEK_BASE_URL'
 
 /** Complete protocol settings captured for one request operation. */
 export type ResolvedDeepSeekOptions = DeepSeekConnectionOptions
+
+/**
+ * Validate and detach one catalog entry's published prices.
+ * @param model - catalog entry declaring optional pricing.
+ * @returns owned prices, or undefined when the entry declares none.
+ */
+function resolvePricing(model: DeepSeekCatalogModel): LlmModelPricing | undefined {
+  const pricing = model.pricing
+  if (pricing === undefined) return undefined
+  const validRate = (value: number | undefined): boolean =>
+    value !== undefined && Number.isFinite(value) && value >= 0
+  const validOptionalRate = (value: number | undefined): boolean =>
+    value === undefined || validRate(value)
+  if (!/^[A-Z]{3}$/u.test(pricing.currency)) {
+    throw new Error(`llm-deepseek: catalog model "${model.id}" pricing currency must be an ISO 4217 code`)
+  }
+  if (!validRate(pricing.inputPerMillion) || !validRate(pricing.outputPerMillion)
+    || !validOptionalRate(pricing.cacheReadPerMillion) || !validOptionalRate(pricing.cacheWritePerMillion)) {
+    throw new Error(`llm-deepseek: catalog model "${model.id}" pricing rates must be non-negative finite numbers`)
+  }
+  if (pricing.offPeakMultiplier !== undefined
+    && (!validRate(pricing.offPeakMultiplier) || pricing.offPeakMultiplier > 1)) {
+    throw new Error(`llm-deepseek: catalog model "${model.id}" pricing offPeakMultiplier must be between 0 and 1`)
+  }
+  return {
+    currency: pricing.currency,
+    inputPerMillion: pricing.inputPerMillion,
+    outputPerMillion: pricing.outputPerMillion,
+    ...pricing.cacheReadPerMillion === undefined ? {} : { cacheReadPerMillion: pricing.cacheReadPerMillion },
+    ...pricing.cacheWritePerMillion === undefined ? {} : { cacheWritePerMillion: pricing.cacheWritePerMillion },
+    ...pricing.offPeakMultiplier === undefined ? {} : { offPeakMultiplier: pricing.offPeakMultiplier },
+  }
+}
 
 /** Resolve, validate, and detach the advisory model catalog. */
 function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): DeepSeekCatalogModel[] {
@@ -179,6 +224,7 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
     }
     if (seen.has(model.id)) throw new Error(`llm-deepseek: duplicate catalog model "${model.id}"`)
     seen.add(model.id)
+    const pricing = resolvePricing(model)
     return {
       id: model.id,
       ...model.name === undefined ? {} : { name: model.name },
@@ -187,6 +233,7 @@ function resolveModels(models: readonly DeepSeekCatalogModel[] | undefined): Dee
       ...model.maxTokens === undefined ? {} : { maxTokens: model.maxTokens },
       ...model.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: model.systemPromptUpdate },
       ...model.toolUpdate === undefined ? {} : { toolUpdate: model.toolUpdate },
+      ...pricing === undefined ? {} : { pricing },
       inputModalities: [...inputModalities],
       ...hasImage
         ? {

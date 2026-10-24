@@ -128,4 +128,46 @@ describe('ACP model configuration control', () => {
     expect(restored.find(option => option.id === 'reasoning_effort')).toMatchObject({ currentValue: '' })
     expect(control.selection.current).toEqual({ provider: 'mock', model: 'mock' })
   })
+
+  it('reports each accepted configuration change to its owner', async () => {
+    const reported: { provider: string; model: string; reasoningEffort?: string }[] = []
+    const runtime = llmRuntime({
+      resolveCallConfig: (selection: { provider?: string; model?: string; reasoningEffort?: string }) => Promise.resolve({
+        provider: selection.provider ?? 'mock',
+        model: selection.model ?? 'mock',
+        ...selection.reasoningEffort === undefined
+          ? {}
+          : { reasoningEffort: ReasoningEffortId(selection.reasoningEffort) },
+      }),
+      resolveModelInfo: (provider: string, model: string) => Promise.resolve({
+        provider,
+        id: model,
+        name: model,
+        reasoning: {
+          efforts: [
+            { id: ReasoningEffortId('low'), name: 'Low' },
+            { id: ReasoningEffortId('high'), name: 'High' },
+          ],
+        },
+      }),
+    })
+    const control = new AcpModelControl(
+      runtime,
+      { provider: 'mock', model: 'mock' },
+      selection => reported.push({ ...selection }),
+    )
+
+    await control.set('reasoning_effort', 'low')
+    await control.set('reasoning_effort', '')
+    await control.set('model', '["mock","mock"]')
+    // A rejected value reports nothing: the owner must not record a change that
+    // did not happen.
+    await expect(control.set('reasoning_effort', 'extreme')).rejects.toThrow(/unknown reasoning effort/)
+
+    expect(reported).toEqual([
+      { provider: 'mock', model: 'mock', reasoningEffort: 'low' },
+      { provider: 'mock', model: 'mock' },
+      { provider: 'mock', model: 'mock' },
+    ])
+  })
 })

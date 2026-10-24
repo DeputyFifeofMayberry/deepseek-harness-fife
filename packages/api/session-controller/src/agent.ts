@@ -97,7 +97,12 @@ export type ApiSessionAgentResult =
 
 type InstalledSelection = ModelSelectionRef & {
   current: AgentModelSelection
-  consume(provider: string, model: string, reasoningEffort: string | undefined): boolean
+  /**
+   * Session position of the `model/selection` record that owns the pending
+   * pick. A header at or before it cannot retire the pick.
+   */
+  pickedAt: number
+  consume(provider: string, model: string, seq: number): boolean
 }
 
 /**
@@ -296,6 +301,7 @@ export class ApiSessionAgentController {
     let picked = projectionState.pending === null
       ? undefined
       : agentModelSelection(projectionState.pending)
+    let pickedAt = 0
     const defaultModel = this.ctx.agentDefaultModel
     const selection: InstalledSelection = {
       get current(): AgentModelSelection {
@@ -317,11 +323,21 @@ export class ApiSessionAgentController {
       set current(next: AgentModelSelection) {
         picked = next
       },
-      consume(provider: string, model: string, reasoningEffort: string | undefined): boolean {
-        if (picked?.provider !== provider
-          || picked.model !== model
-          || picked.reasoningEffort !== reasoningEffort) return false
+      get pickedAt(): number {
+        return pickedAt
+      },
+      set pickedAt(value: number) {
+        pickedAt = value
+      },
+      consume(provider: string, model: string, seq: number): boolean {
+        // A pick is acknowledged by the route it names, not by the effort the
+        // request ran at: the effort policy owns that value now, so requiring it
+        // to match would keep the pick pending forever. The record position keeps
+        // an acknowledgement logged before the pick from retiring it.
+        if (picked?.provider !== provider || picked.model !== model) return false
+        if (seq <= pickedAt) return false
         picked = undefined
+        pickedAt = 0
         return true
       },
       assembled: undefined,
@@ -337,8 +353,10 @@ export class ApiSessionAgentController {
    * @param selection - validated selection to record and apply.
    */
   selectForNextRequest(agent: Agent, selection: AgentModelSelection): void {
-    agent.session.append('model/selection', selection)
-    this.selectionFor(agent).current = selection
+    const event = agent.session.append('model/selection', selection)
+    const installed = this.selectionFor(agent)
+    installed.current = selection
+    installed.pickedAt = event.seq
   }
 
   /**
@@ -346,16 +364,16 @@ export class ApiSessionAgentController {
    * @param agent - live Agent whose request was recorded.
    * @param provider - provider route used by the request.
    * @param model - provider-owned model used by the request.
-   * @param reasoningEffort - adapter-owned effort used by the request.
+   * @param seq - Session position of the logged header.
    * @returns whether the pending selection was consumed.
    */
   consumeSelection(
     agent: Agent,
     provider: string,
     model: string,
-    reasoningEffort: string | undefined,
+    seq: number,
   ): boolean {
-    return this.selections.get(agent)?.consume(provider, model, reasoningEffort) ?? false
+    return this.selections.get(agent)?.consume(provider, model, seq) ?? false
   }
 
   /**

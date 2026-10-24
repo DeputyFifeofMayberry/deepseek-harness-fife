@@ -213,6 +213,16 @@ it('imports reference chips on the first Hub shell and preserves them without an
   expect(b.hub.shellFor(b.binding).draftSnapshot).toEqual({ text: '', references: [] })
 })
 
+it('binds the per-session history store so recall sees that session\'s persisted inputs', async () => {
+  const b = await storedSession(saved)
+  const historyKey = `dsh.input-history.${b.id}`
+  localStorage.setItem(historyKey, JSON.stringify({ entries: [{ text: 'persisted input', references: [] }] }))
+  onTestFinished(() => { localStorage.removeItem(historyKey) })
+  const shell = b.hub.shellFor(b.binding)
+  expect(shell.recall('previous')).toBe(true)
+  expect(shell.draftSnapshot).toEqual({ text: 'persisted input', references: [] })
+})
+
 it('subscribes when a provider arrives and disconnects each withdrawn provider', async () => {
   const b = await fixture(saved)
   expect(b.shell.actions.insertText('/current', {

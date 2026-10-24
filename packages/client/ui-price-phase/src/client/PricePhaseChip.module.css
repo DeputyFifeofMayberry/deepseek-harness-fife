@@ -1,0 +1,43 @@
+/* Sidebar footer billing-phase chip: one quiet dot + word beside Settings. */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 6px;
+  border-radius: var(--dsw-radius-sm);
+  color: inherit;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  opacity: 0.72;
+  cursor: default;
+  user-select: none;
+}
+
+.peak {
+  /* The only emphasis peak gets: a soft warm dot, not a loud banner. */
+  opacity: 0.9;
+}
+
+.dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--dsh-text-faint, currentColor);
+  opacity: 0.55;
+}
+
+.peak .dot {
+  background: #d97706;
+  opacity: 0.85;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

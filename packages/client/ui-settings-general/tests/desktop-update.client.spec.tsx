@@ -59,6 +59,15 @@ it('renders nothing outside the Desktop carrier', () => {
   expect(view.container.innerHTML).toBe('')
 })
 
+it('renders nothing for an unavailable source while keeping the shell state', async () => {
+  const f = fixture()
+  try {
+    await f.emit({ phase: 'unavailable', reason: 'development' })
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(f.source.store.getSnapshot().presentation).toEqual({ phase: 'unavailable', reason: 'development' })
+  } finally { f.view.unmount(); f.status.resolve({ phase: 'idle' }) }
+})
+
 it('keeps the newest event, hides for connection priority, and invokes only the shell action', async () => {
   const f = fixture()
   try {

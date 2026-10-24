@@ -87,17 +87,19 @@ function rejectElectronProfile(program: Command, profile: string): void {
 }
 
 /** The launcher's own help text; each app prints its own. */
-const HELP_EXAMPLES = `
+function helpExamples(programName: string): string {
+  return `
 Examples:
-  dsh web                                   boot the web profile (same as: dsh --profile web)
-  dsh rescue --from-default-profile web
+  ${programName} web                                   boot the web profile (same as: ${programName} --profile web)
+  ${programName} rescue --from-default-profile web
                                             recreate rescue from the shipped web template, then boot it
-  dsh headless "run the tests"              answer one task, print the result, and exit
-  dsh tui --patch ./extra.yml               boot a custom profile with one extra overlay
-  dsh tui --resume <session>                arguments after the launcher flags reach the app
-  dsh web --help                            the web app's own flags and help
-  dsh plugin --profile tui add <package>    install a plugin into the tui profile
+  ${programName} headless "run the tests"              answer one task, print the result, and exit
+  ${programName} tui --patch ./extra.yml               boot a custom profile with one extra overlay
+  ${programName} tui --resume <session>                arguments after the launcher flags reach the app
+  ${programName} web --help                            the web app's own flags and help
+  ${programName} plugin --profile tui add <package>    install a plugin into the tui profile
 `
+}
 
 /**
  * Resolve a boot or dump invocation from the launcher flags and the leftover
@@ -141,20 +143,21 @@ function resolveBoot(program: Command, profile: string, options: BootOptions, ar
  * @param argv - arguments after the Node binary and script.
  * @param version - version string printed by `--version`.
  * @param manageDesktopProfile - permit Desktop's installed carrier to manage its reserved profile's plugins.
+ * @param programName - launcher name shown in usage and help; defaults to dsh.
  * @returns the resolved invocation.
  */
-export function parseDshArgs(argv: readonly string[], version: string, manageDesktopProfile = false): DshInvocation {
+export function parseDshArgs(argv: readonly string[], version: string, manageDesktopProfile = false, programName = 'dsh'): DshInvocation {
   const first = argv[0]
   let resolved: DshInvocation | undefined
   // Annotated, not inferred: the actions below call back into `program`, and an
   // inferred type would be circular through its own chain.
   const program: Command = new Command()
   program
-    .name('dsh')
+    .name(programName)
     .version(version, '-V, --version', 'output the version number')
-    .usage('[--profile] <name> [options] [app-args...]\n       dsh plugin --profile <name> <pnpm-args...>')
-    .description('dsh: boot a DeepSeek Harness profile — an ordered stack of plugin-bundle patch layers under your own overrides.')
-    .addHelpText('after', HELP_EXAMPLES)
+    .usage(`[--profile] <name> [options] [app-args...]\n       ${programName} plugin --profile <name> <pnpm-args...>`)
+    .description(`${programName}: boot a DeepSeek Harness profile — an ordered stack of plugin-bundle patch layers under your own overrides.`)
+    .addHelpText('after', helpExamples(programName))
     .exitOverride()
     // The launcher's flags come first and end at the first token it does not
     // know; everything from there on belongs to the booted app, including
@@ -164,7 +167,7 @@ export function parseDshArgs(argv: readonly string[], version: string, manageDes
     .allowUnknownOption()
     .passThroughOptions()
     .enablePositionalOptions()
-    .argument('[args...]', 'arguments for the booted profile\'s app (see: dsh --profile <name> --help)')
+    .argument('[args...]', `arguments for the booted profile's app (see: ${programName} --profile <name> --help)`)
     .option('--profile <name>', 'the profile under $DSH_HOME/profiles to boot', selectProfile)
     .option('--from-default-profile <name>', 'replace a custom profile with a fresh copy of a shipped profile template')
     .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
@@ -211,6 +214,6 @@ export function parseDshArgs(argv: readonly string[], version: string, manageDes
     return process.exit(error instanceof CommanderError ? error.exitCode : 1)
   }
   /* v8 ignore next -- an action resolves or Commander throws */
-  if (resolved === undefined) throw new Error('dsh: no invocation resolved')
+  if (resolved === undefined) throw new Error(`${programName}: no invocation resolved`)
   return resolved
 }

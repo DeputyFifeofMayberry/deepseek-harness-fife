@@ -68,6 +68,14 @@ it('requires one signing preflight before building, then records only the comple
   expect(record.publicUrl).toBe('https://updates.example.com/dsh-desk/0123456789abcdef0123456789abcdef/feeds/win-x64/')
 })
 
+it('packs Windows workspace packages with bounded parallelism', async () => {
+  const { run } = supervisor()
+  await packageTarget(parseDesktopPackageInvocation(['win-x64', '--prepare-only'], 'win32', 'x64'), environment, run)
+  const packs = run.run.mock.calls.filter(call => call[0].startsWith('run release:pack'))
+  expect(packs).toHaveLength(2)
+  for (const call of packs) expect(call[2].slice(-2)).toEqual(['--concurrency', '8'])
+})
+
 it('initializes shared storage only after acquiring the preflight stage lock', async () => {
   const { run } = supervisor()
   vi.mocked(withWindowsSigningStage).mockImplementationOnce(async (_options, operation) => {

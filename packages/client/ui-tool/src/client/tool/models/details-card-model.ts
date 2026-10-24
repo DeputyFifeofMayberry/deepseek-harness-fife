@@ -1,5 +1,6 @@
 /** Recorded todo, goal, and schedule values for the compact detail body. */
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import { clock12Hour } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallBlock } from './tool-call-model.ts'
 import type { ToolDetailsModel } from '../components/ToolDetails.tsx'
 import { parsedToolCall, singleResultText } from './raw-tool-call.ts'
@@ -17,7 +18,7 @@ function count(value: unknown): value is number {
 function formatDate(date: Date, locale: string, fallback: string): string {
   try {
     return new Intl.DateTimeFormat(locale, {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short',
+      year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short',
     }).format(date)
   } catch {
     return fallback
@@ -79,9 +80,21 @@ function interval(seconds: number, t: Translate): string {
   return t('detail.seconds', { count: seconds })
 }
 
-/** A stored wall clock without its zero seconds, the figure the schedule surfaces state. */
-function shortTime(time: string): string {
-  return time.replace(/:00\.000$/, '').replace(/\.000$/, '')
+/**
+ * One stored wall clock, stated as 12-hour text through the dictionary. The
+ * clock names the task's own zone, so this is textual decomposition — no Date.
+ * Nonzero seconds ride the template as `:ss`; whole minutes stay bare.
+ */
+function scheduleClock(time: string, t: Translate): string {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/u.exec(time)
+  if (match === null || match[2] === undefined) return time
+  const hours = Number(match[1])
+  return t('detail.schedule.clock', {
+    h: clock12Hour(hours),
+    mm: match[2],
+    ss: match[3] === undefined || match[3] === '00' ? '' : `:${match[3]}`,
+    ampm: t(hours < 12 ? 'detail.schedule.time.am' : 'detail.schedule.time.pm'),
+  })
 }
 
 /** Localized weekday list of a stored weekly rule, or undefined when the set is empty or out of range. */
@@ -120,12 +133,12 @@ function scheduleItem(value: unknown, t: Translate, locale: string): DetailItem 
       break
     case 'daily':
       if (!nonempty(value.time) || !nonempty(value.timeZone)) return null
-      frequency = t('detail.schedule.daily', { time: shortTime(value.time), zone: value.timeZone })
+      frequency = t('detail.schedule.daily', { time: scheduleClock(value.time, t), zone: value.timeZone })
       break
     case 'weekly': {
       const days = weekdayText(value.weekdays, t)
       if (!nonempty(value.time) || !nonempty(value.timeZone) || days === undefined) return null
-      frequency = t('detail.schedule.weekly', { days, time: shortTime(value.time), zone: value.timeZone })
+      frequency = t('detail.schedule.weekly', { days, time: scheduleClock(value.time, t), zone: value.timeZone })
       break
     }
     case 'cron':

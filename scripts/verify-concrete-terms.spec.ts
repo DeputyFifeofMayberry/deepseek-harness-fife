@@ -52,10 +52,15 @@ describe('concrete terminology policy', () => {
     )).toEqual([])
   })
 
-  it('excludes vendored sources and frozen Agent Notes', () => {
+  it('excludes vendored sources, frozen Agent Notes, and the copied Mayberry pack', () => {
     expect(findConcreteTermViolations(`vendor/example/${blockedTerm}.ts`, blockedTerm)).toEqual([])
     expect(findConcreteTermViolations(
       `.agents/notes/archived/process/${blockedTerm}.md`,
+      blockedTerm,
+    )).toEqual([])
+    expect(findConcreteTermViolations(`.mayberry/prompts/${blockedTerm}.md`, blockedTerm)).toEqual([])
+    expect(findConcreteTermViolations(
+      `.agents/skills/mayberry-change/${blockedTerm}.md`,
       blockedTerm,
     )).toEqual([])
     expect(findConcreteTermViolations(

@@ -158,6 +158,16 @@ describe('Desktop local packaging configuration', () => {
     }).not.toThrow()
   })
 
+  it('validates a fife update source on unsigned Windows builds and skips the policy service', () => {
+    const fife = { DSH_DESKTOP_APP_ID: RELEASE.DSH_DESKTOP_APP_ID,
+      DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife',
+      FIFE_DESKTOP_UPDATE_FEED_URL: 'https://github.com/example/deepseek-harness-fife/releases/latest/download' }
+    expect(() => { validateDesktopPackageEnvironment(fife, WINDOWS, { unsigned: true }) }).not.toThrow()
+    expect(() => {
+      validateDesktopPackageEnvironment({ ...fife, FIFE_DESKTOP_UPDATE_FEED_URL: 'https://github.com' }, WINDOWS, { unsigned: true })
+    }).toThrow(/FIFE_DESKTOP_UPDATE_FEED_URL/u)
+  })
+
   it('accepts unsigned macOS configuration without Apple or update policy settings while keeping release validation', () => {
     const local = localMacOSPackageEnvironment({})
     expect(() => { validateDesktopPackageEnvironment(local, MACOS, { unsigned: true }) }).not.toThrow()

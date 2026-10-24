@@ -326,6 +326,12 @@
     - id: ui-conversation
       name: '@deepseek-ai/dsh-client-ui-conversation'
 
+    # Reports finished tasks and pending approvals to the Desktop shell for native
+    # background attention. Registered before ui-approval so its waterfall wrapper
+    # settles with the consumer's real answer (first claimed result wins).
+    - id: ui-attention
+      name: '@deepseek-ai/dsh-client-ui-attention'
+
     - id: ui-approval
       name: '@deepseek-ai/dsh-client-ui-approval'
 
@@ -456,6 +462,16 @@
 
     - id: ui-trajectory
       name: '@deepseek-ai/dsh-client-ui-trajectory'
+
+    # DeepSeek peak-rate chip on the sidebar footer action seat; informational
+    # only, computed from the published UTC windows with no Host service.
+    - id: ui-price-phase
+      name: '@deepseek-ai/dsh-client-ui-price-phase'
+
+    # Session spend and account balance on the sidebar footer panel seat,
+    # priced from provider-reported usage and the catalog rate cards.
+    - id: ui-usage-panel
+      name: '@deepseek-ai/dsh-client-ui-usage-panel'
 
 # ── the agent plane moves behind agent presets ─────────────────────────────
 #

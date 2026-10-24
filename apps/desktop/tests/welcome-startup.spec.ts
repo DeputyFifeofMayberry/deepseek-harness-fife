@@ -152,6 +152,7 @@ vi.mock('../src/update-dialog.ts', () => ({ DesktopUpdateDialog: class {
 vi.mock('../src/update-coordinator.ts', () => ({ DesktopUpdateCoordinator: class {
   state = { phase: 'idle' }
   check = vi.fn(async () => this.state)
+  describeSource = () => 'desktop update: source=packaged channel=nightly version=1.0.0'
   dispose = vi.fn()
 } }))
 vi.mock('../src/welcome-window.ts', () => ({

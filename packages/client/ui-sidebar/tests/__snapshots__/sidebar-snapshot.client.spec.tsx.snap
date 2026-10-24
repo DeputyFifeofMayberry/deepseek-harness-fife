@@ -71,6 +71,14 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       class="footArea"
     >
       <div
+        class="panelArea"
+      >
+        <div
+          data-slot="sidebar.footer.panel"
+          style="display: contents;"
+        />
+      </div>
+      <div
         class="footerActions"
       >
         <div
@@ -114,23 +122,6 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="965fe321"
-                fill="none"
-                height="17.6580310880829"
-                viewBox="0 0 23.16 17.04"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -140,11 +131,14 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
               <span
                 class="localBuildBrand"
               >
-                <span
-                  class="localBuildTitle"
-                >
-                  DSH Local Build
-                </span>
+                <svg
+                  aria-hidden="true"
+                  data-content="2bee6585"
+                  fill="none"
+                  height="24"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
+                />
                 <span
                   class="buildVersion"
                 >
@@ -214,6 +208,14 @@ exports[`sidebar shell snapshots > renders Windows caption controls in expanded 
       class="footArea"
     >
       <div
+        class="panelArea"
+      >
+        <div
+          data-slot="sidebar.footer.panel"
+          style="display: contents;"
+        />
+      </div>
+      <div
         class="footerActions"
       >
         <div
@@ -262,10 +264,10 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
           >
             <svg
               aria-hidden="true"
-              data-content="965fe321"
+              data-content="69b16041"
               fill="none"
-              height="17.6580310880829"
-              viewBox="0 0 23.16 17.04"
+              height="24"
+              viewBox="0 0 48 48"
               width="24"
             />
           </div>
@@ -323,6 +325,14 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
       class="footArea"
     >
       <div
+        class="panelArea"
+      >
+        <div
+          data-slot="sidebar.footer.panel"
+          style="display: contents;"
+        />
+      </div>
+      <div
         class="footerActions"
       >
         <div
@@ -366,23 +376,6 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="965fe321"
-                fill="none"
-                height="17.6580310880829"
-                viewBox="0 0 23.16 17.04"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -392,11 +385,14 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
               <span
                 class="localBuildBrand"
               >
-                <span
-                  class="localBuildTitle"
-                >
-                  DSH Local Build
-                </span>
+                <svg
+                  aria-hidden="true"
+                  data-content="c76a8e65"
+                  fill="none"
+                  height="24"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
+                />
                 <span
                   class="buildVersion"
                 >
@@ -466,6 +462,14 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
       class="footArea"
     >
       <div
+        class="panelArea"
+      >
+        <div
+          data-slot="sidebar.footer.panel"
+          style="display: contents;"
+        />
+      </div>
+      <div
         class="footerActions"
       >
         <div
@@ -509,23 +513,6 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
           class="brandIdentity"
         >
           <span
-            class="brandMark"
-          >
-            <div
-              data-slot="sidebar.brand.mark"
-              style="display: contents;"
-            >
-              <svg
-                aria-hidden="true"
-                data-content="965fe321"
-                fill="none"
-                height="17.6580310880829"
-                viewBox="0 0 23.16 17.04"
-                width="24"
-              />
-            </div>
-          </span>
-          <span
             class="brandName"
           >
             <div
@@ -535,11 +522,14 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
               <span
                 class="localBuildBrand"
               >
-                <span
-                  class="localBuildTitle"
-                >
-                  DSH 本地构建
-                </span>
+                <svg
+                  aria-hidden="true"
+                  data-content="ebbda1b5"
+                  fill="none"
+                  height="24"
+                  viewBox="-3 -3.5 106 26.5"
+                  width="96"
+                />
                 <span
                   class="buildVersion"
                 >
@@ -608,6 +598,14 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
     <div
       class="footArea"
     >
+      <div
+        class="panelArea"
+      >
+        <div
+          data-slot="sidebar.footer.panel"
+          style="display: contents;"
+        />
+      </div>
       <div
         class="footerActions"
       >

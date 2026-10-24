@@ -92,7 +92,7 @@ export function QuestionReplyBubble({ data, t }: { data: QuestionReplyData; t: P
       </div>
       <div className={css.actions}>
         <span className={css.time}>
-          {new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }).format(data.time)}
+          {new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', hour12: true }).format(data.time)}
         </span>
         <Tooltip label={copied ? t('copied') : t('copy')} side="bottom">
           <button type="button" className={css.action} aria-label={copied ? t('copied') : t('copy')} onClick={onCopy}>

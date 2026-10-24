@@ -8,7 +8,7 @@ import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { CompactionEngine, ManualCompactionError } from '@deepseek-ai/dsh-compaction'
 import type { CompactionResult, CompactionTrigger } from '@deepseek-ai/dsh-compaction'
-import type { Session, SessionSeq } from '@deepseek-ai/dsh-session'
+import { SessionSeq, type Session } from '@deepseek-ai/dsh-session'
 import { CONTEXT_WINDOW_EXCEEDED_CODE } from '@deepseek-ai/dsh-llm'
 import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
@@ -125,6 +125,7 @@ export class BasicCompactionEngine extends CompactionEngine {
     maxOverflowRetries: maxOverflowRetriesSchema,
     modelPolicies: z.array(modelPolicy),
     auto: z.boolean(),
+    pruneNewResultsAtStep: z.boolean(),
   })
 
   /** Resolved and validated compaction configuration. */
@@ -133,6 +134,8 @@ export class BasicCompactionEngine extends CompactionEngine {
   private readonly warnedPressureConfigTargets = new Set<string>()
   private readonly overflowRetries = new WeakMap<Agent, number>()
   private readonly overflowAgents = new WeakMap<Session, Agent>()
+  /** Per-agent surface high-water mark the step-boundary prune last covered. */
+  private readonly stepPruneMarks = new WeakMap<Agent, SessionSeq>()
 
   constructor(ctx: Context, config: BasicCompactionConfig = {}) {
     super(ctx)
@@ -160,6 +163,12 @@ export class BasicCompactionEngine extends CompactionEngine {
       next,
     ): Promise<PreStepDecision> => {
       if (!signal.aborted) {
+        try {
+          this.pruneNewResultsAtStep(agent)
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : String(error)
+          ctx.logger.warn(`step prune failed: ${message}; continuing the turn`)
+        }
         try {
           const result = await this.compactIfNeeded(agent, 'pressure', signal)
           if (result !== null) logResult(result, 'step pressure')
@@ -232,6 +241,37 @@ export class BasicCompactionEngine extends CompactionEngine {
       this.overflowRetries.set(agent, retries + 1)
       return { kind: 'retry' }
     })
+  }
+
+  /**
+   * Prune over-budget tool results appended since this agent's previous step,
+   * so a fat result is trimmed before its first request and no cached request
+   * prefix is ever rewritten. The first pass for an agent records the surface
+   * high-water mark without pruning: pre-existing surface nodes are already
+   * part of provider-cached history. Requires the `toolResultPruner` sibling;
+   * inert unless `pruneNewResultsAtStep` is configured on.
+   * @param agent - agent whose session may have gained tool results.
+   */
+  private pruneNewResultsAtStep(agent: Agent): void {
+    if (!this.config.pruneNewResultsAtStep) return
+    const prune = this.ctx.get('toolResultPruner')
+    if (prune === undefined) return
+    const nodes = [...agent.session.surface.nodes]
+    const highWater: SessionSeq = nodes.length === 0 ? SessionSeq(0) : (nodes[nodes.length - 1] ?? SessionSeq(0))
+    const previous = this.stepPruneMarks.get(agent)
+    if (previous === undefined || highWater <= previous) {
+      this.stepPruneMarks.set(agent, highWater)
+      return
+    }
+    const result = prune.pruneSession(agent.session, { sinceSeq: SessionSeq(previous + 1) })
+    if (result.pruned.length > 0) {
+      this.ctx.logger.info(
+        `compaction (step prune): shadowed ${result.pruned.length} tool results `
+        + `(~${result.charsRemoved} chars removed)`,
+      )
+    }
+    const after = [...agent.session.surface.nodes]
+    this.stepPruneMarks.set(agent, after.length === 0 ? highWater : (after[after.length - 1] ?? highWater))
   }
 
   /**

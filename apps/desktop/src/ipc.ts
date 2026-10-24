@@ -27,17 +27,23 @@ export const DESKTOP_IPC = {
   updatesStatus: 'dsh-desktop:updates-status',
   updatesOpen: 'dsh-desktop:updates-open',
   updatesPresentation: 'dsh-desktop:updates-presentation',
+  activityAttention: 'dsh-desktop:activity-attention',
   nativeThemeSet: 'dsh-desktop:native-theme-set',
   windowFullscreen: 'dsh-desktop:window-fullscreen',
   windowsAppearance: 'dsh-desktop:windows-appearance',
   windowsMenu: 'dsh-desktop:windows-menu',
+  notesRead: 'dsh-desktop:notes-read',
+  notesWrite: 'dsh-desktop:notes-write',
 } as const
 
 /** Desktop release update state rendered by desktop-owned UI. */
 export type DesktopUpdatePreparationFailureKind = 'stop-failed' | 'tasks-changed' | 'tasks-unavailable'
 
+/** Structural reason no update feed can be read; neither is a failed check. */
+export type DesktopUpdateUnavailableReason = 'development' | 'missing-configuration'
+
 export interface DesktopUpdateState {
-  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error'
+  readonly phase: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'installing' | 'ready' | 'error' | 'unavailable'
   readonly version?: string
   readonly message?: string
   /** Main-owned diagnostics without subprocess output or credentials; hidden until expanded. */
@@ -46,6 +52,8 @@ export interface DesktopUpdateState {
   readonly failedOperation?: 'check' | 'download' | 'install'
   /** Main-owned preparation cause; UI wording is selected by the active locale. */
   readonly preparationFailure?: DesktopUpdatePreparationFailureKind
+  /** Present only with the unavailable phase; the shell never treats it as a failure. */
+  readonly reason?: DesktopUpdateUnavailableReason
 }
 
 /** Classified failure copy selected by the Web locale without exposing raw updater diagnostics. */
@@ -66,6 +74,25 @@ export interface DesktopUpdatePresentation {
   readonly version?: string
   readonly percent?: number
   readonly failure?: DesktopUpdateFailureKind
+  /** Present only with the unavailable phase. */
+  readonly reason?: DesktopUpdateUnavailableReason
+}
+
+/** Activity the product renderer reports for native background attention. */
+export type DesktopActivityKind = 'task-complete' | 'approval-request' | 'approval-resolved'
+
+/** One renderer-reported attention event; `sessionId` names the owning session. */
+export interface DesktopActivityReport {
+  readonly kind: DesktopActivityKind
+  readonly sessionId: string
+}
+
+/** Validate one untrusted activity report from the product renderer. */
+export function isDesktopActivityReport(value: unknown): value is DesktopActivityReport {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return (candidate.kind === 'task-complete' || candidate.kind === 'approval-request' || candidate.kind === 'approval-resolved')
+    && typeof candidate.sessionId === 'string' && candidate.sessionId !== ''
 }
 
 /** Product documents cannot supply update versions, package URLs, or installation authorization. */
@@ -83,6 +110,14 @@ export interface DshDesktopProductApi {
     status(): Promise<DesktopUpdatePresentation>
     open(): Promise<void>
     subscribe(listener: (state: DesktopUpdatePresentation) => void): () => void
+  }
+  /**
+   * Reports session activity for native background attention; absent in plain browsers.
+   * Reports are best effort: the shell validates the sender and drops everything else,
+   * and a report never authorizes any action.
+   */
+  readonly activity?: {
+    report(event: DesktopActivityReport): void
   }
 }
 

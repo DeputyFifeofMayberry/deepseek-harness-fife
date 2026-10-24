@@ -8,6 +8,7 @@
  * common shapes the card's cron builder edits as structured rows.
  */
 import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { clock12Hour } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 
 /** ISO weekday dictionary key naming one cron day-of-week value. */
@@ -26,6 +27,10 @@ export type CronDescriptionKey =
   | 'cron.day.monthDays'
   | 'cron.day.both'
   | 'cron.day.bothStarred'
+  | 'cron.hour'
+  | 'cron.clock'
+  | 'frequency.time.am'
+  | 'frequency.time.pm'
   | 'cron.hours.range'
   | 'cron.hours.list'
   | 'cron.time.everyMinute'
@@ -352,18 +357,35 @@ function cronDayText(
 }
 
 /**
+ * Name one cron hour as 12-hour text through the dictionary, which owns the
+ * meridiem word and its placement. Textual only: a cron hour names a wall
+ * clock, not an instant in the reader's zone.
+ * @param hour - matched hour, 0 through 23.
+ * @param t - cron translations.
+ * @returns localized hour text, for example `9 AM` or `上午9点`.
+ */
+function cronHourName(hour: number, t: CronDescriptionTranslator): string {
+  return t('cron.hour', {
+    h: clock12Hour(hour),
+    ampm: t(hour < 12 ? 'frequency.time.am' : 'frequency.time.pm'),
+  })
+}
+
+/**
  * Name a restricted hour set as a contiguous range or an explicit list.
  * @param values - matched hours, ascending.
  * @param t - cron translations.
- * @returns localized hour scope, for example `09–17` or `09, 15`.
+ * @returns localized hour scope, for example `9 AM–5 PM` or `9 AM, 3 PM`.
  */
 function cronHourText(values: readonly number[], t: CronDescriptionTranslator): string {
-  const hours = values.map(twoDigits)
-  const contiguous = hours.length >= 2
+  const contiguous = values.length >= 2
     && cronElementAt(values, values.length - 1) - cronElementAt(values, 0) === values.length - 1
   return contiguous
-    ? t('cron.hours.range', { from: cronElementAt(hours, 0), to: cronElementAt(hours, hours.length - 1) })
-    : t('cron.hours.list', { hours: hours.join(t('cron.list.join')) })
+    ? t('cron.hours.range', {
+      from: cronHourName(cronElementAt(values, 0), t),
+      to: cronHourName(cronElementAt(values, values.length - 1), t),
+    })
+    : t('cron.hours.list', { hours: values.map(hour => cronHourName(hour, t)).join(t('cron.list.join')) })
 }
 
 /**
@@ -447,8 +469,12 @@ function cronTimeText(
       joined: t('cron.time.joinedEveryNHours', { count: hourStep }),
     }
   }
-  const times = parsed.hours.values.flatMap(hour =>
-    parsed.minutes.values.map(minute => `${twoDigits(hour)}:${twoDigits(minute)}`))
+  const times = parsed.hours.values.flatMap((hour) => {
+    const ampm = t(hour < 12 ? 'frequency.time.am' : 'frequency.time.pm')
+    return parsed.minutes.values.map(minute => t('cron.clock', {
+      h: clock12Hour(hour), mm: twoDigits(minute), ampm,
+    }))
+  })
   const text = times.length <= CRON_TIME_LIST_LIMIT
     ? t('cron.time.at', { times: times.join(t('cron.list.join')) })
     : t('cron.time.hoursAt', { hours, minutes: numberList(parsed.minutes.values, t) })
@@ -460,7 +486,7 @@ function cronTimeText(
  * @param parsed - parsed cron expression.
  * @param t - cron translations.
  * @param locale - active UI locale naming restricted months.
- * @returns localized sentence, for example `Mon–Fri at 09:00` or `Every 15 minutes`.
+ * @returns localized sentence, for example `Mon–Fri at 9:00 AM` or `Every 15 minutes`.
  */
 export function cronPreview(parsed: ParsedCron, t: CronDescriptionTranslator, locale: string): string {
   const day = cronDayText(parsed, locale, t)

@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for 2026-10-20-desktop-activity-notifications.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-20-desktop-activity-notifications.md
+/agent-note-desktop-background-activity-notifications:
+  en: 449c1e3147e3ba84
+  zh: a0d99d19ec3651df
+/agent-note-desktop-background-activity-notifications/problem:
+  en: 8b61a449956141d3
+  zh: eceaa10073b1f719
+/agent-note-desktop-background-activity-notifications/decision:
+  en: c46f11ec2f7c9645
+  zh: aac549b9365894b2
+/agent-note-desktop-background-activity-notifications/alternatives-considered:
+  en: b73d674f3d679935
+  zh: 22cf7499822c2946
+/agent-note-desktop-background-activity-notifications/consequences:
+  en: 49f12833b1490eec
+  zh: 68bacd59b398ae59

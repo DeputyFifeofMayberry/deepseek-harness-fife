@@ -1053,6 +1053,54 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'effortPolicy',
+    summary: 'Owns the deployment configuration, the durable record, and the request write.',
+    description: 'Owns the deployment configuration, the durable record, and the request write.\n\nA disabled policy is inert: it registers the service so a tool can detect that the deployment knows about the feature, and it writes nothing. All wiring is installed only when the services it needs are composed.',
+    methods: [
+      {
+        signature: 'async applyTo(session: Session, proposed: LlmCallConfig, start?: StartChoice): Promise<LlmCallConfig>',
+        description: 'Apply the policy to one proposed request. Provider and model are always preserved; only the effort may change, and only when the policy is enabled and the route advertises a vocabulary.',
+        parameters: [{ name: 'session', description: 'the Session making the request.' }, { name: 'proposed', description: 'the configuration the loop would dispatch.' }, { name: 'start', description: 'the Agent\'s own starting choice, used only while the Session has recorded none of its own.' }],
+        returns: 'the configuration to dispatch.',
+      },
+      {
+        signature: 'meetsOperationMinimum(operation: DelegationOperation, rawEffort: string): boolean',
+        description: 'Whether a delegation\'s declared effort respects its operation minimum. The minimum constrains the three automatic level names; any other advertised effort is written verbatim, because only the adapter knows whether it is a capability above or below that level.',
+        parameters: [{ name: 'operation', description: 'the delegation\'s declared operation.' }, { name: 'rawEffort', description: 'the effort the caller selected.' }],
+        returns: 'whether the delegating tool may accept the value.',
+      },
+      {
+        signature: 'stateOf(session: Session): EffortState',
+        description: 'The observed state for one Session, read from its durable record.',
+        parameters: [{ name: 'session', description: 'the Session whose state is read.' }],
+        returns: 'the current state as the core consumes it.',
+      },
+      {
+        signature: 'setBase(session: Session, rawEffort: string): void',
+        description: 'Record a user pick. A level value replaces the base and clears any exact effort; any other value is an exact effort written verbatim and never escalated.',
+        parameters: [{ name: 'session', description: 'the Session the pick applies to.' }, { name: 'rawEffort', description: 'the effort value the user selected.' }],
+        throws: ['when `rawEffort` is empty.'],
+      },
+      {
+        signature: 'observe(session: Session, tool: string, args: unknown, result: ToolExecutionResult): void',
+        description: 'Fold one settled tool result into the workspace revision or the open escalation, appending a decision record only when the state changes.',
+        parameters: [{ name: 'session', description: 'the Session whose tool call settled.' }, { name: 'tool', description: 'registered tool name.' }, { name: 'args', description: 'the call\'s parsed arguments.' }, { name: 'result', description: 'the settled result.' }],
+      },
+      {
+        signature: 'decideFor(capability: EffortCapability, session?: Session): Decision',
+        description: 'Decide the effort for one request.',
+        parameters: [{ name: 'capability', description: 'the exact route\'s advertised efforts.' }, { name: 'session', description: 'the Session making the request; omission decides from the configured base.' }],
+        returns: 'the decision and the rule that produced it.',
+      },
+      {
+        signature: 'levelFor(operation: DelegationOperation): EffortLevel',
+        description: 'The starting level for a delegated operation.',
+        parameters: [{ name: 'operation', description: 'the delegation\'s declared operation.' }],
+        returns: 'the operation\'s starting level.',
+      },
+    ],
+  },
+  {
     key: 'fileReferences',
     summary: 'Host capability for cancellable file-reference discovery.',
     description: 'Host capability for cancellable file-reference discovery.',
@@ -3403,9 +3451,9 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'pruned content, or `null` when the text is within budget.',
       },
       {
-        signature: 'pruneSession(session: Session): PruneResult',
-        description: 'Prune every over-budget tool result from one stable current-surface snapshot. Each replacement preserves the complete event data except for `content`, cites the shadowed node so replay can recover the replacement input, and is immediately preceded by a `compaction/prune` shadow-price event pricing the shadowed node through the injected token meter, so pure consumers can subtract it without per-node state.',
-        parameters: [{ name: 'session', description: 'session whose current surface is rewritten.' }],
+        signature: 'pruneSession(session: Session, options: PruneSessionOptions = {}): PruneResult',
+        description: 'Prune over-budget tool results from one stable current-surface snapshot, optionally bounded to nodes appended after a caller-supplied sequence so already provider-cached history keeps its prefix intact. Each replacement preserves the complete event data except for `content`, cites the shadowed node so replay can recover the replacement input, and is immediately preceded by a `compaction/prune` shadow-price event pricing the shadowed node through the injected token meter, so pure consumers can subtract it without per-node state.',
+        parameters: [{ name: 'session', description: 'session whose current surface is rewritten.' }, { name: 'options', description: '`sinceSeq` bounds the pass to surface nodes at or above that sequence; omitted means the whole current surface.' }],
         returns: 'landed replacements and aggregate Unicode-code-point savings.',
         throws: ['when the session rejects a replacement; replacements committed earlier in the pass remain durable.'],
       },
@@ -5947,7 +5995,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmModelInfo',
-    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n}',
+    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n    pricing?: LlmModelPricing;\n}',
+  },
+  {
+    name: 'LlmModelPricing',
+    declaration: 'export interface LlmModelPricing {\n    currency: string;\n    inputPerMillion: number;\n    outputPerMillion: number;\n    cacheReadPerMillion?: number;\n    cacheWritePerMillion?: number;\n    offPeakMultiplier?: number;\n}',
   },
   {
     name: 'LlmModelReasoningInfo',
@@ -6227,7 +6279,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelCatalogModel',
-    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
+    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n    readonly pricing?: LlmModelPricing;\n}',
   },
   {
     name: 'ModelMessageSource',
@@ -6592,6 +6644,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PruneResult',
     declaration: 'export interface PruneResult {\n    readonly pruned: readonly PrunedEntry[];\n    readonly charsRemoved: number;\n}',
+  },
+  {
+    name: 'PruneSessionOptions',
+    declaration: 'export interface PruneSessionOptions {\n    readonly sinceSeq?: SessionSeq;\n}',
   },
   {
     name: 'PtcBindingErrorClass',
@@ -7800,6 +7856,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SshStreamEndpoint',
     declaration: 'export type SshStreamEndpoint = z.infer<typeof streamEndpointSchema>;',
+  },
+  {
+    name: 'StartChoice',
+    declaration: 'export interface StartChoice {\n    readonly level?: EffortLevel;\n    readonly exact?: string;\n}',
   },
   {
     name: 'StorageBackend',

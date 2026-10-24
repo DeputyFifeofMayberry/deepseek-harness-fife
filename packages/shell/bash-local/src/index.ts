@@ -16,6 +16,11 @@ import { ShellExecutor } from '@deepseek-ai/dsh-shell'
 import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellProcess, ShellProcessRead, ShellRunResult, CollectedOutput } from '@deepseek-ai/dsh-shell'
 import type { SubprocessCollect, SubprocessHandle, SubprocessOutputReader, SubprocessSpawnSpec } from '@deepseek-ai/dsh-subprocess'
 import { clampTimeout, deadline, MAX_TIMER_DELAY_MS, timeoutOf } from '@deepseek-ai/dsh-timeout'
+import { resolveBashPath } from './resolve.ts'
+
+// Executable resolution stays dependency-free so the executor and its suites
+// share one definition.
+export { candidateBashPaths, resolveBashPath } from './resolve.ts'
 
 /**
  * Model-friendly environment overrides: disable colors, pagers, and
@@ -51,6 +56,12 @@ export interface Config {
   maxSpillBytes: Volatile<number>
   /** Grace period for kill escalation and inherited pipes; at most `MAX_TIMER_DELAY_MS`. */
   graceMs: Volatile<number>
+  /**
+   * Explicit bash executable. When omitted, Windows probes Git for Windows
+   * installs and PATH entries in that order, and every other platform resolves
+   * a bare `bash` through PATH.
+   */
+  bashPath: Volatile<string | undefined>
 }
 
 /** Project a settled collect-mode reader into the final CollectedOutput shape. */
@@ -104,10 +115,29 @@ export class LocalBashExecutor extends ShellExecutor {
     maxOutputBytes: z.number().default(64_000).volatile(),
     maxSpillBytes: z.number().default(DEFAULT_MAX_SPILL_BYTES).volatile(),
     graceMs: z.number().default(DEFAULT_GRACE_MS).volatile(),
+    bashPath: z.string().volatile(),
   })
+
+  /** The declared executable the current {@link bashPath} was resolved from. */
+  private declaredBashPath: string | undefined
+
+  /** The bash executable resolved from the current config. */
+  private resolvedBashPath: string
+
+  /** The bash executable every command runs through; a changed declared path is probed again on the next read. */
+  get bashPath(): string {
+    const declared = this.config.bashPath.get()
+    if (declared !== this.declaredBashPath) {
+      this.resolvedBashPath = resolveBashPath(declared)
+      this.declaredBashPath = declared
+    }
+    return this.resolvedBashPath
+  }
 
   constructor(ctx: Context, readonly config: Config) {
     super(ctx)
+    this.declaredBashPath = config.bashPath.get()
+    this.resolvedBashPath = resolveBashPath(this.declaredBashPath)
   }
 
   /**
@@ -185,7 +215,7 @@ export class LocalBashExecutor extends ShellExecutor {
   }
 
   async execute(spec: ShellExecSpec): Promise<ShellExecution> {
-    return this.executeArgv(spec, ['bash', '-c', spec.command])
+    return this.executeArgv(spec, [this.bashPath, '-c', spec.command])
   }
 
   /**

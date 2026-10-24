@@ -423,7 +423,11 @@ export async function packageTarget(
   const journal = target.platform === 'darwin' ? process.env.DSH_DESKTOP_PACKAGING_RUN_DIR : undefined
   const proxyEvent = (status: string) => { if (journal) recordPackagingEvent(journal, { type: 'notarization-proxy', status }) }
   const mac = target.platform === 'darwin' ? resolveMacOSPackageSettings(environment) : undefined
-  const packArguments = mac === undefined ? [] : ['--concurrency', String(mac.packConcurrency)]
+  const packArguments = mac !== undefined
+    ? ['--concurrency', String(mac.packConcurrency)]
+    // fife: packaging packs into a local directory, where publication order is irrelevant, so Windows
+    // uses the same bounded parallelism macOS applies instead of packing every package serially.
+    : target.platform === 'win32' ? ['--concurrency', '8'] : []
   const buildPaths = desktopTargetBuildPaths(target.name)
   const releaseRecordPath = join(buildPaths.artifacts, desktopBuildRecordFilename(target.name))
   if (!invocation.prepareOnly && !invocation.unsigned && !invocation.skipNotarization) {

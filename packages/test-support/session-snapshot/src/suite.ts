@@ -18,7 +18,7 @@
  * @module @deepseek-ai/dsh-session-snapshot/suite
  */
 
-import { readFile, readdir, writeFile } from 'node:fs/promises'
+import { readdir, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { isSurfaceEligibleType } from '@deepseek-ai/dsh-session/surface'
@@ -31,6 +31,7 @@ import {
   type SnapshotSessionFormatManifest,
 } from './manifest.ts'
 import { redactSessionSnapshotIds } from './identity.ts'
+import { readSnapshotText as readFile } from './symlinks.ts'
 import { captureExpectedWorkspaceSnapshot } from './workspace.ts'
 import {
   assertSessionFixtureVersion,

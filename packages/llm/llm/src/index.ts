@@ -19,6 +19,7 @@ import type {
   LlmModelContext,
   LlmModelDiscoveryRequest,
   LlmModelInfo,
+  LlmModelPricing,
   LlmResolvedModelInfo,
   LlmProviderInfo,
   ModelModality,
@@ -709,6 +710,36 @@ export class LlmRuntime extends TypertRemoteService {
   }
 
   /**
+   * Validate and detach one adapter-owned price table.
+   * @param pricing - adapter-reported prices, if any.
+   * @param subject - catalog subject used in the failure message.
+   * @returns an owned copy, or undefined when the adapter declared no pricing.
+   */
+  private detachedPricing(pricing: LlmModelPricing | undefined, subject: string): LlmModelPricing | undefined {
+    if (pricing === undefined) return undefined
+    const rate = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0
+    if (
+      !/^[A-Z]{3}$/u.test(pricing.currency)
+      || !rate(pricing.inputPerMillion)
+      || !rate(pricing.outputPerMillion)
+      || (pricing.cacheReadPerMillion !== undefined && !rate(pricing.cacheReadPerMillion))
+      || (pricing.cacheWritePerMillion !== undefined && !rate(pricing.cacheWritePerMillion))
+      || (pricing.offPeakMultiplier !== undefined
+        && (!rate(pricing.offPeakMultiplier) || pricing.offPeakMultiplier > 1))
+    ) {
+      throw new LlmError(`adapter returned invalid model pricing for ${subject}`, 'INVALID_MODEL_INFO')
+    }
+    return {
+      currency: pricing.currency,
+      inputPerMillion: pricing.inputPerMillion,
+      outputPerMillion: pricing.outputPerMillion,
+      ...pricing.cacheReadPerMillion === undefined ? {} : { cacheReadPerMillion: pricing.cacheReadPerMillion },
+      ...pricing.cacheWritePerMillion === undefined ? {} : { cacheWritePerMillion: pricing.cacheWritePerMillion },
+      ...pricing.offPeakMultiplier === undefined ? {} : { offPeakMultiplier: pricing.offPeakMultiplier },
+    }
+  }
+
+  /**
    * Discover models advertised by one registered provider. Catalog membership
    * does not constrain core routing. Catalog-driven entry points may restrict
    * selection and submission to the advertised models.
@@ -734,12 +765,14 @@ export class LlmRuntime extends TypertRemoteService {
       }
       seen.add(model.id)
       const inputModalities = this.detachedModalities(model.inputModalities)
+      const pricing = this.detachedPricing(model.pricing, `provider "${provider}"`)
       return {
         provider: model.provider,
         id: model.id,
         name: model.name,
         ...model.description === undefined ? {} : { description: model.description },
         ...inputModalities === undefined ? {} : { inputModalities },
+        ...pricing === undefined ? {} : { pricing },
       }
     })
   }
@@ -825,12 +858,14 @@ export class LlmRuntime extends TypertRemoteService {
         'INVALID_MODEL_MAX_TOKENS',
       )
     }
+    const pricing = this.detachedPricing(resolved.pricing, `provider "${provider}" model "${model}"`)
     const info: LlmResolvedModelInfo = {
       provider,
       id: model,
       name: resolved.name,
       ...resolved.description === undefined ? {} : { description: resolved.description },
       ...inputModalities === undefined ? {} : { inputModalities },
+      ...pricing === undefined ? {} : { pricing },
       ...context === undefined ? {} : { context: { contextWindow: context.contextWindow } },
       ...defaultMaxTokens === undefined ? {} : { defaultMaxTokens },
       ...resolved.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: resolved.systemPromptUpdate },

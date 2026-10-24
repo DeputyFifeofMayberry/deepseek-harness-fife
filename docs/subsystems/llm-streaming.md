@@ -538,6 +538,8 @@ interface LlmModelInfo {
   description?: string
   /** Accepted request modalities; absent means unknown, while an explicit omission is negative capability. */
   inputModalities?: readonly ModelModality[]
+  /** Published token prices for this route; absent means the caller cannot calculate spend. */
+  pricing?: LlmModelPricing
 }
 ```
 

@@ -295,7 +295,7 @@ describe('ApiSession model selection', () => {
     expect(() => agents.selectionFor(live)).toThrow('required modelSelection projection')
   })
 
-  it('reads a reasoning-free request and consumes only the exact pending selection', async () => {
+  it('retires a pending selection on its route and ignores an earlier acknowledgement', async () => {
     const { ctx, agents } = await harness()
     const logged = agent(ctx, header('logged-model'))
     logged.session.append('request/header', {
@@ -317,14 +317,17 @@ describe('ApiSession model selection', () => {
     expect(selection.current).toMatchObject({
       provider: 'selected-provider', model: 'selected-model', reasoningEffort: 'high',
     })
-    expect(agents.consumeSelection(pending, 'other-provider', 'selected-model', 'high')).toBe(false)
-    expect(agents.consumeSelection(pending, 'selected-provider', 'other-model', 'high')).toBe(false)
-    expect(agents.consumeSelection(pending, 'selected-provider', 'selected-model', 'low')).toBe(false)
-    expect(agents.consumeSelection(pending, 'selected-provider', 'selected-model', 'high')).toBe(true)
+    const pickedAt = selection.pickedAt
+    expect(agents.consumeSelection(pending, 'other-provider', 'selected-model', pickedAt + 1)).toBe(false)
+    expect(agents.consumeSelection(pending, 'selected-provider', 'other-model', pickedAt + 1)).toBe(false)
+    // The route acknowledges the pick; the effort on the request belongs to the
+    // policy, so only a header logged before the pick can fail to retire it.
+    expect(agents.consumeSelection(pending, 'selected-provider', 'selected-model', pickedAt)).toBe(false)
+    expect(agents.consumeSelection(pending, 'selected-provider', 'selected-model', pickedAt + 1)).toBe(true)
     expect(selection.current).toEqual({ provider: 'fixture', model: 'fixture-model' })
 
     const untouched = agent(ctx, header('uninstalled-model'))
-    expect(agents.consumeSelection(untouched, 'fixture', 'fixture-model', undefined)).toBe(false)
+    expect(agents.consumeSelection(untouched, 'fixture', 'fixture-model', 0)).toBe(false)
   })
 })
 

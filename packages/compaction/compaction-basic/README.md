@@ -74,6 +74,7 @@ All settings are optional. With context window `W`, effective request output cap
 | `maxOverflowRetries` | `1` | Maximum retries after a confirmed context-window overflow; `0` disables recovery only. |
 | `modelPolicies` | `[]` | Exact `{ provider, model, ...partialPolicy }` overrides for individual model routes. |
 | `auto` | `true` | Enable automatic condensation and overflow recovery; set `false` for manual-only operation. |
+| `pruneNewResultsAtStep` | `false` | With the pruner mounted, trim oversized tool results appended since the previous step before their first request, so a fat result never enters cached history at full size. Requires `auto`. |
 
 Misconfiguration fails fast: unknown settings, duplicate per-model overrides, invalid token counts, both retention forms together, or a retention ratio at least as large as the threshold ratio reject the plugin at load. When the model is first used, `W − O − B` must be positive and the resolved retained budget must be below the trigger. Zero headroom requires an explicit positive `maxTokens`, globally or in that model policy. Small-window deployments must configure headroom that fits their capacity; lower `thresholdRatio` to compact earlier.
 
@@ -87,7 +88,7 @@ With `dsh-command-compact` mounted, type `/compact` in a chat UI to condense imm
 
 ### Trimming oversized tool outputs
 
-Mount `dsh-compaction-tool-result-pruner` before this package to trim oversized tool results as part of condensation. Trimming makes no model call and can remove the need to summarize at all: when the trimmed conversation fits within the threshold, condensation skips the summary. Trimming only runs after a condensation trigger qualifies — a below-pressure conversation is never touched.
+Mount `dsh-compaction-tool-result-pruner` before this package to trim oversized tool results as part of condensation. Trimming makes no model call and can remove the need to summarize at all: when the trimmed conversation fits within the threshold, condensation skips the summary. Trimming only runs after a condensation trigger qualifies — a below-pressure conversation is never touched. With `pruneNewResultsAtStep: true`, the step-boundary listener additionally prunes only tool results appended since the previous step, before their first request; an agent's first pass records the surface high-water mark without pruning, so already provider-cached history keeps its prefix.
 
 -----
 
@@ -226,7 +227,7 @@ Rules:
 
 #### Token effect
 
-This is a separate model call: the replayed conversation prefix plus the fixed instruction as input, with `maxTokens`-capped output. Convergence retries can pay this cost more than once.
+This is a separate model call: the replayed conversation prefix plus the fixed instruction as input, with `maxTokens`-capped output. Convergence retries can pay this cost more than once. When the deployment composes `@deepseek-ai/dsh-effort-policy` with `enabled: true`, this call pins the policy's least expensive automatic level (`low`) instead of inheriting the adapter's default effort: that is the largest auxiliary request in a long session, and summarization tolerates a cheaper level than conversation. A disabled or absent policy keeps the original dispatch exactly, including any `llm/stream` middleware that reroutes the provider.
 
 #### KV Cache effect
 

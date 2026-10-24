@@ -18,6 +18,10 @@
  */
 
 export {
+  readSnapshotText,
+  readSnapshotTextSync,
+} from './symlinks.ts'
+export {
   redactSessionSnapshotIds,
 } from './identity.ts'
 export {

@@ -332,6 +332,18 @@ describe('ui-model-selection dual entry', () => {
     }
   })
 
+  it('offers label surfaces the shared catalog and advertised reasoning metadata', async () => {
+    const b = await bench()
+    const catalog = b.ctx.modelDirectories.modelCatalog
+    const value = await catalog.load()
+    expect(value.groups).toEqual(GROUPS)
+    expect(catalog.store.getSnapshot()).toMatchObject({ status: 'ready', value })
+    expect(catalog.reasoningFor({ provider: 'deepseek-official', model: 'deepseek-v4-flash' })).toMatchObject({
+      defaultEffort: 'high',
+    })
+    expect(catalog.reasoningFor({ provider: 'deepseek-official', model: 'absent' })).toBeUndefined()
+  })
+
   it('both entries share one directory instance per session, isolated across sessions', async () => {
     const b = await bench()
     b.mint('a')

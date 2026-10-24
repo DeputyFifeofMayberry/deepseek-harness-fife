@@ -163,6 +163,7 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 - **Labels:** one PR `kind/*`, all material `area/*`, and native Issue Type ([taxonomy](.agents/notes/implemented/process/2026-08-08-unified-github-label-taxonomy.md)).
 - TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
 - Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
+- **Mayberry pack:** generated worksheets, X-Ray, and handoff go under `.mayberry/instances/`; repository `docs/` remains canonical and additions there need bilingual pairs ([integration](.mayberry/INTEGRATION.md)). Where a Mayberry skill or `STEPS.md` shows `docs/`, follow repository instructions and write generated records under `.mayberry/instances/` instead.
 
 ## Defensive patterns
 
@@ -183,3 +184,17 @@ Docs accompany every code change: update affected README and JSDoc contracts tog
 ## Vendoring policy
 
 `vendor/` packages are pinned source copies (manifest with upstream SHAs in [vendor/README.md](vendor/README.md)). Update via the sync procedure there; re-apply or retire the logged local modifications; rerun `pnpm run test && pnpm run build`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked as GitHub issues on this repository via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles use identity label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: read `docs/glossary.md`, `docs/architecture.md`, `docs/defensive-patterns/`, and `.agents/notes/` before exploring. See `docs/agents/domain.md`.

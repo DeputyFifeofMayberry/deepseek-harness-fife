@@ -27,6 +27,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { SubmitOutcome } from '../src/client/contract/input.ts'
 import { SessionInputShell } from '../src/client/input/facade.ts'
+import type { InputHistoryStore } from '../src/client/input-history.ts'
 import { $replaceDetectSpanWithText, $selectDetectSpan } from '../src/client/input/editor/span-map.ts'
 import type {
   ComposerAttachment, ComposerAttachmentsOwnerProps, DraftFileUploads, InputActivityOwnerProps,
@@ -109,6 +110,8 @@ interface BenchOptions {
   commandMenuOpen?: boolean
   busyEnter?: 'queue' | 'steer'
   toggleCommandMenu?: (selection: { start: number; end: number }) => void
+  /** Capture face behind Up-recall (absent = the shell has no history store). */
+  history?: InputHistoryStore
 }
 
 /** One pending queue row (the runtime snapshot shape, as the dock tests build it). */
@@ -144,6 +147,7 @@ function bench(over?: BenchOptions) {
       'next-step': over?.nextStep ?? [],
     }),
     ...(over?.steerQueue !== undefined ? { steerQueue: over.steerQueue } : {}),
+    ...(over?.history !== undefined ? { history: over.history } : {}),
     // Lexicon-only stub: adjudication untouched (undefined slash methods are
     // never reached — these benches drive plain-draft flows only).
     ...(lex !== undefined
@@ -1232,6 +1236,45 @@ describe('running and lock semantics', () => {
     expect(shell.canPickFiles()).toBe(false)
     expect(shell.pickFiles()).toBe(false)
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('a blocked composer keeps Up native until unlocked, then recalls the captured input', () => {
+    const history = {
+      record: () => {},
+      entries: () => [{ text: 'recalled text', references: [] }],
+    }
+    const { props, shell, textarea, view } = bench({
+      blocked: { reason: 'waiting' },
+      draft: 'in progress',
+      history,
+    })
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    expect(shell.snapshot.draft).toBe('in progress')
+    const { blocked: _unlock, ...unblocked } = props
+    view.rerender(<InputBar {...unblocked} />)
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    expect(shell.snapshot.draft).toBe('recalled text')
+  })
+
+  it('a blocked composer keeps Escape native until unlocked, then restores the walk draft', () => {
+    const history = {
+      record: () => {},
+      entries: () => [{ text: 'recalled text', references: [] }],
+    }
+    const { props, shell, textarea, view } = bench({
+      blocked: { reason: 'waiting' },
+      draft: 'in progress',
+      history,
+    })
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    fireEvent.keyDown(textarea, { key: 'Escape', keyCode: 27 })
+    expect(shell.snapshot.draft).toBe('in progress')
+    const { blocked: _unlock, ...unblocked } = props
+    view.rerender(<InputBar {...unblocked} />)
+    fireEvent.keyDown(textarea, { key: 'ArrowUp', keyCode: 38 })
+    expect(shell.snapshot.draft).toBe('recalled text')
+    fireEvent.keyDown(textarea, { key: 'Escape', keyCode: 27 })
+    expect(shell.snapshot.draft).toBe('in progress')
   })
 
   it('file action availability follows mount and live composer state', () => {

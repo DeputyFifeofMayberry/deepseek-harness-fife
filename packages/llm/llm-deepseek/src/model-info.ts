@@ -49,6 +49,7 @@ export function catalogModelInfo(provider: string, model: DeepSeekCatalogModel):
     name: model.name ?? model.id,
     ...model.description === undefined ? {} : { description: model.description },
     inputModalities: model.inputModalities ?? ['text'],
+    ...model.pricing === undefined ? {} : { pricing: model.pricing },
   }
 }
 

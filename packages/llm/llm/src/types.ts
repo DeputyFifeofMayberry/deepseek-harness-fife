@@ -344,6 +344,31 @@ export interface LlmDiscoveredModel {
   inputModalities?: readonly ModelModality[]
 }
 
+/**
+ * Published token prices for one exact provider/model route, in one currency.
+ *
+ * Amounts are per million tokens. `inputPerMillion` is the cache-miss input
+ * price and `cacheReadPerMillion` the cache-hit price. A provider whose
+ * off-peak window discounts the same rates multiplies them by
+ * `offPeakMultiplier`; the schedule itself belongs to the consumer that knows
+ * the provider's clock. Absent cache prices leave those buckets unpriced
+ * rather than borrowing the input rate.
+ */
+export interface LlmModelPricing {
+  /** ISO 4217 currency code the per-million amounts are stated in. */
+  currency: string
+  /** Price of one million cache-miss input tokens. */
+  inputPerMillion: number
+  /** Price of one million output tokens. */
+  outputPerMillion: number
+  /** Price of one million cache-read input tokens; absent leaves cache reads unpriced. */
+  cacheReadPerMillion?: number
+  /** Price of one million cache-write input tokens; absent leaves cache writes unpriced. */
+  cacheWritePerMillion?: number
+  /** Multiplier applied during the provider's off-peak window; absent means no phase pricing. */
+  offPeakMultiplier?: number
+}
+
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 export interface LlmModelInfo {
   /** Provider route that owns this model entry. */
@@ -356,6 +381,8 @@ export interface LlmModelInfo {
   description?: string
   /** Accepted request modalities; absent means unknown, while an explicit omission is negative capability. */
   inputModalities?: readonly ModelModality[]
+  /** Published token prices for this route; absent means the caller cannot calculate spend. */
+  pricing?: LlmModelPricing
 }
 
 /** Provider-owned context capacity for one exact provider/model route. */

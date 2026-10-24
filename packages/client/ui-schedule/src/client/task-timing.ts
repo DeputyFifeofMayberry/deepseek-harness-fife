@@ -168,7 +168,8 @@ export function slashDate(date: string): string {
 /**
  * One clock time at whole-second precision.
  *
- * The rows and the clock picker both show `HH:MM:SS`; an untouched stored value
+ * The staged and stored clocks stay whole-second 24-hour text; the trigger and
+ * the picker state that value on the 12-hour scale. An untouched stored value
  * keeps its milliseconds in the draft so a save can submit them back.
  * @param time - stored or staged clock text, with or without fractional seconds.
  * @returns the same clock time at whole-second precision, or the input when it is not a clock time.

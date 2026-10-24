@@ -1,5 +1,6 @@
 /** Browser-safe formatting shared by Session and Host reminder catalogs. */
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
+import { clock12Hour } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ScheduleRecord } from '@deepseek-ai/dsh-schedule/client'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import type { CronDescriptionKey } from './task-cron.ts'
@@ -13,6 +14,9 @@ type WeekdayKey = `frequency.weekday.${1 | 2 | 3 | 4 | 5 | 6 | 7}`
 export type FrequencyKey =
   | 'time.locale'
   | 'time.utcPrefix'
+  | 'frequency.clock'
+  | 'frequency.time.am'
+  | 'frequency.time.pm'
   | 'frequency.once'
   | 'frequency.every'
   | 'frequency.daily'
@@ -80,9 +84,24 @@ export function taskName(record: ScheduleRecord): string {
   return record.title
 }
 
-/** Localized clock text that omits fractional seconds and zero seconds. */
-function clockLabel(time: string): string {
-  return time.replace(/\.\d+$/, '').replace(/:00$/, '')
+/**
+ * Localized 12-hour text for one stored wall clock, whole seconds dropped.
+ * Textual decomposition: a stored rule's clock names its own zone's wall, so
+ * the meridiem derives from the stored digits, not from the reader's zone.
+ * @param time - stored clock text, with or without seconds and a fraction.
+ * @param t - frequency translations supplying the clock template and words.
+ * @returns 12-hour clock text, for example `9:00 PM`; the input when unparsable.
+ */
+function clockLabel(time: string, t: FrequencyTranslator): string {
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/.exec(time)
+  if (match === null || match[2] === undefined) return time
+  const hours = Number(match[1])
+  return t('frequency.clock', {
+    h: clock12Hour(hours),
+    mm: match[2],
+    ss: match[3] === undefined || match[3] === '00' ? '' : `:${match[3]}`,
+    ampm: t(hours < 12 ? 'frequency.time.am' : 'frequency.time.pm'),
+  })
 }
 
 /**
@@ -237,7 +256,7 @@ export function recordTimeZone(record: ScheduleRecord): string | undefined {
  * Format exact intervals or wall-clock rules without changing their precision or zone.
  *
  * A cron rule reads as the sentence `cronPreview` derives from its expression,
- * for example `Every day at 09:00, 15:00`. An expression this parser cannot
+ * for example `Every day at 9:00 AM, 3:00 PM`. An expression this parser cannot
  * read keeps the raw `Cron {expression}` form, so the stored rule stays visible
  * when the Host's dialect and this parser diverge.
  * @param record - reminder whose kind and stored rule determine its frequency.
@@ -269,14 +288,14 @@ export function formatScheduleFrequency(
         : t('frequency.cron', { expression: record.expression, timeZone: zone.label(record.timeZone) })
     }
     case 'daily': {
-      const time = clockLabel(record.time)
+      const time = clockLabel(record.time, t)
       if (zone === undefined) return t('frequency.daily', { time, timeZone: zoneLabel(record.timeZone, t) })
       return zone.system === record.timeZone
         ? t('frequency.dailyLocal', { time })
         : t('frequency.daily', { time, timeZone: zone.label(record.timeZone) })
     }
     case 'weekly': {
-      const params = { weekdays: formatWeekdays(record.weekdays, t), time: clockLabel(record.time) }
+      const params = { weekdays: formatWeekdays(record.weekdays, t), time: clockLabel(record.time, t) }
       if (zone === undefined) return t('frequency.weekly', { ...params, timeZone: zoneLabel(record.timeZone, t) })
       return zone.system === record.timeZone
         ? t('frequency.weeklyLocal', params)
@@ -329,6 +348,7 @@ export function formatScheduleNextRun(scheduledAt: string, locale: string, timeZ
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    hour12: true,
     ...zone,
   }).format(at)
 }
@@ -362,8 +382,8 @@ function statesYear(locale: string): boolean {
  * A task whose stored rule names its own zone still shows its next run in the
  * reader's zone: the instant is the same one, and the reader compares it with
  * their own clock. The locale owns the month name, the field order, and the
- * separators, so the stamp reads `Sep 19, 2026, 15:51` in English and
- * `9月19日 15:51` in Chinese.
+ * separators, so the stamp reads `Sep 19, 2026, 3:51 PM` in English and
+ * `9月19日 下午3:51` in Chinese.
  *
  * Whether a bare date reads the year is a per-language typographic choice, and
  * the languages the design pins are stated in {@link YEAR_LANGUAGES} and
@@ -381,11 +401,12 @@ export function formatScheduleAbsolute(scheduledAt: string, locale: string): str
     ...(statesYear(locale) ? { year: 'numeric' as const } : {}),
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    // h23 matches the clock rows' own formatter (task-timing.ts): `hour12: false`
-    // leaves midnight's hour open in older engines, which may render `24:00`.
-    hourCycle: 'h23',
+    // The 12-hour clock is forced everywhere; `hour12: true` also pins
+    // midnight's hour closed, which bare `hour12: false` leaves open on
+    // older engines (they may render `24:00`).
+    hour12: true,
   }).format(at)
 }
 

@@ -42,6 +42,13 @@ export interface BasicCompactionConfig extends CompactionPolicyConfig {
   modelPolicies?: ModelCompactPolicyConfig[]
   /** Enable automatic step-boundary pressure and overflow-recovery listeners. Defaults to `true`. */
   auto?: boolean
+  /**
+   * Prune over-budget tool results appended since the previous step, before
+   * their first request, so a fat result never enters provider-cached history
+   * at full size and no cached prefix is rewritten. Requires the automatic
+   * listeners (`auto`) and the `toolResultPruner` sibling. Defaults to `false`.
+   */
+  pruneNewResultsAtStep?: boolean
 }
 
 /** Exactly one validated retention form. */
@@ -64,6 +71,7 @@ interface ResolvedPolicyFields {
 export type ResolvedConfig = ResolvedPolicyFields & ResolvedRetention & {
   readonly modelPolicies: readonly Readonly<ModelCompactPolicyConfig>[]
   readonly auto: boolean
+  readonly pruneNewResultsAtStep: boolean
 }
 
 /** Fully merged policy for one routed conversation target, before capacity scaling. */

@@ -18,6 +18,27 @@ function exitCode(argv: string[], manageDesktopProfile = false): number {
   }
 }
 
+/** Run one launcher identity and capture its exit code and stdout. */
+function invoke(argv: string[], programName: string, version = '1.2.3'): { code: number; stdout: string } {
+  const stdout: string[] = []
+  const exit = vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('exit') })
+  vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
+    stdout.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString())
+    return true
+  })
+  vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+  let code = 0
+  try {
+    parseDshArgs(argv, version, false, programName)
+    throw new Error(`expected ${JSON.stringify(argv)} to exit`)
+  } catch {
+    code = exit.mock.calls.at(-1)?.[0] as number
+  } finally {
+    vi.restoreAllMocks()
+  }
+  return { code, stdout: stdout.join('') }
+}
+
 afterEach(() => { vi.restoreAllMocks() })
 
 describe('parseDshArgs', () => {
@@ -253,5 +274,24 @@ describe('parseDshArgs', () => {
     expect(stdout.mock.calls.map(([chunk]) => String(chunk)).join('')).not.toContain('help [command]')
     expect(exitCode(['-h'])).toBe(0)
     expect(exitCode(['--version'])).toBe(0)
+  })
+
+  it('names the launcher in help and prints the supplied version', () => {
+    const dsh = invoke(['--help'], 'dsh')
+    expect(dsh.code).toBe(0)
+    expect(dsh.stdout).toContain('Usage: dsh')
+    expect(dsh.stdout).toContain('dsh web')
+    expect(dsh.stdout).not.toContain('fife')
+
+    const fife = invoke(['--help'], 'fife')
+    expect(fife.code).toBe(0)
+    expect(fife.stdout).toContain('Usage: fife')
+    expect(fife.stdout).toContain('fife web')
+    expect(fife.stdout).not.toContain('dsh')
+    expect(invoke(['plugin', '--help'], 'fife').stdout).toContain('Usage: fife plugin')
+
+    const version = invoke(['--version'], 'fife', '1.2.3+fife.1')
+    expect(version.code).toBe(0)
+    expect(version.stdout).toContain('1.2.3+fife.1')
   })
 })

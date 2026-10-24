@@ -4,6 +4,7 @@ import type { AppUpdater } from 'electron-updater'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { parseDesktopRelease } from '../src/release.ts'
 import type { DesktopUpdateState } from '../src/ipc.ts'
+import type { DesktopUpdateSource } from '../src/update-source.ts'
 import { DesktopUpdatePreparationError } from '../src/update-error.ts'
 import { zh } from '../src/locale.ts'
 
@@ -47,7 +48,8 @@ describe('desktop release metadata', () => {
 const coordinators: InstanceType<typeof DesktopUpdateCoordinator>[] = []
 afterEach(() => { for (const item of coordinators.splice(0)) item.dispose() })
 
-function fixture(channel: 'nightly' | 'latest' = 'nightly', version = '1.1.0-alpha.1') {
+function fixture(channel: 'nightly' | 'latest' = 'nightly', version = '1.1.0-alpha.1',
+  source: DesktopUpdateSource = { kind: 'packaged', configPath: '/app/resources/app-update.yml', appPath: '/app' }) {
   const events = new EventEmitter()
   const checkForUpdates = vi.fn(async () => ({
     isUpdateAvailable: true,
@@ -66,13 +68,40 @@ function fixture(channel: 'nightly' | 'latest' = 'nightly', version = '1.1.0-alp
   const updater = Object.assign(events, { checkForUpdates, downloadUpdate, quitAndInstall }) as unknown as AppUpdater
   const coordinator = new DesktopUpdateCoordinator(
     (state) => { states.push(state); return state },
-    beforeRestart, updater, () => true, () => version, downloadResult, channel,
+    beforeRestart, updater, () => source, () => version, downloadResult, channel,
   )
   coordinators.push(coordinator)
   return { coordinator, updater, events, states, checkForUpdates, downloadUpdate, quitAndInstall, beforeRestart, downloadResult }
 }
 
 describe('desktop update coordinator', () => {
+  it('reports a development build as an unavailable source instead of a failed check', async () => {
+    const f = fixture('nightly', '1.1.0-alpha.1', { kind: 'development', appPath: '/app' })
+    expect(await f.coordinator.check(true)).toEqual({ phase: 'unavailable', reason: 'development',
+      technicalDetails: 'desktop update: source=development channel=nightly version=1.1.0-alpha.1 app=/app' })
+    expect(f.checkForUpdates).not.toHaveBeenCalled()
+    expect(f.states).toEqual([expect.objectContaining({ phase: 'unavailable' })])
+  })
+
+  it('names a missing packaged configuration and authorizes nothing', async () => {
+    const f = fixture('nightly', '1.1.0-alpha.1',
+      { kind: 'missing-configuration', configPath: '/app/resources/app-update.yml', appPath: '/app' })
+    expect(await f.coordinator.check()).toEqual({ phase: 'unavailable', reason: 'missing-configuration',
+      technicalDetails: 'desktop update: source=missing-configuration channel=nightly version=1.1.0-alpha.1 config=/app/resources/app-update.yml app=/app' })
+    expect(f.checkForUpdates).not.toHaveBeenCalled()
+    await expect(f.coordinator.download('1.1.0-rc.2')).rejects.toThrow(/no checked update is available/u)
+    await expect(f.coordinator.install('1.1.0-rc.2')).rejects.toThrow(/not ready/u)
+    expect(f.downloadUpdate).not.toHaveBeenCalled()
+    expect(f.quitAndInstall).not.toHaveBeenCalled()
+  })
+
+  it('keeps the packaged source line on a real check failure', async () => {
+    const f = fixture()
+    f.checkForUpdates.mockRejectedValueOnce(new Error('offline'))
+    expect(await f.coordinator.check()).toEqual({ phase: 'error', failedOperation: 'check', message: 'offline',
+      technicalDetails: 'desktop update: source=packaged channel=nightly version=1.1.0-alpha.1 config=/app/resources/app-update.yml app=/app\noffline' })
+  })
+
   it('keeps safe preparation diagnostics separate and clears them on an explicit retry', async () => {
     const f = fixture()
     await f.coordinator.check()

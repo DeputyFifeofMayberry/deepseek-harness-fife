@@ -47,6 +47,11 @@ it('rejects login origins in production', () => {
     .toThrow('must not configure allowedAuthOrigins')
 })
 
+it('rejects the fife deployment instead of demanding a policy origin', () => {
+  expect(() => resolveDesktopPolicyEnvironment({ ...origins, DSH_DESKTOP_AUTO_UPDATE_ENV: 'fife' }))
+    .toThrow('no mandatory-update policy service')
+})
+
 it.each([{ unsigned: true }, { prepareOnly: true }, {}])('requires policy outside local macOS builds in %j', (options) => {
   for (const platform of ['win32', 'darwin'] as const) {
     if (platform === 'darwin' && options.unsigned) {

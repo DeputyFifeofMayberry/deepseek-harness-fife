@@ -43,7 +43,10 @@ export { RiskConfirmation } from './RiskConfirmation.tsx'
 export type { RiskConfirmationProps } from './RiskConfirmation.tsx'
 export { ConnectionIndicator } from './ConnectionIndicator.tsx'
 export type { ConnectionIndicatorState } from './ConnectionIndicator.tsx'
-export { FishLogo, FISH_LOGO_PATH, FISH_LOGO_VIEWBOX } from './FishLogo.tsx'
+export {
+  SheriffHatMark, SHERIFF_HAT_BRIM_PATH, SHERIFF_HAT_PATH, SHERIFF_HAT_VIEWBOX,
+} from './SheriffHatMark.tsx'
+export { BrandBadgeMark } from './BrandBadgeMark.tsx'
 export { BrandWordmark } from './BrandWordmark.tsx'
 export type { BrandWordmarkProps } from './BrandWordmark.tsx'
 export {
@@ -79,6 +82,8 @@ export type {
 export { CODE_HIGHLIGHT_EXTENSIONS, languageForPath, useCodeHighlighter } from './code-highlighting.ts'
 export type { CodeHighlighter, HighlightSpan } from './code-highlighting.ts'
 export { relativeTime } from './relative-time.ts'
+export { clock12Parts, clock12Hour } from './clock-time.ts'
+export type { Clock12Parts, Clock12Meridiem } from './clock-time.ts'
 export { rankByName } from './rank-by-name.ts'
 export { isDarwinDesktop } from './darwin-desktop.ts'
 export type { RelativeTime, RelativeTimeUnit } from './relative-time.ts'

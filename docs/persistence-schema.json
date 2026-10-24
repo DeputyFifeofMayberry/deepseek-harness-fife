@@ -9454,6 +9454,187 @@
       }
     },
     {
+      "key": "event:effort/decision",
+      "kind": "event",
+      "event": "effort/decision",
+      "surface": false,
+      "digest": "69d81cfb2452d110c8f47a8d5a8b1a98e4bcae78443a92b009a20e32160300d4",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 15,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 16,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "base",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "effort",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "exact",
+                "type": 6,
+                "optional": true
+              },
+              {
+                "name": "level",
+                "type": 2,
+                "optional": true
+              },
+              {
+                "name": "openFailure",
+                "type": 7,
+                "optional": true
+              },
+              {
+                "name": "protocolVersion",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": true
+              },
+              {
+                "name": "rule",
+                "type": 9,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": true
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "union",
+            "types": [
+              3,
+              4,
+              5
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "deep"
+          },
+          {
+            "kind": "literal",
+            "value": "low"
+          },
+          {
+            "kind": "literal",
+            "value": "standard"
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "revision",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "sequence",
+                "type": 8,
+                "optional": false
+              },
+              {
+                "name": "verifier",
+                "type": 6,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "union",
+            "types": [
+              10,
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "base"
+          },
+          {
+            "kind": "literal",
+            "value": "escalated"
+          },
+          {
+            "kind": "literal",
+            "value": "exact-base"
+          },
+          {
+            "kind": "literal",
+            "value": "mode-pin"
+          },
+          {
+            "kind": "literal",
+            "value": "untouched"
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "effort/decision"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:feedback/message-delete",
       "kind": "event",
       "event": "feedback/message-delete",
@@ -15903,6 +16084,135 @@
           {
             "kind": "literal",
             "value": "subagent/model-selection-policy"
+          }
+        ]
+      }
+    },
+    {
+      "key": "event:subagent/usage",
+      "kind": "event",
+      "event": "subagent/usage",
+      "surface": false,
+      "digest": "9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 7,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 8,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "childId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "routes",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "version",
+                "type": 6,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "array",
+            "element": 4
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "cacheReadTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "cacheWriteTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "model",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "outputTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "provider",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "reasoningEffort",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "uncachedInputTokens",
+                "type": 5,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "literal",
+            "value": 0
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "subagent/usage"
           }
         ]
       }
@@ -22479,6 +22789,11 @@
       ]
     },
     {
+      "digest": "074f5f5fdcb38e5f3d288b2fb94ceb6695da33585e4ee664fd28398bb590be1b",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "0755b7d1128319ba2e389619cbbf2c961ad648882b4e91da7f3e9582cc8a2034",
       "names": [],
       "sources": []
@@ -22536,7 +22851,7 @@
         "packages/llm/llm/src/types.ts#ReplayEnvelope"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:448"
+        "packages/llm/llm/src/types.ts:475"
       ]
     },
     {
@@ -22839,6 +23154,11 @@
       "sources": []
     },
     {
+      "digest": "1c9aed64df6a5f6a75df1875ecd332a92fcac0a7ce0aa201d0c81d7284d57ba1",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "1ccb56061942f5ccb0d30c9e4f2883b9d115ff906560029de637b61d3cde896d",
       "names": [],
       "sources": [
@@ -23063,7 +23383,7 @@
       "digest": "2abb711460e6238d851c30f3e4bdd87a2aa1887ee70575b3d3b7b25610673095",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:473"
+        "packages/llm/llm/src/types.ts:500"
       ]
     },
     {
@@ -23075,6 +23395,13 @@
       "digest": "2aed07493b1c65b6d00de5586da1e743cf501684b9ad43a1765fb4007d4ea456",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "2b893eded73cc9000e069a39d5ea1295e62ccffee9cf4920c376ab7f2f71a8e3",
+      "names": [],
+      "sources": [
+        "packages/llm/effort-policy/src/events.ts:24"
+      ]
     },
     {
       "digest": "2c4c21f19f426a58f2dac914e34313aa43f8408972de857a486d1f086d5adb6c",
@@ -23325,7 +23652,7 @@
       "digest": "3bec87f9e6ab3da03346f49923d3c51621debc0159df68605e543c3b2a026f90",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:471"
+        "packages/llm/llm/src/types.ts:498"
       ]
     },
     {
@@ -23403,6 +23730,11 @@
       "sources": []
     },
     {
+      "digest": "42d10eb6abdb2b771b3be4ab203eb564fe0ffc03b5f5d69ae3a746ed70cb0fad",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "42e0916e0dda5f6d1e7bb05d8514717147c036a79c9f36085683469516c1fd3f",
       "names": [],
       "sources": []
@@ -23466,7 +23798,7 @@
         "packages/llm/llm/src/types.ts#StreamChunk"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:470"
+        "packages/llm/llm/src/types.ts:497"
       ]
     },
     {
@@ -23475,6 +23807,11 @@
       "sources": [
         "packages/llm/llm/src/assistant-stream.ts:44"
       ]
+    },
+    {
+      "digest": "4894fa6d276bff26d96aec10f80445da02a5dcbe3e63e359bd3132ee59721c00",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3",
@@ -23574,7 +23911,7 @@
         "packages/workflow/workflow/src/types.ts#WorkflowRunId"
       ],
       "sources": [
-        "packages/api/session-controller/src/types.ts:409",
+        "packages/api/session-controller/src/types.ts:411",
         "packages/attachment/attachment/src/brand.ts:6",
         "packages/compaction/compaction/src/brand.ts:4",
         "packages/core/session/src/types.ts:21",
@@ -23974,12 +24311,17 @@
       ]
     },
     {
+      "digest": "65f6a6e8bdce83766d022927b3a9ba4d05876b4aaa7e0c5f13648801e9286634",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "66ba70f6f068da443f969a0b947a013c3addd776b9b60a0a393759c19825e9a2",
       "names": [
         "packages/llm/llm/src/types.ts#ToolSchema"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:491"
+        "packages/llm/llm/src/types.ts:518"
       ]
     },
     {
@@ -24033,12 +24375,22 @@
       "sources": []
     },
     {
+      "digest": "69d81cfb2452d110c8f47a8d5a8b1a98e4bcae78443a92b009a20e32160300d4",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "6ab45ac76839722df912f3ba50f1c6b41f2d614bde11f1aabfae04117ccdc80d",
       "names": [],
       "sources": []
     },
     {
       "digest": "6b23ed9ce1b397e602788dbe033693bf97642a69e23fcab1cc45bf6f13b6d619",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "6bb7920e95ffc9e7abc623ec2b2e894b79cee63375b5b8f3cf1fc947a344cd29",
       "names": [],
       "sources": []
     },
@@ -24078,6 +24430,11 @@
       ]
     },
     {
+      "digest": "6c789ebc07330133c899b397fe52f7ad5696b6c1558c91f30507dceca6f37581",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "6ccb6bc423fb3952458abf9c1b1c3284208b7e660344b612cc55da773d61afe4",
       "names": [],
       "sources": []
@@ -24096,7 +24453,7 @@
       "digest": "6dacb1584f2bfbe209dc6b6f578d51da6d55595f64d0e63c727c98f359278def",
       "names": [],
       "sources": [
-        "packages/api/session-controller/src/types.ts:418"
+        "packages/api/session-controller/src/types.ts:420"
       ]
     },
     {
@@ -24160,6 +24517,11 @@
       "sources": []
     },
     {
+      "digest": "71592eac6c7cac71cd2b4b05f36d3e3927bb79ccb2414bdbace6188519eef903",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "7180844e1066230c5e891f1b9ccd942423b0fe48aac6ded7eef2a285b288a732",
       "names": [],
       "sources": []
@@ -24187,6 +24549,11 @@
     },
     {
       "digest": "7382c4fc95fe8c5db65ca4d9da572b115d0dbb818b7f32c22ab040318ffbb4bc",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "741f528fdc9b43aa19014341cee73ab0dbebce66ffce633d97cb3755d1fa92a1",
       "names": [],
       "sources": []
     },
@@ -24501,7 +24868,7 @@
       "digest": "88a610b831be6d92612a464be5c7d0b88ec24d97bd299837bf74bf7672183c9a",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:474"
+        "packages/llm/llm/src/types.ts:501"
       ]
     },
     {
@@ -24570,6 +24937,11 @@
       "sources": [
         "packages/llm/llm/src/types.ts:115"
       ]
+    },
+    {
+      "digest": "8e701c4a07c0e775aa8878b69235d14da86c6dc240623d27bf66a29bf2fb4abd",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "8e8155594e07812356b67d732196dda894b0f9c91a5969d51612cf490b0a016d",
@@ -24652,7 +25024,7 @@
       "digest": "95080295115fbd83544520ba247b68a03790131f6a2eac323d388758cb542f65",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:472"
+        "packages/llm/llm/src/types.ts:499"
       ]
     },
     {
@@ -24762,6 +25134,15 @@
       "sources": []
     },
     {
+      "digest": "9b6e67d76d1d34b53f543987f927d78771a74523647c37d70f9799cc64d4bf11",
+      "names": [
+        "packages/subagent/subagent/src/delegated-usage.ts#DelegatedUsageRoute"
+      ],
+      "sources": [
+        "packages/subagent/subagent/src/delegated-usage.ts:18"
+      ]
+    },
+    {
       "digest": "9c001ecb5e1d3c3894410db2a1e383842e5f8454fb52182338686158abc1b3ee",
       "names": [],
       "sources": [
@@ -24797,6 +25178,11 @@
       "sources": [
         "packages/experimental/webhook/src/types.ts:74"
       ]
+    },
+    {
+      "digest": "9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "9f65c43e340bba31cdc0fc37bd93ccb68d5e9b36f47a68c207e95a8e68620a5d",
@@ -24852,7 +25238,7 @@
       "digest": "a2b49331716ba0a7078b026d145306a70eae64b7313c3e6204bd931e75ec3bb1",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:477"
+        "packages/llm/llm/src/types.ts:504"
       ]
     },
     {
@@ -24867,6 +25253,11 @@
     },
     {
       "digest": "a3c6f1ea38e9a61d7a9706057ba65aabe02dfe6d9dd90d4736aa62325d874531",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "a3d21eaedffb5907fdb6c98fa7ef51b1a508543878c1c06d2b76e05ea44e974e",
       "names": [],
       "sources": []
     },
@@ -25289,6 +25680,15 @@
       "sources": []
     },
     {
+      "digest": "b95fd1c6cd83fa3d3258a6347203127bb619fd86f231b0bb770f705d9fcdb09d",
+      "names": [
+        "packages/subagent/subagent/src/delegated-usage.ts#SubagentUsageEvent"
+      ],
+      "sources": [
+        "packages/subagent/subagent/src/delegated-usage.ts:37"
+      ]
+    },
+    {
       "digest": "b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26",
       "names": [],
       "sources": []
@@ -25507,6 +25907,11 @@
       ]
     },
     {
+      "digest": "ce29bbda71d10fc5c63e4ffa9807314f242a0a87ad7f44c584be1b81d0a92d5b",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "cef171adf021a1867d244618a3dbbaafc22beb17c7f3df3ee203393271c8c6f6",
       "names": [
         "packages/core/tools/src/types.ts#PtcDispatchEventData"
@@ -25538,7 +25943,7 @@
       "digest": "d4b739491689cc6bb13d07ffac1a32239875abda364c0d5edd8f74faf5e9c00d",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:475"
+        "packages/llm/llm/src/types.ts:502"
       ]
     },
     {
@@ -25623,6 +26028,11 @@
       "sources": []
     },
     {
+      "digest": "db973d3748efe232f21100e13ea6903ac550cd6626e5f0f9b31a705665fc7d90",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "dba54c09c6e7aafc9acbed7792ecc920d99f92d0784aeeed10af55f7fe0bc8cd",
       "names": [],
       "sources": [
@@ -25638,6 +26048,15 @@
       "digest": "dd2780e7e07684332f7a9ab047237798d260e7eaffb1321cb38eca695d184c3d",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "dd4af9f8a1d5086e3f9cab20dfd63cbd6afb6dce5744f77da0a645abd2b99c26",
+      "names": [
+        "packages/llm/effort-policy/src/events.ts#EffortDecisionRecord"
+      ],
+      "sources": [
+        "packages/llm/effort-policy/src/events.ts:35"
+      ]
     },
     {
       "digest": "dd5ee8762bd8a14b6c6bffedd1753e4e78505bb0f9ea1621018d03a54eef59d5",
@@ -25946,7 +26365,7 @@
       "digest": "f1a96afe7503ac1817de769cd0ba13d9b80111c7034c50106b3344ecc14cc515",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:476"
+        "packages/llm/llm/src/types.ts:503"
       ]
     },
     {
@@ -25974,7 +26393,7 @@
         "packages/llm/llm/src/types.ts#SystemPromptUpdate"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:414"
+        "packages/llm/llm/src/types.ts:441"
       ]
     },
     {

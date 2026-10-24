@@ -1,9 +1,11 @@
 // Shared time-label helpers for user/assistant IconActions rows.
 
+import { clock12Parts } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from '@deepseek-ai/dsh-client-ui-slots'
 
-/** The date-template share of the conversation dictionary the clock consumes. */
-export type ClockTranslate = Translate<'clock.md' | 'clock.ymd'>
+/** The date-and-clock share of the conversation dictionary the clock consumes. */
+export type ClockTranslate =
+  | Translate<'clock.md' | 'clock.ymd' | 'clock.time' | 'clock.am' | 'clock.pm'>
 
 /** The elapsed-duration share of the conversation dictionary. */
 export type RunDurationTranslate =
@@ -11,10 +13,6 @@ export type RunDurationTranslate =
 
 /** Refresh interval for whole-second live run clocks. */
 export const LIVE_RUN_CLOCK_INTERVAL_MS = 1000
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0')
-}
 
 /**
  * Local calendar-day epoch (ms at local midnight) for an instant.
@@ -75,18 +73,23 @@ export function formatTokensPerSecond(tps: number): string {
 
 /**
  * Compact local timestamp for message IconActions. Same calendar day →
- * `HH:mm`; earlier this year → the `clock.md` date template + clock; other
- * years → the `clock.ymd` template + clock. Pure: the date templates arrive
- * through the caller's locale seat.
+ * `h:mm AM/PM`; earlier this year → the `clock.md` date template + clock; other
+ * years → the `clock.ymd` template + clock. Pure: the date templates and the
+ * meridiem words arrive through the caller's locale seat, which also owns the
+ * meridiem's placement in the clock template.
  * @param time - Unix epoch ms from the source session event.
- * @param t - translate seat supplying the `clock.md` / `clock.ymd` templates.
+ * @param t - translate seat supplying the clock templates and meridiem words.
  * @param now - Reference instant for the day/year cut (defaults to wall clock).
- * @returns Date-aware clock string (24-hour, zero-padded time).
+ * @returns Date-aware clock string (12-hour local time).
  */
 export function formatMessageClock(time: number, t: ClockTranslate, now: number = Date.now()): string {
   const d = new Date(time)
   const n = new Date(now)
-  const clock = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+  const parts = clock12Parts(time)
+  const clock = t('clock.time', {
+    h: parts.h, mm: parts.mm,
+    ampm: t(parts.ampm === 'am' ? 'clock.am' : 'clock.pm'),
+  })
   if (
     d.getFullYear() === n.getFullYear()
     && d.getMonth() === n.getMonth()

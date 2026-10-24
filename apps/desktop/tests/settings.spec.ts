@@ -22,8 +22,23 @@ it('creates a discoverable default file on first launch without touching other p
   const { userData, path } = fixture()
   rmSync(join(userData, 'desktop'), { recursive: true })
   writeFileSync(join(userData, 'keybindings.json'), 'existing shortcuts\n')
-  expect(readDesktopSettings(userData)).toEqual({ updates: { allowTestAuthPopupWindow: false } })
-  expect(readFileSync(path, 'utf8')).toBe('{\n  "updates": {\n    "allowTestAuthPopupWindow": false\n  }\n}\n')
+  expect(readDesktopSettings(userData)).toEqual({
+    updates: { allowTestAuthPopupWindow: false },
+    notifications: { enabled: true, taskComplete: true, approval: true, approvalSound: true, taskCompleteSound: false },
+  })
+  expect(readFileSync(path, 'utf8')).toBe(`{
+  "updates": {
+    "allowTestAuthPopupWindow": false
+  },
+  "notifications": {
+    "enabled": true,
+    "taskComplete": true,
+    "approval": true,
+    "approvalSound": true,
+    "taskCompleteSound": false
+  }
+}
+`)
   expect(readFileSync(join(userData, 'keybindings.json'), 'utf8')).toBe('existing shortcuts\n')
 })
 
@@ -81,3 +96,39 @@ it('continues with defaults even when warning output fails', () => {
   expect(readDesktopSettings(userData).updates.allowTestAuthPopupWindow).toBe(false)
   expect(readFileSync(path, 'utf8')).toBe('{')
 })
+
+it('loads explicit notification preferences without rewriting the document', () => {
+  const { userData, path } = fixture()
+  const raw = JSON.stringify({
+    notifications: { enabled: false, approval: true, approvalSound: false, taskComplete: true, taskCompleteSound: true },
+  })
+  writeFileSync(path, raw)
+  expect(readDesktopSettings(userData).notifications).toEqual({
+    enabled: false, taskComplete: true, approval: true, approvalSound: false, taskCompleteSound: true,
+  })
+  expect(readFileSync(path, 'utf8')).toBe(raw)
+})
+
+it('defaults older documents with partial notification preferences', () => {
+  const { userData, path } = fixture()
+  writeFileSync(path, '{"notifications": {"enabled": false}}')
+  expect(readDesktopSettings(userData).notifications).toEqual({
+    enabled: false, taskComplete: true, approval: true, approvalSound: true, taskCompleteSound: false,
+  })
+  expect(readFileSync(path, 'utf8')).toBe('{"notifications": {"enabled": false}}')
+})
+
+it.each(['{"notifications":null}', '{"notifications":[]}', '{"notifications":{"enabled":"yes"}}',
+  '{"notifications":{"taskComplete":1}}', '{"notifications":{"approval":null}}',
+  '{"notifications":{"approvalSound":"false"}}', '{"notifications":{"taskCompleteSound":0}}'])(
+  'reports invalid notification settings and falls back to defaults: %s',
+  (raw) => {
+    const { userData, path } = fixture()
+    writeFileSync(path, raw)
+    expect(readDesktopSettings(userData).notifications).toEqual({
+      enabled: true, taskComplete: true, approval: true, approvalSound: true, taskCompleteSound: false,
+    })
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(path), expect.any(Error))
+    expect(readFileSync(path, 'utf8')).toBe(raw)
+  },
+)

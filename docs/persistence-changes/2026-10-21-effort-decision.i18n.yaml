@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-10-21-effort-decision.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-10-21-effort-decision.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-10-21-effort-decision:
+  en: 8e88e47f084f1896
+  zh: 1ffdb709df22cf86
+/2026-10-21-effort-decision/summary:
+  en: b1887e6bab6c2c0b
+  zh: 3f6b69929de0c66f
+/2026-10-21-effort-decision/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-10-21-effort-decision/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-10-21-effort-decision/compatibility:
+  en: cc52fd995ee8be2b
+  zh: d671ca98158f7604
+/2026-10-21-effort-decision/verification:
+  en: dce750663206ec2e
+  zh: 20910f1e77d25acd
+/2026-10-21-effort-decision/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

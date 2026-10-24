@@ -409,7 +409,8 @@ function timeButton(dictionary: typeof en | typeof zh = en): HTMLButtonElement {
 
 /** One column of the open clock panel, by the row copy that names it. */
 function clockColumn(
-  key: 'timing.hour' | 'timing.minute' | 'timing.second', dictionary: typeof en | typeof zh = en,
+  key: 'timing.hour' | 'timing.minute' | 'timing.second' | 'timing.meridiem',
+  dictionary: typeof en | typeof zh = en,
 ): HTMLElement {
   return screen.getByRole('listbox', { name: dictionary[key] })
 }
@@ -420,14 +421,20 @@ function clockColumn(
  * @param minute - minute option text.
  * @param second - second option text, or undefined for a panel without the seconds column.
  * @param dictionary - active locale.
+ * @param meridiem - half-day to pick after the clock columns, or undefined to keep the staged one.
  * @returns the trigger's text once the picks are staged.
  */
 function chooseClock(
-  hour: string, minute: string, second: string | undefined, dictionary: typeof en | typeof zh = en,
+  hour: string, minute: string, second: string | undefined,
+  dictionary: typeof en | typeof zh = en,
+  meridiem?: 'timing.am' | 'timing.pm',
 ): string {
-  const picks: readonly (readonly ['timing.hour' | 'timing.minute' | 'timing.second', string])[] = [
+  const picks: readonly (readonly [
+    'timing.hour' | 'timing.minute' | 'timing.second' | 'timing.meridiem', string,
+  ])[] = [
     ['timing.hour', hour], ['timing.minute', minute],
     ...second === undefined ? [] : [['timing.second', second] as const],
+    ...meridiem === undefined ? [] : [['timing.meridiem', dictionary[meridiem]] as const],
   ]
   for (const [key, value] of picks) {
     fireEvent.click(within(clockColumn(key, dictionary)).getByRole('option', { name: value }))
@@ -441,13 +448,16 @@ function chooseClock(
  * @param minute - minute option text.
  * @param second - second option text, or undefined for a panel without the seconds column.
  * @param dictionary - active locale.
+ * @param meridiem - half-day to pick after the clock columns, or undefined to keep the staged one.
  * @returns the trigger's text once the picks are staged.
  */
 function chooseTime(
-  hour: string, minute: string, second: string | undefined, dictionary: typeof en | typeof zh = en,
+  hour: string, minute: string, second: string | undefined,
+  dictionary: typeof en | typeof zh = en,
+  meridiem?: 'timing.am' | 'timing.pm',
 ): string {
   if (screen.queryByRole('listbox', { name: dictionary['timing.hour'] }) === null) fireEvent.click(timeButton(dictionary))
-  return chooseClock(hour, minute, second, dictionary)
+  return chooseClock(hour, minute, second, dictionary, meridiem)
 }
 
 /**
@@ -867,8 +877,8 @@ describe('Task manager catalog', () => {
   })
 
   it.each([
-    { dictionary: en, frequency: 'Daily at 23:00' },
-    { dictionary: zh, frequency: '每天 23:00' },
+    { dictionary: en, frequency: 'Daily at 11:00 PM' },
+    { dictionary: zh, frequency: '每天 下午11:00' },
   ])('classifies daily wall-clock rules as repeating and omits the host zone: $frequency', ({ dictionary, frequency }) => {
     mount({ records: [...records, daily] }, dictionary)
     const list = screen.getByRole('list', { name: dictionary['list.label'] })
@@ -1568,7 +1578,7 @@ describe('Task manager details', () => {
     const locale = en['time.locale']
     const ruleZone = new Intl.DateTimeFormat(locale, {
       timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: false,
+      hour: 'numeric', minute: '2-digit', hour12: true,
     }).format(Date.parse(stored.scheduledAt))
     const device = absoluteNextRun(stored.scheduledAt, en)
     // The reader compares the target with their own clock, so the stamp names the
@@ -1730,17 +1740,17 @@ describe('Task detail rule header and run-time card', () => {
     const date = dateButton()
     const time = timeButton()
     // Both rows show the stored value itself — the date in the design's slashed
-    // form and one 24-hour clock — and open their own picker instead of a native
+    // form and one 12-hour clock — and open their own picker instead of a native
     // control. Only the exposed text slashes the date: the calendar compares and
     // the save submits the ISO text the draft holds.
     expect(date.textContent).toBe('2026/10/01')
     expect(date.getAttribute('aria-label')).toBe(en['timing.date'])
     expect(date.getAttribute('aria-haspopup')).toBe('dialog')
     // A one-shot target stores only its instant, so its rows start in this
-    // device's zone: 09:00:00Z reads as 17:00:00 here.
-    expect(time.textContent).toBe('17:00:00')
+    // device's zone: the staged 17:00:00 clock shows as 5:00 PM.
+    expect(time.textContent).toBe('5:00 PM')
     expect(time.getAttribute('aria-haspopup')).toBe('dialog')
-    chooseTime('10', '25', '30')
+    chooseTime('10', '25', '30', en, 'timing.am')
     expect(h.updateTiming).not.toHaveBeenCalled()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -1793,7 +1803,7 @@ describe('Task detail rule header and run-time card', () => {
     const stored: ScheduleCatalogEntry = { ...at, scheduledAt: '2026-10-01T09:00:15.500Z' }
     const h = mount({ records: [stored] })
     fireEvent.click(screen.getByRole('button', { name: 'Review release' }))
-    expect(timeButton().textContent).toBe('17:00:15')
+    expect(timeButton().textContent).toBe('5:00:15 PM')
     chooseZone('Europe/Berlin')
     expect(h.updateTiming).not.toHaveBeenCalled()
     clickSave()
@@ -2340,7 +2350,7 @@ describe('Task detail rule header and run-time card', () => {
     const h = mount({ records: [stored] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     const time = timeButton()
-    expect(time.textContent).toBe('23:00:15')
+    expect(time.textContent).toBe('11:00:15 PM')
     chooseZone('Europe/Berlin')
     expect(h.updateTiming).not.toHaveBeenCalled()
     clickSave()
@@ -2351,15 +2361,16 @@ describe('Task detail rule header and run-time card', () => {
   })
 
   it.each([
-    ['a daily rule', daily, 'Daily weather', '23:00:00'],
-    ['a weekly rule', weekly, 'Weekly review', '09:30:00'],
-  ] as const)('shows %s time as one 24-hour clock without milliseconds', (_case, task, row, shown) => {
+    ['a daily rule', daily, 'Daily weather', '11:00 PM'],
+    ['a weekly rule', weekly, 'Weekly review', '9:30 AM'],
+  ] as const)('shows %s time as one 12-hour clock without milliseconds', (_case, task, row, shown) => {
     mount({ records: [task] })
     fireEvent.click(screen.getByRole('button', { name: row }))
     expect(timeButton().textContent).toBe(shown)
     expect(timeButton().textContent).not.toContain('.')
-    // Both locales read the same 24-hour clock: no AM/PM marker anywhere.
-    expect(timeButton().textContent).not.toMatch(/[AP]M/)
+    // Both locales' stored clocks read through this card's own 12-hour text:
+    // the shown hour never stays the stored 24-hour one.
+    expect(timeButton().textContent).toMatch(/ [AP]M$/)
   })
 
   it('shows a one-shot date and time as separate whole-second rows', () => {
@@ -2369,7 +2380,7 @@ describe('Task detail rule header and run-time card', () => {
     // row shows a whole-second clock. Both are read-only triggers that open their
     // own picker.
     expect(dateButton().textContent).toBe('2026/10/01')
-    expect(timeButton().textContent).toBe('17:00:00')
+    expect(timeButton().textContent).toBe('5:00 PM')
     expect(timeButton().textContent).not.toContain('.')
     expect(screen.queryByRole('textbox', { name: en['timing.date'] })).toBeNull()
     expect(screen.queryByRole('textbox', { name: en['timing.time'] })).toBeNull()
@@ -2379,7 +2390,7 @@ describe('Task detail rule header and run-time card', () => {
     const stored: ScheduleCatalogEntry = { ...daily, time: '23:00:15.500' }
     const h = mount({ records: [stored] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
-    chooseTime('10', '23', '45')
+    chooseTime('10', '23', '45', en, 'timing.am')
     expect(h.updateTiming).not.toHaveBeenCalled()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -2389,27 +2400,27 @@ describe('Task detail rule header and run-time card', () => {
   })
 
   it.each([
-    ['daily', daily, 'Daily weather', '2026-10-02T15:00:00.000Z', {
+    ['daily', daily, 'Daily weather', '11:00 PM', '2026-10-02T15:00:00.000Z', {
       kind: 'daily', daily: { time: '10:23:45', time_zone: 'Asia/Shanghai' },
     }],
-    ['weekly', weekly, 'Weekly review', '2026-10-12T01:30:00.000Z', {
+    ['weekly', weekly, 'Weekly review', '9:30 AM', '2026-10-12T01:30:00.000Z', {
       kind: 'weekly', weekly: { time: '10:23:45', time_zone: 'Asia/Shanghai', weekdays: [1, 3] },
     }],
   ] as const)(
     'keeps and commits an unsaved %s Time edit when an authoritative refresh changes the stored record',
-    async (_kind, task, row, rescheduled, change) => {
+    async (_kind, task, row, storedShown, rescheduled, change) => {
       const h = mount({ records: [task] })
       const refreshed: ScheduleCatalogEntry = { ...task, scheduledAt: rescheduled }
       const saved: ScheduleCatalogEntry = { ...refreshed, time: '10:23:45.000' }
       h.updateTiming.mockResolvedValue({ ok: true, value: { id: task.id, updated: true, record: saved } })
       fireEvent.click(screen.getByRole('button', { name: row }))
       const time = timeButton()
-      expect(time.textContent).toBe(task.time.slice(0, 8))
-      chooseTime('10', '23', '45')
+      expect(time.textContent).toBe(storedShown)
+      chooseTime('10', '23', '45', en, 'timing.am')
       // The Host re-anchors the stored record (its next occurrence advanced) while
       // the time edit is still unsaved.
       h.update({ records: [refreshed] })
-      expect(timeButton().textContent).toBe('10:23:45')
+      expect(timeButton().textContent).toBe('10:23:45 AM')
       expect(h.updateTiming).not.toHaveBeenCalled()
       clickSave()
       expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -2417,7 +2428,7 @@ describe('Task detail rule header and run-time card', () => {
       })
       h.update({ records: [saved] })
       await act(async () => { await h.updateTiming.mock.results[0]!.value })
-      expect(timeButton().textContent).toBe('10:23:45')
+      expect(timeButton().textContent).toBe('10:23:45 AM')
     },
   )
 
@@ -2470,8 +2481,8 @@ describe('Task detail rule header and run-time card', () => {
     chooseRepeat(en['rule.daily'])
     // The row reads back the stored rule's own frequency, which is the evidence
     // that the draft equals the stored values again.
-    expect(repeatButton().textContent).toContain('Daily at 23:00')
-    expect(timeButton().textContent).toBe('23:00:00')
+    expect(repeatButton().textContent).toContain('Daily at 11:00 PM')
+    expect(timeButton().textContent).toBe('11:00 PM')
     expect(zoneButton().textContent).toContain(displayedZone('Asia/Shanghai'))
     // A draft equal to the stored rule stages nothing.
     expect(saveFooter()).toBeNull()
@@ -2514,31 +2525,31 @@ describe('Task detail rule header and run-time card', () => {
     const h = mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     h.updateTiming.mockResolvedValue({ ok: false, error: new RemoteError('gateway/internal', 'Unavailable', {}) })
-    chooseTime('10', '23', '00')
+    chooseTime('10', '23', '00', en, 'timing.am')
     clickSave()
     await act(async () => { await h.updateTiming.mock.results[0]!.value })
     expect(screen.getByRole('alert').textContent).toBe(en['rule.error.unknown'])
     // The failed save keeps the draft so the user can retry it.
-    expect(timeButton().textContent).toBe('10:23:00')
+    expect(timeButton().textContent).toBe('10:23 AM')
   })
 
   it('keeps the shared wording for a controlled failure without an override', async () => {
     const h = mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     h.updateTiming.mockResolvedValue({ ok: true, value: { id: daily.id, updated: false, code: 'schedule_ended' } })
-    chooseTime('10', '23', '00')
+    chooseTime('10', '23', '00', en, 'timing.am')
     clickSave()
     await act(async () => { await h.updateTiming.mock.results[0]!.value })
     expect(screen.getByRole('alert').textContent).toBe(en['timing.inactive'])
-    expect(timeButton().textContent).toBe('10:23:00')
+    expect(timeButton().textContent).toBe('10:23 AM')
   })
 
   it('submits a Time row edit with the complete expected record', () => {
     const h = mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     const time = timeButton()
-    expect(time.textContent).toBe('23:00:00')
-    chooseTime('10', '23', '00')
+    expect(time.textContent).toBe('11:00 PM')
+    chooseTime('10', '23', '00', en, 'timing.am')
     expect(h.updateTiming).not.toHaveBeenCalled()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -2644,7 +2655,7 @@ describe('Task detail rule header and run-time card', () => {
     h.update({ records: [seeded] })
     await act(async () => { await h.updateTiming.mock.results[0]!.value })
     expect(weekdayPressed(weekdayGroup())).toEqual(['false', 'false', 'false', 'true', 'false', 'false', 'false'])
-    expect(timeButton().textContent).toBe('23:00:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     expect(zoneButton().textContent).toContain(displayedZone('Asia/Shanghai'))
   })
 
@@ -2654,10 +2665,10 @@ describe('Task detail rule header and run-time card', () => {
     // Both choices state the rule as one wall clock in one zone, so the switch
     // carries that pair instead of restating the committed instant in UTC.
     chooseRepeat(en['rule.weekly'])
-    expect(timeButton().textContent).toBe('23:00:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     expect(zoneButton().textContent).toContain(displayedZone('Asia/Shanghai'))
     chooseRepeat(en['rule.daily'])
-    expect(timeButton().textContent).toBe('23:00:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     expect(zoneButton().textContent).toContain(displayedZone('Asia/Shanghai'))
     // The stored kind is back and the carried pair matches it, so nothing is staged.
     expect(saveFooter()).toBeNull()
@@ -2670,7 +2681,7 @@ describe('Task detail rule header and run-time card', () => {
     mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     chooseRepeat(en['rule.weekly'])
-    expect(timeButton().textContent).toBe('23:00:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     expect(weekdayPressed(weekdayGroup())).toEqual(['false', 'false', 'false', 'true', 'false', 'false', 'false'])
   })
 
@@ -2684,7 +2695,7 @@ describe('Task detail rule header and run-time card', () => {
     const h = mount({ records: [eastDaily] })
     fireEvent.click(screen.getByRole('button', { name: eastDaily.title }))
     chooseRepeat(en['rule.weekly'])
-    expect(timeButton().textContent).toBe('01:00:00')
+    expect(timeButton().textContent).toBe('1:00 AM')
     expect(zoneButton().textContent).toContain(displayedZone('Asia/Shanghai'))
     expect(weekdayPressed(weekdayGroup())).toEqual(['false', 'false', 'false', 'true', 'false', 'false', 'false'])
     clickSave()
@@ -2700,7 +2711,7 @@ describe('Task detail rule header and run-time card', () => {
     chooseRepeat(en['rule.weekly'])
     // A choice without a clock row has no pair to carry, so the weekly choice
     // seeds the occurrence's clock in the device zone and its weekday there.
-    expect(timeButton().textContent).toBe('17:30:00')
+    expect(timeButton().textContent).toBe('5:30 PM')
     expect(zoneButton().textContent).toContain(displayedZone(DEVICE_ZONE))
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -2769,7 +2780,7 @@ describe('Task detail rule header and run-time card', () => {
     expect(within(card).getByRole('button', { name: new RegExp(`^${dictionary['rule.repeat']}`) }).textContent)
       .toContain(frequency)
     expect(weekdayPressed(weekdayGroup(dictionary))).toEqual(['true', 'false', 'true', 'false', 'false', 'false', 'false'])
-    expect(timeButton(dictionary).textContent).toBe('09:30:00')
+    expect(timeButton(dictionary).textContent).toBe(dictionary === en ? '9:30 AM' : '上午9:30')
     expect(zoneButton(dictionary).textContent).toContain(displayedZone('Asia/Shanghai', dictionary))
   })
 
@@ -2801,10 +2812,10 @@ describe('Task detail rule header and run-time card', () => {
     const frequency = cronFrequencyButton(dictionary)
     expect(frequency.textContent).toContain(dictionary['cronForm.daily'])
     // The choice seeds the committed occurrence's clock in the device zone.
-    expect(timeButton(dictionary).textContent).toBe('23:00')
+    expect(timeButton(dictionary).textContent).toBe(dictionary === en ? '11:00 PM' : '下午11:00')
     // The described hint carries the sentence the staged expression parses to.
     expect(document.getElementById(frequency.getAttribute('aria-describedby')!)?.textContent)
-      .toBe(dictionary === en ? 'Every day at 23:00' : '每天 23:00')
+      .toBe(dictionary === en ? 'Every day at 11:00 PM' : '每天 下午11:00')
     expect(saveFooter()).not.toBeNull()
   })
 
@@ -2831,7 +2842,7 @@ describe('Task detail rule header and run-time card', () => {
     expect(hint.className).toBe(css.ruleHint)
     expect(row.contains(hint)).toBe(false)
     expect(hint.parentElement).toBe(rows.parentElement)
-    expect(hint.textContent).toBe(dictionary === en ? 'Every day at 09:30, 15:30' : '每天 09:30、15:30')
+    expect(hint.textContent).toBe(dictionary === en ? 'Every day at 9:30 AM, 3:30 PM' : '每天 上午9:30、下午3:30')
     // The zone row keeps no hint of its own: its picker names the zone it states,
     // so the row points at nothing.
     expect(zoneButton(dictionary).getAttribute('aria-describedby')).toBeNull()
@@ -2855,7 +2866,7 @@ describe('Task detail rule header and run-time card', () => {
     mount({ records: [cron] })
     fireEvent.click(screen.getByRole('button', { name: cron.prompt }))
     chooseRepeat(en['rule.daily'])
-    expect(timeButton().textContent).toBe('09:00:00')
+    expect(timeButton().textContent).toBe('9:00 AM')
     expect(zoneButton().textContent).toContain(displayedZone(DEVICE_ZONE))
   })
 
@@ -2895,7 +2906,7 @@ describe('Task detail rule header and run-time card', () => {
     // The raw choice is sticky, so the restored expression stays editable text.
     expect(screen.getByLabelText<HTMLInputElement>(en['rule.cronLabel']).value).toBe('0 9 * * 1-5')
     const card = screen.getByRole('region', { name: en['rule.title'] })
-    expect(within(card).getByText('Mon–Fri at 09:00')).toBeDefined()
+    expect(within(card).getByText('Mon–Fri at 9:00 AM')).toBeDefined()
     expect(saveFooter()).toBeNull()
   })
 
@@ -2965,8 +2976,8 @@ describe('Task detail rule header and run-time card', () => {
     expect(within(card).queryByLabelText(dictionary['rule.cronLabel'])).toBeNull()
     expect(cronFrequencyButton(dictionary).textContent).toContain(dictionary['cronForm.weekly'])
     expect(weekdayPressed(weekdayGroup(dictionary))).toEqual(['true', 'true', 'true', 'true', 'true', 'false', 'false'])
-    expect(timeButton(dictionary).textContent).toBe('09:00')
-    expect(within(card).getByText(dictionary === en ? 'Mon–Fri at 09:00' : '周一至周五 09:00')).toBeDefined()
+    expect(timeButton(dictionary).textContent).toBe(dictionary === en ? '9:00 AM' : '上午9:00')
+    expect(within(card).getByText(dictionary === en ? 'Mon–Fri at 9:00 AM' : '周一至周五 上午9:00')).toBeDefined()
     expect(zoneButton(dictionary).textContent).toContain(displayedZone('Asia/Shanghai', dictionary))
     const detail = screen.getByRole('complementary', { name: dictionary['detail.label'] })
     expect(nextRunTime(detail)?.textContent).toBe(absoluteNextRun(cron.scheduledAt, dictionary))
@@ -2996,7 +3007,7 @@ describe('Task detail rule header and run-time card', () => {
     fireEvent.click(within(weekdayGroup()).getByRole('button', { name: weekdayName('frequency.weekday.6') }))
     expect(weekdayPressed(weekdayGroup())).toEqual(['true', 'true', 'true', 'true', 'true', 'true', 'false'])
     fireEvent.click(within(weekdayGroup()).getByRole('button', { name: weekdayName('frequency.weekday.1') }))
-    expect(screen.getByText('Tue–Sat at 09:00')).toBeDefined()
+    expect(screen.getByText('Tue–Sat at 9:00 AM')).toBeDefined()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: cron.sessionId, id: cron.id, expected: timingSnapshot(cron),
@@ -3013,12 +3024,13 @@ describe('Task detail rule header and run-time card', () => {
     expect(saveFooter()).toBeNull()
   })
 
-  it('stages a picked clock into the weekly cron expression from its two columns', () => {
+  it('stages a picked clock into the weekly cron expression from its three columns', () => {
     const h = mount({ records: [cron] })
     fireEvent.click(screen.getByRole('button', { name: cron.prompt }))
-    // A cron expression has no seconds field, so its panel offers no seconds column.
-    expect(chooseTime('10', '45', undefined)).toBe('10:45')
-    expect(screen.getByText('Mon–Fri at 10:45')).toBeDefined()
+    // A cron expression has no seconds field, so its panel offers no seconds
+    // column; the hour, minute, and half-day columns remain.
+    expect(chooseTime('10', '45', undefined)).toBe('10:45 AM')
+    expect(screen.getByText('Mon–Fri at 10:45 AM')).toBeDefined()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: cron.sessionId, id: cron.id, expected: timingSnapshot(cron),
@@ -3078,8 +3090,8 @@ describe('Task detail rule header and run-time card', () => {
     expect(within(group).getAllByRole('button')).toHaveLength(31)
     expect(datesPressed(group)).toEqual([1, 15])
     expect(within(group).getByRole('button', { name: dateName(15, dictionary) }).getAttribute('aria-pressed')).toBe('true')
-    expect(timeButton(dictionary).textContent).toBe('08:30')
-    expect(within(card).getByText(dictionary === en ? 'Day 1, 15 of every month at 08:30' : '每月 1、15 日 08:30')).toBeDefined()
+    expect(timeButton(dictionary).textContent).toBe(dictionary === en ? '8:30 AM' : '上午8:30')
+    expect(within(card).getByText(dictionary === en ? 'Day 1, 15 of every month at 8:30 AM' : '每月 1、15 日 上午8:30')).toBeDefined()
   })
 
   it('regenerates the monthly cron expression from date toggles and submits it', () => {
@@ -3090,7 +3102,7 @@ describe('Task detail rule header and run-time card', () => {
     expect(datesPressed(dateGroup())).toEqual([1, 15, 20])
     fireEvent.click(within(dateGroup()).getByRole('button', { name: dateName(1) }))
     expect(datesPressed(dateGroup())).toEqual([15, 20])
-    expect(screen.getByText('Day 15, 20 of every month at 08:30')).toBeDefined()
+    expect(screen.getByText('Day 15, 20 of every month at 8:30 AM')).toBeDefined()
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: cron.sessionId, id: cron.id, expected: timingSnapshot(stored),
@@ -3115,7 +3127,7 @@ describe('Task detail rule header and run-time card', () => {
     // device zone, so the switch selects that date and keeps the clock.
     chooseCronShape(en['cronForm.monthly'])
     expect(datesPressed(dateGroup())).toEqual([1])
-    expect(timeButton().textContent).toBe('23:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: daily.sessionId, id: daily.id, expected: timingSnapshot(daily),
@@ -3136,9 +3148,9 @@ describe('Task detail rule header and run-time card', () => {
     // occurrence, 2026-10-01T15:00Z, a Thursday at 23:00 in the device zone.
     chooseCronShape(en['cronForm.weekly'])
     expect(weekdayPressed(weekdayGroup())).toEqual(['false', 'false', 'false', 'true', 'false', 'false', 'false'])
-    expect(timeButton().textContent).toBe('23:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     chooseCronShape(en['cronForm.daily'])
-    expect(timeButton().textContent).toBe('23:00')
+    expect(timeButton().textContent).toBe('11:00 PM')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: daily.sessionId, id: daily.id, expected: timingSnapshot(daily),
@@ -3219,7 +3231,7 @@ describe('Task detail rule header and run-time card', () => {
     })
     // The failed save keeps the staged daily choice and its rows.
     expect(repeat.hasAttribute('disabled')).toBe(false)
-    expect(timeButton().textContent).toBe('17:30:00')
+    expect(timeButton().textContent).toBe('5:30 PM')
     expect(zoneButton().textContent).toContain(displayedZone(DEVICE_ZONE))
     expect(screen.getByRole('alert').textContent).toBe(en['rule.error.conflict'])
   })
@@ -3252,7 +3264,7 @@ describe('Task detail rule header and run-time card', () => {
     await act(async () => { await h.updateTiming.mock.results[0]!.value })
     // A failed save keeps the draft so the user can retry it.
     expect(zoneButton(dictionary).textContent).toContain(displayedZone('Europe/Berlin', dictionary))
-    expect(timeButton(dictionary).textContent).toBe('23:00:00')
+    expect(timeButton(dictionary).textContent).toBe(dictionary === en ? '11:00 PM' : '下午11:00')
     expect(screen.getByRole('alert').textContent).toBe(dictionary['rule.error.conflict'])
   })
 
@@ -3261,15 +3273,15 @@ describe('Task detail rule header and run-time card', () => {
     const h = mount({ records: [stored] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     h.updateTiming.mockResolvedValue({ ok: true, value: { id: daily.id, updated: false, code: 'schedule_conflict' } })
-    chooseTime('10', '23', '00')
+    chooseTime('10', '23', '00', en, 'timing.am')
     clickSave()
     await act(async () => { await h.updateTiming.mock.results[0]!.value })
     // The failed save keeps the draft and its localized error.
-    expect(timeButton().textContent).toBe('10:23:00')
+    expect(timeButton().textContent).toBe('10:23 AM')
     expect(screen.getByRole('alert').textContent).toBe(en['rule.error.conflict'])
     // Cancel restores the stored rule, whose untouched millisecond value the next save keeps.
     clickCancel()
-    expect(timeButton().textContent).toBe('23:00:15')
+    expect(timeButton().textContent).toBe('11:00:15 PM')
     expect(saveFooter()).toBeNull()
     chooseZone('Europe/Berlin')
     clickSave()
@@ -3283,11 +3295,11 @@ describe('Task detail rule header and run-time card', () => {
     const h = mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     h.updateTiming.mockRejectedValue(new Error('transport down'))
-    chooseTime('10', '23', '00')
+    chooseTime('10', '23', '00', en, 'timing.am')
     clickSave()
     const attempt = h.updateTiming.mock.results[0]?.value as Promise<unknown> | undefined
     await act(async () => { await attempt?.catch(() => {}) })
-    expect(timeButton().textContent).toBe('10:23:00')
+    expect(timeButton().textContent).toBe('10:23 AM')
     expect(screen.getByRole('alert').textContent).toBe(en['rule.error.unknown'])
   })
 
@@ -3380,8 +3392,8 @@ describe('Task detail rule header and run-time card', () => {
   })
 
   it.each([
-    [en, 'Daily at 23:00'],
-    [zh, '每天 23:00'],
+    [en, 'Daily at 11:00 PM'],
+    [zh, '每天 下午11:00'],
   ] as const)('omits a stored zone equal to the host zone from the frequency line', (dictionary, expected) => {
     mount({ records: [daily] }, dictionary)
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
@@ -3393,8 +3405,8 @@ describe('Task detail rule header and run-time card', () => {
     mount({ records: [{ ...daily, timeZone: 'America/New_York' }] }, dictionary)
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     const expected = dictionary === en
-      ? `Daily at 23:00 (${displayedZone('America/New_York', dictionary)})`
-      : `每天 23:00（${displayedZone('America/New_York', dictionary)}）`
+      ? `Daily at 11:00 PM (${displayedZone('America/New_York', dictionary)})`
+      : `每天 下午11:00（${displayedZone('America/New_York', dictionary)}）`
     expect(repeatButton(dictionary).textContent).toContain(expected)
     expect(repeatButton(dictionary).textContent).not.toContain('America/New_York')
   })
@@ -3402,7 +3414,7 @@ describe('Task detail rule header and run-time card', () => {
   it('localizes a stored zone outside the minimal fallback in the frequency line', () => {
     mount({ records: [{ ...daily, timeZone: 'Europe/Paris' }] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
-    expect(repeatButton().textContent).toContain(`Daily at 23:00 (${displayedZone('Europe/Paris')})`)
+    expect(repeatButton().textContent).toContain(`Daily at 11:00 PM (${displayedZone('Europe/Paris')})`)
   })
 
   it('renders the linked Session control in the strip on Rules only', () => {
@@ -3565,7 +3577,7 @@ describe('Task detail name and instruction edits', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review release' }))
     fireEvent.change(nameField(), { target: { value: 'Release audit' } })
     fireEvent.change(instructionField(), { target: { value: 'Audit every release' } })
-    chooseTime('10', '25', '30')
+    chooseTime('10', '25', '30', en, 'timing.am')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: at.sessionId, id: at.id, expected: timingSnapshot(at),
@@ -4129,27 +4141,30 @@ describe('Task manager deletion', () => {
 })
 
 describe('timing pickers', () => {
-  it('opens the three clock columns, marks the staged value, and stages one pick', () => {
+  it('opens the four clock columns, marks the staged value, and stages one pick', () => {
     const h = mount({ records: [daily] })
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     fireEvent.click(timeButton())
-    // Three columns of the padded clock range, each with one marked option.
+    // Four columns — the 12-scale hours, minutes, seconds, and the half-day —
+    // each with one marked option.
     for (const [key, count] of [
-      ['timing.hour', 24], ['timing.minute', 60], ['timing.second', 60],
+      ['timing.hour', 12], ['timing.minute', 60], ['timing.second', 60], ['timing.meridiem', 2],
     ] as const) {
       const column = clockColumn(key)
       expect(within(column).getAllByRole('option')).toHaveLength(count)
       expect(within(column).getAllByRole('option', { selected: true })).toHaveLength(1)
     }
-    expect(within(clockColumn('timing.hour')).getByRole('option', { selected: true }).textContent).toBe('23')
+    // The staged 24-hour value reads on the 12-hour display: 23:00:00 is 11 PM.
+    expect(within(clockColumn('timing.hour')).getByRole('option', { selected: true }).textContent).toBe('11')
     expect(within(clockColumn('timing.minute')).getByRole('option', { selected: true }).textContent).toBe('00')
     expect(within(clockColumn('timing.second')).getByRole('option', { selected: true }).textContent).toBe('00')
+    expect(within(clockColumn('timing.meridiem')).getByRole('option', { selected: true }).textContent).toBe(en['timing.pm'])
     // The staged value is brought into view as the panel opens.
     expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' })
 
     fireEvent.click(within(clockColumn('timing.second')).getByRole('option', { name: '30' }))
     // A pick stages the clock, marks it, and keeps the keyboard in the panel.
-    expect(timeButton().textContent).toBe('23:00:30')
+    expect(timeButton().textContent).toBe('11:00:30 PM')
     expect(within(clockColumn('timing.second')).getByRole('option', { name: '30' })).toBe(document.activeElement)
     expect(saveNotice()?.textContent).toBe(en['rule.unsaved'])
     expect(h.updateTiming).not.toHaveBeenCalled()
@@ -4160,7 +4175,7 @@ describe('timing pickers', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     fireEvent.click(timeButton())
     fireEvent.click(within(clockColumn('timing.minute')).getByRole('option', { name: '05' }))
-    expect(timeButton().textContent).toBe('23:05:00')
+    expect(timeButton().textContent).toBe('11:05 PM')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
       sessionId: daily.sessionId, id: daily.id, expected: timingSnapshot(daily),
@@ -4173,15 +4188,18 @@ describe('timing pickers', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     fireEvent.click(timeButton())
     const hour = clockColumn('timing.hour')
-    // Opening leaves the keyboard on the staged hour: the last one here.
-    fireEvent.keyDown(within(hour).getByRole('option', { name: '23' }), { key: 'ArrowDown' })
-    expect(document.activeElement).toBe(within(hour).getByRole('option', { name: '23' }))
-    fireEvent.keyDown(within(hour).getByRole('option', { name: '23' }), { key: 'ArrowUp' })
-    const walked = within(hour).getByRole('option', { name: '22' })
+    // Opening leaves the keyboard on the staged hour: 23:00 shows as 11 PM, one
+    // row before the column's end.
+    fireEvent.keyDown(within(hour).getByRole('option', { name: '11' }), { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(within(hour).getByRole('option', { name: '12' }))
+    fireEvent.keyDown(within(hour).getByRole('option', { name: '12' }), { key: 'ArrowUp' })
+    fireEvent.keyDown(within(hour).getByRole('option', { name: '11' }), { key: 'ArrowUp' })
+    const walked = within(hour).getByRole('option', { name: '10' })
     expect(document.activeElement).toBe(walked)
     fireEvent.keyDown(walked, { key: 'Enter' })
-    expect(timeButton().textContent).toBe('22:00:00')
-    expect(document.activeElement).toBe(within(hour).getByRole('option', { name: '22' }))
+    // The pick keeps the staged value's own half-day: 10 PM stages 22:00:00.
+    expect(timeButton().textContent).toBe('10:00 PM')
+    expect(document.activeElement).toBe(within(hour).getByRole('option', { name: '10' }))
   })
 
   it('scrolls every clock column to its staged value and walks across columns', () => {
@@ -4191,28 +4209,29 @@ describe('timing pickers', () => {
     // One focusable row per column, on the value that column shows, and every
     // column brings its row into view as the panel opens.
     for (const [key, shown] of [
-      ['timing.hour', '23'], ['timing.minute', '00'], ['timing.second', '00'],
+      ['timing.hour', '11'], ['timing.minute', '00'], ['timing.second', '00'],
+      ['timing.meridiem', en['timing.pm']],
     ] as const) {
       const tabbable = within(clockColumn(key)).getAllByRole('option')
         .filter(option => option.getAttribute('tabindex') === '0')
       expect(tabbable).toHaveLength(1)
       expect(tabbable[0]?.textContent).toBe(shown)
     }
-    expect(scrolledIntoView.map(element => element.textContent)).toEqual(['23', '00', '00'])
+    expect(scrolledIntoView.map(element => element.textContent)).toEqual(['11', '00', '00', en['timing.pm']])
 
     // Right carries the row into the next column.
-    fireEvent.keyDown(within(clockColumn('timing.hour')).getByRole('option', { name: '23' }), { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(within(clockColumn('timing.minute')).getByRole('option', { name: '23' }))
+    fireEvent.keyDown(within(clockColumn('timing.hour')).getByRole('option', { name: '11' }), { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(within(clockColumn('timing.minute')).getByRole('option', { name: '10' }))
     // The minute column's last row clamps into the shorter hour column on the way back.
-    fireEvent.keyDown(within(clockColumn('timing.minute')).getByRole('option', { name: '23' }), { key: 'End' })
+    fireEvent.keyDown(within(clockColumn('timing.minute')).getByRole('option', { name: '10' }), { key: 'End' })
     const lastMinute = within(clockColumn('timing.minute')).getByRole('option', { name: '59' })
     expect(document.activeElement).toBe(lastMinute)
     fireEvent.keyDown(lastMinute, { key: 'ArrowLeft' })
-    const lastHour = within(clockColumn('timing.hour')).getByRole('option', { name: '23' })
+    const lastHour = within(clockColumn('timing.hour')).getByRole('option', { name: '12' })
     expect(document.activeElement).toBe(lastHour)
     // Home returns to the first row; there is no column left of the hour column.
     fireEvent.keyDown(lastHour, { key: 'Home' })
-    const firstHour = within(clockColumn('timing.hour')).getByRole('option', { name: '00' })
+    const firstHour = within(clockColumn('timing.hour')).getByRole('option', { name: '01' })
     expect(document.activeElement).toBe(firstHour)
     fireEvent.keyDown(firstHour, { key: 'ArrowLeft' })
     expect(document.activeElement).toBe(firstHour)
@@ -4245,7 +4264,7 @@ describe('timing pickers', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Daily weather' }))
     // A stored clock without seconds still reads as a whole-second row, and the
     // untouched value goes back to the Host at that precision.
-    expect(timeButton().textContent).toBe('10:23:00')
+    expect(timeButton().textContent).toBe('10:23 AM')
     chooseZone('Europe/Berlin')
     clickSave()
     expect(h.updateTiming).toHaveBeenCalledExactlyOnceWith({
@@ -4354,9 +4373,12 @@ describe('timing pickers', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review release' }))
     fireEvent.click(timeButton(dictionary))
     expect(screen.getByRole('dialog', { name: dictionary['timing.time'] })).toBeDefined()
-    for (const key of ['timing.hour', 'timing.minute', 'timing.second'] as const) {
+    for (const key of ['timing.hour', 'timing.minute', 'timing.second', 'timing.meridiem'] as const) {
       expect(screen.getByRole('listbox', { name: dictionary[key] })).toBeDefined()
     }
+    // The meridiem column names both half-days in the active locale.
+    expect(within(clockColumn('timing.meridiem', dictionary)).getAllByRole('option').map(option => option.textContent))
+      .toEqual([dictionary['timing.am'], dictionary['timing.pm']])
     fireEvent.keyDown(within(clockColumn('timing.hour', dictionary)).getByRole('option', { name: '09' }), { key: 'Escape' })
     expect(screen.queryByRole('listbox', { name: dictionary['timing.hour'] })).toBeNull()
 

@@ -50,8 +50,8 @@ describe('detailsCardModel', () => {
       schedule,
     ]), t, 'en')
     expect(model?.items).toHaveLength(4)
-    expect(model?.items[0]?.fields).toContainEqual({ label: 'Repeat', value: 'Weekly on Mon, Wed at 09:00 (Asia/Shanghai)' })
-    expect(model?.items[1]?.fields).toContainEqual({ label: 'Repeat', value: 'Every day at 23:00 (Asia/Shanghai)' })
+    expect(model?.items[0]?.fields).toContainEqual({ label: 'Repeat', value: 'Weekly on Mon, Wed at 9:00 AM (Asia/Shanghai)' })
+    expect(model?.items[1]?.fields).toContainEqual({ label: 'Repeat', value: 'Every day at 11:00 PM (Asia/Shanghai)' })
     expect(model?.items[2]?.fields).toContainEqual({ label: 'Repeat', value: 'Cron */15 9-17 * * 1-5 (Asia/Shanghai)' })
     // A result recorded before the Host owned delivery stays readable.
     expect(model?.items[3]?.fields).toContainEqual({ label: 'Repeat', value: 'Every 1 h' })
@@ -67,7 +67,7 @@ describe('detailsCardModel', () => {
       ...schedule, deliveryMode: 'host', kind: 'daily', time: '10:30:00.000', timeZone: 'Asia/Shanghai', everySeconds: undefined,
     }), t, 'en')
     expect(model?.items[0]?.title).toBe('Review the build')
-    expect(model?.items[0]?.fields).toContainEqual({ label: 'Repeat', value: 'Every day at 10:30 (Asia/Shanghai)' })
+    expect(model?.items[0]?.fields).toContainEqual({ label: 'Repeat', value: 'Every day at 10:30 AM (Asia/Shanghai)' })
   })
 
   it.each([

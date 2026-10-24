@@ -16,15 +16,31 @@ import type {} from '@deepseek-ai/dsh-client-product-analytics/client'
 import { Service } from '@deepseek-ai/cordis'
 import type { Context } from '@deepseek-ai/cordis'
 import type { SessionBinding } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { ModelCatalog, ModelReasoning, ModelSelection } from '@deepseek-ai/dsh-api-session-controller/types'
+import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { WeakMapWithValues } from '@deepseek-ai/dsh-util-values'
-import { ModelCatalogDirectory } from './catalog.ts'
+import { ModelCatalogDirectory, type ModelCatalogState } from './catalog.ts'
 import { ModelDirectory } from './directory.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
     modelDirectories: ModelDirectoryResolver
   }
+}
+
+/**
+ * Shared Host-generation catalog reads offered to label surfaces. The catalog
+ * itself stays owned by {@link ModelDirectoryResolver}; consumers subscribe to
+ * its state instead of fetching a second copy.
+ */
+export interface ModelCatalogRead {
+  /** Current catalog value and load lifecycle. */
+  readonly store: SnapshotStore<ModelCatalogState>
+  /** @returns the current generation catalog after the shared load settles. */
+  load(): Promise<ModelCatalog>
+  /** @param selection - provider/model pair. @returns the advertised reasoning metadata, including unavailable models. */
+  reasoningFor(selection: ModelSelection): ModelReasoning | undefined
 }
 
 /** Live mutable state in one holder (service methods run behind the caller-ctx tracker). */
@@ -39,6 +55,8 @@ export class ModelDirectoryResolver extends Service {
 
   private readonly live: LiveState = { directories: new WeakMapWithValues() }
   private readonly catalog: ModelCatalogDirectory
+  /** Shared catalog reads for surfaces that label recorded routes. */
+  readonly modelCatalog: ModelCatalogRead
 
   /**
    * @param ctx - owning root context (the service registers itself as `models`).
@@ -46,6 +64,11 @@ export class ModelDirectoryResolver extends Service {
   constructor(ctx: Context) {
     super(ctx, 'modelDirectories')
     this.catalog = new ModelCatalogDirectory(ctx)
+    this.modelCatalog = {
+      store: this.catalog.store,
+      load: () => this.catalog.load(),
+      reasoningFor: selection => this.catalog.reasoningFor(selection),
+    }
     void this.catalog.load().catch(() => { /* selectors expose the shared error */ })
     ctx.on('connection/reset', () => {
       this.catalog.resetGeneration()
