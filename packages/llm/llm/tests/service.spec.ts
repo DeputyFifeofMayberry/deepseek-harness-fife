@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import LlmRuntime, {
+  CONTEXT_WINDOW_EXCEEDED_CODE,
   errorChain,
   GenerateOptions,
   HarnessError,
@@ -16,6 +17,7 @@ import LlmRuntime, {
   createMessage,
   createDeveloperMessage,
   createUserMessage,
+  zaiBusinessErrorCode,
 } from '@deepseek-ai/dsh-llm'
 import type {
   LlmCallConfig,
@@ -142,6 +144,33 @@ describe('LlmRuntime', () => {
     ]) expect(isQuotaExceededError(detail)).toBe(true)
     expect(isQuotaExceededError('HTTP 429: rate limit reached')).toBe(false)
     expect(isQuotaExceededError('quota resets in one minute')).toBe(false)
+  })
+
+  it('routes Z.ai/BigModel business codes to canonical failure codes', () => {
+    for (const [detail, expected] of [
+      ['HTTP 429: {"error":{"code":"1302","message":"Too many requests"}}', 'RATE_LIMIT'],
+      ['HTTP 200: {"error":{"code":"insufficient_quota","message":"top up"}}', 'QUOTA'],
+      ['{"code":20097,"message":"token plan exhausted"}', 'QUOTA'],
+      ['{"code":3010,"message":"concurrency cap reached"}', 'QUOTA'],
+      ['upstream error [1316][67e6f1] while streaming', 'QUOTA'],
+      ['provider answered rate_limit_error', 'RATE_LIMIT'],
+      ['{"code":1312,"message":"provider overloaded"}', 'SERVER'],
+      ['{"code":"1234","message":"internal network error"}', 'TRANSPORT'],
+      ['{"code":1261,"message":"context length exceeded"}', CONTEXT_WINDOW_EXCEEDED_CODE],
+      ['{"code":"1006","message":"authentication failed"}', 'AUTH'],
+      ['{"code":3006,"message":"model not found"}', 'INVALID_REQUEST'],
+      ['{"code":99999,"message":"unknown"} {"code":"1302","message":"rate"}', 'RATE_LIMIT'],
+      ['error [9999][1302][trace]', 'RATE_LIMIT'],
+    ] as const) {
+      expect(zaiBusinessErrorCode(detail)).toBe(expected)
+    }
+  })
+
+  it('leaves unrecognized vendor text to the generic status classification', () => {
+    expect(zaiBusinessErrorCode('HTTP 429: rate limit reached')).toBeUndefined()
+    expect(zaiBusinessErrorCode('{"code":13025,"message":"unknown business failure"}')).toBeUndefined()
+    expect(zaiBusinessErrorCode('{"error":{"message":"quota resets in one minute"}}')).toBeUndefined()
+    expect(zaiBusinessErrorCode('spent token 1302 of the daily budget')).toBeUndefined()
   })
 
   it('errorChain renders the full cause chain of a wrapped transport failure', () => {
