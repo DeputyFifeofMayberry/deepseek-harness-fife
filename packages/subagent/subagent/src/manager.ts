@@ -41,6 +41,7 @@ import { attachStructuredRuntime } from './structured.ts'
 import type { StructuredAttachment } from './structured.ts'
 import type { SubagentDelivery } from './control-types.ts'
 import { ActivationPool, ChildLock, activationAgent, captureLocalResult, observeLocalFailure, requireLocalActivation } from './activation.ts'
+import { appendDelegatedUsage } from './delegated-usage.ts'
 import type { Activation, ActivationResource, LocalActivation } from './activation.ts'
 
 /** Inputs shared by model steering and human prompt delivery. */
@@ -1141,6 +1142,7 @@ export class SubagentManager {
           await this.flushFinalState(activation)
         }
         result = captureLocalResult(activation)
+        this.attributeDelegatedUsage(activation)
       }
     } catch (error: unknown) {
       resultFailure = { error }
@@ -1181,6 +1183,29 @@ export class SubagentManager {
     if (resultFailure === undefined) activation.result.resolve(result)
     else activation.result.reject(resultFailure.error)
     if (failure !== undefined) throw failure
+  }
+
+  /**
+   * Attribute this epoch's provider usage to the delegating parent's log.
+   *
+   * The child's usage settles in its own Session, so the parent never sees what
+   * its delegation cost unless the epoch reports it. Accounting never changes the
+   * run: a refused append is reported and the settlement proceeds.
+   * @param activation - the settled local execution whose epoch is being reported.
+   */
+  private attributeDelegatedUsage(activation: LocalActivation): void {
+    try {
+      appendDelegatedUsage(
+        activation.parent.session,
+        activation.childId,
+        // oxlint-disable-next-line typescript/no-deprecated -- Existing Session history read; migration deferred.
+        activation.handle.agent.session.snapshotEvents(activation.outputStart),
+      )
+    } catch (error: unknown) {
+      this.ctx.logger.warn(
+        `subagent "${activation.childId}" usage attribution failed: ${failureMessage(error)}`,
+      )
+    }
   }
 
   /** Deliver the captured execution result to the durable direct parent after cleanup. */

@@ -16089,6 +16089,135 @@
       }
     },
     {
+      "key": "event:subagent/usage",
+      "kind": "event",
+      "event": "subagent/usage",
+      "surface": false,
+      "digest": "9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330",
+      "schema": {
+        "root": 0,
+        "nodes": [
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "data",
+                "type": 1,
+                "optional": false
+              },
+              {
+                "name": "ignorable",
+                "type": 7,
+                "optional": true
+              },
+              {
+                "name": "seq",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "time",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "type",
+                "type": 8,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "childId",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "routes",
+                "type": 3,
+                "optional": false
+              },
+              {
+                "name": "version",
+                "type": 6,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "string"
+          },
+          {
+            "kind": "array",
+            "element": 4
+          },
+          {
+            "kind": "object",
+            "properties": [
+              {
+                "name": "cacheReadTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "cacheWriteTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "model",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "outputTokens",
+                "type": 5,
+                "optional": false
+              },
+              {
+                "name": "provider",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "reasoningEffort",
+                "type": 2,
+                "optional": false
+              },
+              {
+                "name": "uncachedInputTokens",
+                "type": 5,
+                "optional": false
+              }
+            ],
+            "indices": []
+          },
+          {
+            "kind": "primitive",
+            "type": "number"
+          },
+          {
+            "kind": "literal",
+            "value": 0
+          },
+          {
+            "kind": "literal",
+            "value": true
+          },
+          {
+            "kind": "literal",
+            "value": "subagent/usage"
+          }
+        ]
+      }
+    },
+    {
       "key": "event:system/message",
       "kind": "event",
       "event": "system/message",
@@ -23680,6 +23809,11 @@
       ]
     },
     {
+      "digest": "4894fa6d276bff26d96aec10f80445da02a5dcbe3e63e359bd3132ee59721c00",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "48e5c9861f16ac07e78cb7b5ae9dabdf7bb85c58baed5a51b4ad275050ea58e3",
       "names": [],
       "sources": []
@@ -24419,6 +24553,11 @@
       "sources": []
     },
     {
+      "digest": "741f528fdc9b43aa19014341cee73ab0dbebce66ffce633d97cb3755d1fa92a1",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "750a2b129d67704df675c06823c20c80b65cbae89d5aaa914fd5a72e3df395b5",
       "names": [
         "packages/jobs/jobs/src/types.ts#JobSettleCause"
@@ -24995,6 +25134,15 @@
       "sources": []
     },
     {
+      "digest": "9b6e67d76d1d34b53f543987f927d78771a74523647c37d70f9799cc64d4bf11",
+      "names": [
+        "packages/subagent/subagent/src/delegated-usage.ts#DelegatedUsageRoute"
+      ],
+      "sources": [
+        "packages/subagent/subagent/src/delegated-usage.ts:18"
+      ]
+    },
+    {
       "digest": "9c001ecb5e1d3c3894410db2a1e383842e5f8454fb52182338686158abc1b3ee",
       "names": [],
       "sources": [
@@ -25030,6 +25178,11 @@
       "sources": [
         "packages/experimental/webhook/src/types.ts:74"
       ]
+    },
+    {
+      "digest": "9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330",
+      "names": [],
+      "sources": []
     },
     {
       "digest": "9f65c43e340bba31cdc0fc37bd93ccb68d5e9b36f47a68c207e95a8e68620a5d",
@@ -25525,6 +25678,15 @@
       "digest": "b9305f0ea75ccd6a6061c27fde19f2ab85534f9f3c1a717b573b077ebae0f611",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "b95fd1c6cd83fa3d3258a6347203127bb619fd86f231b0bb770f705d9fcdb09d",
+      "names": [
+        "packages/subagent/subagent/src/delegated-usage.ts#SubagentUsageEvent"
+      ],
+      "sources": [
+        "packages/subagent/subagent/src/delegated-usage.ts:37"
+      ]
     },
     {
       "digest": "b978cff734e62143eb56c9125423ec275405eda969802d42aaf73ecb987d3b26",

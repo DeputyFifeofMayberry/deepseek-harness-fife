@@ -68,6 +68,10 @@ kind: "package-reference"
 
 每个确切在线 Agent 都可以对直接可继续 child 使用 `sendMessage()`；驻留的可继续 child 还可以对自己的直接 parent 使用它。正在工作的目标通过 Steer 在最近 step 接收 Agent 消息；空闲目标启动轮次，且只有直接 child 可以冷恢复。parent 也可以随时中断正在运行的后代或列举自己的子级。浏览器发出的继续执行 prompt 会独立选择 Queue 或 Steer，并且可以携带图片部分：Host 先通过附件存储完成整批图片的准入与持久化，子级 inbox 才接受这条消息；当子级声明的模型不接受图片输入时拒绝投递。 直接子级发现读取 parent 自有的 `subagentCatalog` projection。`listChildren(parentSessionId, signal?)` 持有一次优先实时来源的 Session 观察，异步返回目录，不读取子级日志。它转发取消信号，并在物化后释放观察。物化以 O(D) 时间保留 D 条事实的父日志事件顺序。外部条目是叶节点，不需要观察子 Session。后代发现按父事件顺序递归读取子级目录，每个可达 Session 观察一次。无法读取目录的分支会被跳过，并返回诊断；两条路径都不加载或恢复子级 Agent。
 
+### 委派用量归属
+
+本地子级的提供方用量结算在子级自己的 Session 日志里，父级从不折叠它。当本地执行周期结算且报告了用量时，服务向委派方父会话追加一条 `subagent/usage` 记录：该周期的提供方计数，按 `(turn, step)` 去重并按每次结算所用路由分组。子级自身的归属记录会并入它上报的记录，因此根父级能看到整棵树。该记录仅写入日志，从不呈现给模型；外部执行不产生记录，因为它们没有本地 Session。`dsh-token-meter` 将它折叠进 `tokenUsage` 与 `usageByRoute`，因此对话的用量与花费读数包含它委派出去的工作，而其 `contextPressure` 仍是它自身的请求。
+
 ### 失败与恢复
 
 缺少 `agents` 服务时，启动请求以 `CONTINUATION_UNAVAILABLE` 拒绝；运行时可用但父级缺失或被替换时，以 `UNAUTHORIZED` 拒绝。未实现任何执行方法的提供方会在注册时以 `UNSUPPORTED_CAPABILITY` 被拒绝；请求不受支持的能力会以同一码使创建失败。调用方信号仅取消尚未发布的工作；发布后通过 `dispose()` 取消该次 activation，并等待其后代（包括正在启动的后代）及其资源清理完成。`result` 在清理与通知结束后完成，携带输出、可选结构化数据与停止原因；结果捕获故障在清理后使其拒绝。清理失败使 `dispose()` 拒绝，并将生命周期结束事件标记为失败；结果 promise 与父级通知保留已捕获的执行结果。
@@ -102,6 +106,7 @@ kind: "package-reference"
 | [`src/types.ts`](src/types.ts) | 公开的请求、结果与提供方约定 |
 | [`src/descriptor.ts`](src/descriptor.ts) | 版本化的 `subagent/descriptor` 会话事件词汇 |
 | [`src/catalog.ts`](src/catalog.ts) | parent 自有的 `subagent/catalog` 事件与分块 host projection |
+| [`src/delegated-usage.ts`](src/delegated-usage.ts) | parent 自有的 `subagent/usage` 事件：一个子执行周期产生的按路由分组的提供方用量 |
 | [`src/child-agent.ts`](src/child-agent.ts) | 子级组装、委派策略、深度辅助函数 |
 | [`src/list-children.ts`](src/list-children.ts) | 直接与递归的 parent 目录读取 |
 | [`src/control.ts`](src/control.ts) | 浏览器控制请求校验与稳定失败分码 |

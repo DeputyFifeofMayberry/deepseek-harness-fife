@@ -155,7 +155,7 @@ function project(state: UsageByRouteState): UsageByRouteProjection {
  */
 export const usageByRouteProjectionDefinition = {
   key: 'usageByRoute',
-  stateVersion: 1,
+  stateVersion: 2,
   stateSchema: usageByRouteStateSchema,
   init: () => ({ route: null, routes: [], last: null }),
   apply: (state, event: SessionEvent) => {
@@ -168,6 +168,25 @@ export const usageByRouteProjectionDefinition = {
       }
       if (state.route !== null && sameIdentity(state.route, identity)) return state
       return { ...state, route: identity }
+    }
+    if (event.type === 'subagent/usage') {
+      // Delegated spend names its own routes: the child may have run on another
+      // model than the parent's current header, so each sample keeps its identity.
+      let routes = state.routes
+      const hourOfWeek = hourOfWeekOf(event.time)
+      for (const route of event.data.routes) {
+        routes = addSample(routes, {
+          provider: route.provider,
+          model: route.model,
+          reasoningEffort: route.reasoningEffort,
+        }, hourOfWeek, {
+          uncachedInputTokens: route.uncachedInputTokens,
+          outputTokens: route.outputTokens,
+          cacheReadTokens: route.cacheReadTokens,
+          cacheWriteTokens: route.cacheWriteTokens,
+        })
+      }
+      return routes === state.routes ? state : { ...state, routes }
     }
     if (event.type === 'llm/retry-started') {
       return state.last?.turn === event.data.turn && state.last.step === event.data.step

@@ -67,6 +67,7 @@
 | `event:subagent/catalog` | event | `53750b9abf61efb7992b0aadc3e247ec927449c63266df28230fd1139f5590ac` | [`{ type: "subagent/catalog" }`](#persistence-type-sha256-53750b9abf61efb7992b0aadc3e247ec927449c63266df28230fd1139f5590ac) |
 | `event:subagent/descriptor` | event | `b79ada42962cad0190a9d465805260567621fa3a4abd757eb31e6016b52d5ab5` | [`{ type: "subagent/descriptor" }`](#persistence-type-sha256-b79ada42962cad0190a9d465805260567621fa3a4abd757eb31e6016b52d5ab5) |
 | `event:subagent/model-selection-policy` | event | `a6567ccb2e530606b775371eb4fa31468d72084339968e8b0440a516a23b39dc` | [`{ type: "subagent/model-selection-policy" }`](#persistence-type-sha256-a6567ccb2e530606b775371eb4fa31468d72084339968e8b0440a516a23b39dc) |
+| `event:subagent/usage` | event | `9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330` | [`{ type: "subagent/usage" }`](#persistence-type-sha256-9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330) |
 | `event:system/message` | event | `69081694be231d56fd9580ba14645fd5e35373202605d5c5c841a9435b5fa3b1` | [`{ type: "system/message" }`](#persistence-type-sha256-69081694be231d56fd9580ba14645fd5e35373202605d5c5c841a9435b5fa3b1) |
 | `event:team/member` | event | `4fb59762612c3e3ac3a3bd4f84c9c148d3c3893bd422ba2b201cc039fabd49bc` | [`{ type: "team/member" }`](#persistence-type-sha256-4fb59762612c3e3ac3a3bd4f84c9c148d3c3893bd422ba2b201cc039fabd49bc) |
 | `event:team/message/delivered` | event | `48f9c19417a1abbedfa59f4667bba36b93ac2db407adf5e84cb3ba0de30942cb` | [`{ type: "team/message/delivered" }`](#persistence-type-sha256-48f9c19417a1abbedfa59f4667bba36b93ac2db407adf5e84cb3ba0de30942cb) |
@@ -995,6 +996,20 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 ```
 
 来源：[`packages/subagent/tool-subagent/src/model-selection-state.ts:17`](../packages/subagent/tool-subagent/src/model-selection-state.ts)
+
+<a id="subagentusage--log-only"></a>
+
+#### `subagent/usage` — log-only
+
+```ts persistence-catalog
+/**
+ * Provider usage one delegating parent was charged for on behalf of `childId`.
+ * @param data - versioned route-bucketed attribution.
+ */
+'subagent/usage': SubagentUsageEvent
+```
+
+来源：[`packages/subagent/subagent/src/delegated-usage.ts:49`](../packages/subagent/subagent/src/delegated-usage.ts)
 
 ### `system/*`
 
@@ -2701,6 +2716,14 @@ SHA-256: `0a8a062bc9c3c0d97fd97742262f2ea53dd32297f834e81114870d38ac3dc6da`
 
 `"subagent/model-selection-policy"`
 
+<a id="persistence-type-sha256-4894fa6d276bff26d96aec10f80445da02a5dcbe3e63e359bd3132ee59721c00"></a>
+
+### `"subagent/usage"`
+
+SHA-256: `4894fa6d276bff26d96aec10f80445da02a5dcbe3e63e359bd3132ee59721c00`
+
+`"subagent/usage"`
+
 <a id="persistence-type-sha256-511801b0a6470d98566e8385d3dffddb2b67f79fcf73ed6056f46c3cc0a245a7"></a>
 
 ### `"success"`
@@ -3456,6 +3479,36 @@ SHA-256: `abd6ca62a5ab166553848324a23fef90eed7f59c8021bd63e7ea5bc6fd666b0c`
 | `apiVersion` | 必需 | `string` |
 | `body` | 必需 | [`{ max_tokens, messages, model, thinking?, … }`](#persistence-type-sha256-9c001ecb5e1d3c3894410db2a1e383842e5f8454fb52182338686158abc1b3ee) |
 | `endpoint` | 必需 | `string` |
+
+<a id="persistence-type-sha256-9b6e67d76d1d34b53f543987f927d78771a74523647c37d70f9799cc64d4bf11"></a>
+
+<a id="persistence-type-delegatedusageroute"></a>
+
+<a id="persistence-type-packagessubagentsubagentsrcdelegated-usagetsdelegatedusageroute"></a>
+
+### `DelegatedUsageRoute`
+
+SHA-256: `9b6e67d76d1d34b53f543987f927d78771a74523647c37d70f9799cc64d4bf11`
+
+来源：[`packages/subagent/subagent/src/delegated-usage.ts:18`](../packages/subagent/subagent/src/delegated-usage.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `cacheReadTokens` | 必需 | `number` |
+| `cacheWriteTokens` | 必需 | `number` |
+| `model` | 必需 | `string` |
+| `outputTokens` | 必需 | `number` |
+| `provider` | 必需 | `string` |
+| `reasoningEffort` | 必需 | `string` |
+| `uncachedInputTokens` | 必需 | `number` |
+
+<a id="persistence-type-sha256-741f528fdc9b43aa19014341cee73ab0dbebce66ffce633d97cb3755d1fa92a1"></a>
+
+### `DelegatedUsageRoute[]`
+
+SHA-256: `741f528fdc9b43aa19014341cee73ab0dbebce66ffce633d97cb3755d1fa92a1`
+
+[`DelegatedUsageRoute`](#persistence-type-sha256-9b6e67d76d1d34b53f543987f927d78771a74523647c37d70f9799cc64d4bf11) 的数组。
 
 <a id="persistence-type-sha256-0f6265188dae7ba6faa26830a180bb4deb0760561f97ee0c9d399ccf6c9cf1f7"></a>
 
@@ -4990,6 +5043,24 @@ SHA-256: `4e97c3d85c0fc817ee58873c38c25a2474abaaa0af4839311b50b68db3b8cf1a`
 | `kind` | 必需 | `"subagent-settled"` |
 | `senderSessionId` | 必需 | `string` |
 | `summary` | 必需 | `string` |
+
+<a id="persistence-type-sha256-b95fd1c6cd83fa3d3258a6347203127bb619fd86f231b0bb770f705d9fcdb09d"></a>
+
+<a id="persistence-type-packagessubagentsubagentsrcdelegated-usagetssubagentusageevent"></a>
+
+<a id="persistence-type-subagentusageevent"></a>
+
+### `SubagentUsageEvent`
+
+SHA-256: `b95fd1c6cd83fa3d3258a6347203127bb619fd86f231b0bb770f705d9fcdb09d`
+
+来源：[`packages/subagent/subagent/src/delegated-usage.ts:37`](../packages/subagent/subagent/src/delegated-usage.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `childId` | 必需 | `string` |
+| `routes` | 必需 | [`DelegatedUsageRoute[]`](#persistence-type-sha256-741f528fdc9b43aa19014341cee73ab0dbebce66ffce633d97cb3755d1fa92a1) |
+| `version` | 必需 | `0` |
 
 <a id="persistence-type-sha256-335e242de1fcc17b6ca920fc420d71bec2d76e53e37955c00948b65ab77f05c5"></a>
 
@@ -8871,6 +8942,22 @@ SHA-256: `a6567ccb2e530606b775371eb4fa31468d72084339968e8b0440a516a23b39dc`
 | `seq` | 必需 | `number` |
 | `time` | 必需 | `number` |
 | `type` | 必需 | `"subagent/model-selection-policy"` |
+
+<a id="persistence-type-sha256-9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330"></a>
+
+<a id="persistence-type-eventsubagentusage"></a>
+
+### `{ type: "subagent/usage" }`
+
+SHA-256: `9f45f09ee552545e6a9841eed2c3acb44fdc89a1eea6831a63eafcc972d5f330`
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `data` | 必需 | [`SubagentUsageEvent`](#persistence-type-sha256-b95fd1c6cd83fa3d3258a6347203127bb619fd86f231b0bb770f705d9fcdb09d) |
+| `ignorable` | 可选 | `true` |
+| `seq` | 必需 | `number` |
+| `time` | 必需 | `number` |
+| `type` | 必需 | `"subagent/usage"` |
 
 <a id="persistence-type-sha256-69081694be231d56fd9580ba14645fd5e35373202605d5c5c841a9435b5fa3b1"></a>
 

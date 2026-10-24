@@ -11,6 +11,7 @@ import type { ContextPressureProjection } from './projection.ts'
 import { foldSurfaceProjection } from './surface-projection.ts'
 import {
   addUsageBuckets,
+  delegatedUsageBuckets,
   eventUsage,
   sameUsageBuckets,
   subtractUsageBuckets,
@@ -79,7 +80,7 @@ type ContextPressureState = z.infer<typeof contextPressureStateSchema>
  */
 export const tokenUsageProjectionDefinition = {
   key: 'tokenUsage',
-  stateVersion: 2,
+  stateVersion: 3,
   stateSchema: tokenUsageStateSchema,
   init: () => ({ totals: zeroUsageBuckets(), last: null }),
   apply: (state, event) => {
@@ -87,6 +88,11 @@ export const tokenUsageProjectionDefinition = {
       return state.last?.turn === event.data.turn && state.last.step === event.data.step
         ? { ...state, last: null }
         : state
+    }
+    if (event.type === 'subagent/usage') {
+      // Delegated spend is attributed once per child epoch and never replaces a
+      // sample, so it adds to the totals while leaving the `(turn, step)` slot alone.
+      return { ...state, totals: addUsageBuckets(state.totals, delegatedUsageBuckets(event)) }
     }
     if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') {
       return state

@@ -4,34 +4,19 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Before exploring, read these
 
-- **`docs/glossary.md`**: this repo's canonical glossary. There is deliberately no root `GLOSSARY.md`; this file is the single glossary home.
-- **`.agents/notes/`**: this repo's decision records ("Agent Notes") in `proposed/`, `implemented/`, and `rejected/` lifecycle folders. Read the notes that touch the area you're about to work in. Treat `archived/` as frozen history, not current authority.
+- **`docs/glossary.md`** — the project glossary. It defines the harness vocabulary (capability seams, plugins, sessions, turns, events, tools). Use its terms; do not drift to synonyms it avoids. The repo is single-context: one glossary serves all packages.
+- **`docs/architecture.md`** — the authoritative system map, required reading before changing `packages/`.
+- **`docs/defensive-patterns/README.md`** — review principles that apply per artifact when the work touches a package surface, remote service, client component or state, conversation or Session behavior, or lifecycle, concurrency, subprocess, and teardown code.
+- **`.agents/notes/`** — durable decision-rationale records, the repo's equivalent of ADRs. Check the `implemented/` subtree for decisions in the area being touched. Archived notes are frozen and are not current authority.
 
-If any of these don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) resolves terms and decisions into these locations when they actually come up.
-
-## File structure
-
-Single-context repo reusing its existing documentation:
-
-```
-/
-├── docs/
-│   └── glossary.md
-└── .agents/notes/
-    ├── proposed/
-    ├── implemented/
-    ├── rejected/
-    └── archived/
-```
+The engineering-skills `GLOSSARY.md` / `docs/adr/` layout from other repos does not apply here; the files above are this repo's canonical homes. Do not suggest creating sibling glossary files upfront.
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `docs/glossary.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, or a test name), use the term as defined in `docs/glossary.md`. If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for a glossary update).
 
 ## Flag decision-record conflicts
 
-If your output contradicts an existing Agent Note, surface it explicitly rather than silently overriding:
+If your output contradicts an existing `.agents/notes/implemented/` record, surface it explicitly rather than silently overriding:
 
-> _Contradicts 2026-08-23-locale-owned-client-ui-copy (implemented), but worth reopening because…_
+> _Contradicts `<note-path>` (<decision>), but worth reopening because…_

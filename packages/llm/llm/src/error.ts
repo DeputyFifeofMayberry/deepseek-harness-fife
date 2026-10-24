@@ -103,6 +103,93 @@ export function isQuotaExceededError(detail: string): boolean {
 }
 
 /**
+ * Z.ai / BigModel vendor business codes routed to canonical harness codes.
+ * Each entry pairs a matcher for one code's textual forms with the canonical
+ * code it routes to. Terminal quota, fair-use, spend-cap, and
+ * concurrency-ceiling codes route to `QUOTA` so a terminal body under a
+ * transient-looking 429 status stops retrying; transient rate, overload, and
+ * wrapped-network codes route to their retryable families; auth,
+ * invalid-request, and context codes keep their harness meanings. Table order
+ * decides when text carries more than one vendor code. Codes absent from the
+ * table keep the generic status-based classification. Evidence: Z.ai's own
+ * harness ships this table with per-code retryability
+ * (`.agents/plans/2026-10-23-zai-zcode-integration-research.md`).
+ */
+const ZAI_BUSINESS_CODE_ROUTES: ReadonlyArray<readonly [RegExp, string]> = [
+  // Terminal quota, fair-use, spend cap, and concurrency ceilings: lifting
+  // them requires an account change, so no resend can succeed.
+  ...[
+    'insufficient_quota',
+    'credit_balance_exhausted',
+    'organization_spend_limit_exceeded',
+    'project_spend_limit_exceeded',
+    'organization_usage_limit_exceeded',
+    'exceeded_current_quota_error',
+    '2056',
+    '20097',
+    // Observed live on api.z.ai (2026-10-24): "[1113][Insufficient balance or
+    // no resource package. Please recharge.]" — balance exhaustion, terminal.
+    '1113',
+    '1304',
+    '1308',
+    '1310',
+    '1313',
+    '1316',
+    '1317',
+    '1318',
+    '1319',
+    '1320',
+    '1321',
+    '3008',
+    '3009',
+    '3010',
+  ].map((code): [RegExp, string] => [zaiBusinessCodePattern(code), QUOTA_EXCEEDED_CODE]),
+  // Transient rate limits and provider overload: safe to retry with backoff.
+  ...['1302', '1303', '1305', '3002', 'rate_limit_reached_error', 'rate_limit_error']
+    .map((code): [RegExp, string] => [zaiBusinessCodePattern(code), 'RATE_LIMIT']),
+  ...['1120', '1230', '2007', '1312', 'engine_overloaded_error', 'overloaded_error']
+    .map((code): [RegExp, string] => [zaiBusinessCodePattern(code), 'SERVER']),
+  ...([
+    ['1234', 'TRANSPORT'],
+    ['1261', CONTEXT_WINDOW_EXCEEDED_CODE],
+    ['1006', 'AUTH'],
+    ['3007', 'AUTH'],
+    ['1005', 'INVALID_REQUEST'],
+    ['3001', 'INVALID_REQUEST'],
+    ['3006', 'INVALID_REQUEST'],
+  ] as const).map(([code, routed]): [RegExp, string] => [zaiBusinessCodePattern(code), routed]),
+]
+
+/**
+ * Match one vendor code in its folded-JSON form (`"code":"1302"`), its
+ * bracketed SSE form (`[1302]`), or — for the distinctive snake_case codes —
+ * bare in message text. Numeric codes never match bare, so an unrelated
+ * number in a message cannot route the failure.
+ */
+function zaiBusinessCodePattern(code: string): RegExp {
+  return /[a-z_]/.test(code)
+    ? new RegExp(String.raw`"code"\s*:\s*"?${code}"?|\b${code}\b`)
+    : new RegExp(String.raw`"code"\s*:\s*"?${code}(?!\d)"?|\[${code}\]`)
+}
+
+/**
+ * Route a Z.ai / BigModel business code carried in provider error text to its
+ * canonical harness failure code. The vendor code reaches this layer inside
+ * the flattened error message — a folded JSON body, the bracketed SSE form, or
+ * a bare snake_case code — so recognition is text-shaped like the other
+ * recognition helpers in this module.
+ * @param detail - provider error code/type/message text joined into one string.
+ * @returns the canonical code of the first matching table entry, or undefined
+ *   when the detail carries none.
+ */
+export function zaiBusinessErrorCode(detail: string): string | undefined {
+  for (const [pattern, code] of ZAI_BUSINESS_CODE_ROUTES) {
+    if (pattern.test(detail)) return code
+  }
+  return undefined
+}
+
+/**
  * Render a thrown value with its full `cause` chain and AggregateError
  * members, so transport wrappers like undici's `TypeError: fetch failed`
  * surface the underlying failure instead of masking it. Plain structured

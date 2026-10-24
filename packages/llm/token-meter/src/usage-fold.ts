@@ -8,6 +8,8 @@ import { z } from 'zod'
 import { lastAssistantStreamChunk } from '@deepseek-ai/dsh-llm'
 import type { TokenUsage } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+// Type-only: activates the `subagent/usage` SessionEventMap member and its payload.
+import type {} from '@deepseek-ai/dsh-subagent'
 import type { TokenUsageProjection } from './projection.ts'
 
 /** Persisted and wire schema for one four-bucket usage set. */
@@ -106,4 +108,24 @@ export function eventUsage(event: SessionEvent): TokenUsage | undefined {
   if (event.type === 'assistant/message' && event.data.usage !== undefined) return event.data.usage
   if (event.type !== 'assistant/message' && event.type !== 'assistant/attempt') return undefined
   return lastAssistantStreamChunk(event.data.stream, 'usage')?.usage
+}
+
+/**
+ * The provider usage a delegating parent was charged for, as one aggregate.
+ *
+ * Delegated samples stay out of {@link eventUsage}: they describe another
+ * Session's requests, so they belong in the parent's billed totals and never in
+ * its context pressure.
+ * @param event - `subagent/usage` attribution record.
+ * @returns every route's buckets summed into one set.
+ */
+export function delegatedUsageBuckets(event: SessionEvent<'subagent/usage'>): TokenUsageProjection {
+  const totals = zeroUsageBuckets()
+  for (const route of event.data.routes) {
+    totals.uncachedInputTokens += route.uncachedInputTokens
+    totals.outputTokens += route.outputTokens
+    totals.cacheReadTokens += route.cacheReadTokens
+    totals.cacheWriteTokens += route.cacheWriteTokens
+  }
+  return totals
 }

@@ -12,7 +12,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
-Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
+Always pass `-R DeputyFifeofMayberry/deepseek-harness-fife` (or run `gh repo set-default` to the fork once per clone). `gh`'s own default-repo resolution can land on `upstream` (`deepseek-ai/deepseek-harness`), which is read-only and not a publishing target.
 
 ## Pull requests as a triage surface
 
@@ -44,3 +44,7 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (`issue_dependencies_summary.blocked_by > 0`, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+
+## Relationship to PR labels
+
+The repo's PR label taxonomy (`kind/*`, `area/*`, Issue Type) governs pull requests only. The triage labels in `triage-labels.md` govern issues. The two vocabularies do not mix.

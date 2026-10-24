@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-23-delegated-subagent-usage.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-23-delegated-subagent-usage.md
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent:
+  en: 3d9819a4424f81c6
+  zh: 111955fdda0bc1ac
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent/problem:
+  en: 828c333225b3acd0
+  zh: cba1865467491320
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent/decision:
+  en: 4b43b52bd25e1e3d
+  zh: e2c7ec5dedae3134
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent/verification:
+  en: a279d2ef480b5d58
+  zh: ea55a7554736766d
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent/alternatives-considered:
+  en: ade76f3a0a93e659
+  zh: f6d651704e1b147f
+/agent-note-delegated-usage-is-attributed-to-the-delegating-parent/consequences:
+  en: 3764a7ef99787bbf
+  zh: 8c46c29bf0979dd9
